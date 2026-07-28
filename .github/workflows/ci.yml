@@ -10,21 +10,29 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  backend:
-    name: Backend
-    runs-on: ubuntu-latest
+  go:
+    name: Go validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/setup-go@v6
+      - name: Check out repository
+        uses: actions/checkout@v6
         with:
-          go-version: "1.26.x"
+          persist-credentials: false
+
+      - name: Install Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
           cache: true
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
 
       - name: Synchronize workspace
         run: go work sync
@@ -34,82 +42,183 @@ jobs:
           go mod download
           go -C tools mod download
 
-      - name: Verify formatting
+      - name: Check formatting
         run: |
-          files="$(find platform services runtime-connectors gen -type f -name '*.go')"
-          test -z "$(gofmt -l ${files})"
+          files="$(
+            find \
+              platform \
+              services \
+              runtime-connectors \
+              gen \
+              -type f \
+              -name '*.go'
+          )"
+
+          unformatted="$(gofmt -l ${files})"
+
+          if [[ -n "${unformatted}" ]]; then
+            echo "${unformatted}"
+            exit 1
+          fi
 
       - name: Vet
         run: go vet ./...
 
+      - name: Lint
+        run: go tool golangci-lint run
+
       - name: Test
-        run: go test -race -count=1 ./...
+        run: go test -race -shuffle=on -count=1 ./...
 
       - name: Build services
         run: bash scripts/build-services.sh
 
   contracts:
-    name: Contracts
-    runs-on: ubuntu-latest
+    name: Contract validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/setup-go@v6
+      - name: Check out repository
+        uses: actions/checkout@v6
         with:
-          go-version: "1.26.x"
+          persist-credentials: false
+
+      - name: Install Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
           cache: true
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
 
       - name: Download tool dependencies
         run: go -C tools mod download
 
-      - name: Install generators
-        run: go -C tools install tool
-
-      - name: Lint contracts
+      - name: Lint Protobuf
         run: go tool buf lint
 
-      - name: Check contract formatting
+      - name: Check Protobuf formatting
         run: go tool buf format --diff --exit-code
 
-      - name: Generate contracts
+      - name: Regenerate contracts
         run: |
           rm -rf gen/go
           mkdir -p gen/go
+
           go tool buf generate
           go mod tidy
 
-      - name: Verify generated files
+      - name: Verify generated contracts
         run: git diff --exit-code -- gen/go go.mod go.sum
 
   frontend:
-    name: Frontend
-    runs-on: ubuntu-latest
+    name: Frontend validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v5
-
-      - uses: pnpm/action-setup@v6
+      - name: Check out repository
+        uses: actions/checkout@v6
         with:
-          version: "11.4.0"
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.4.0
           run_install: false
 
-      - uses: actions/setup-node@v5
+      - name: Install Node.js
+        uses: actions/setup-node@v6
         with:
-          node-version: "24"
+          node-version: 24.18.0
           cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Check formatting
-        run: pnpm format:check
-
-      - name: Type-check
-        run: pnpm typecheck
+      - name: Lint
+        run: pnpm lint
 
       - name: Test
         run: pnpm test
 
       - name: Build
         run: pnpm build
+
+  infrastructure:
+    name: Development infrastructure
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Create development environment
+        run: |
+          cp \
+            deployments/local/.env.example \
+            deployments/local/.env
+
+      - name: Validate Compose model
+        run: |
+          docker compose \
+            --env-file deployments/local/.env \
+            -f deployments/local/compose.yaml \
+            config --quiet
+
+      - name: Start infrastructure
+        run: |
+          docker compose \
+            --env-file deployments/local/.env \
+            -f deployments/local/compose.yaml \
+            up \
+              -d \
+              --wait \
+              --wait-timeout 240 \
+              postgres \
+              redis \
+              kafka \
+              temporal
+
+          docker compose \
+            --env-file deployments/local/.env \
+            -f deployments/local/compose.yaml \
+            run \
+              --rm \
+              kafka-init
+
+      - name: Smoke-test infrastructure
+        env:
+          POSTGRES_USER: gereh
+        run: |
+          bash scripts/infra/smoke-test.sh \
+            deployments/local/compose.yaml \
+            deployments/local/.env
+
+      - name: Show logs after failure
+        if: failure()
+        run: |
+          docker compose \
+            --env-file deployments/local/.env \
+            -f deployments/local/compose.yaml \
+            ps -a
+
+          docker compose \
+            --env-file deployments/local/.env \
+            -f deployments/local/compose.yaml \
+            logs --no-color --tail=300
+
+      - name: Stop infrastructure
+        if: always()
+        run: |
+          docker compose \
+            --env-file deployments/local/.env \
+            -f deployments/local/compose.yaml \
+            down -v --remove-orphans

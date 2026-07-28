@@ -10,7 +10,7 @@ describe("HomePage", () => {
   });
 
   it("shows the API status when the backend is healthy", async () => {
-    const fetchMock = vi.fn(async () => {
+    const fetchMock = vi.fn(() => {
       return new Response(
         JSON.stringify({
           status: "ok",
