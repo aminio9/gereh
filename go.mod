@@ -1,5 +1,8 @@
-module github.com/aminio9/gereh-platform
+module github.com/aminio9/gereh
 
-go 1.26
+go 1.26.0
 
-require github.com/go-chi/chi/v5 v5.3.1
+require (
+	github.com/go-chi/chi/v5 v5.3.1
+	google.golang.org/protobuf v1.36.11
+)

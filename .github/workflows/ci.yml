@@ -3,14 +3,21 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches:
+      - main
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   backend:
+    name: Backend
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v5
 
@@ -19,11 +26,18 @@ jobs:
           go-version: "1.26.x"
           cache: true
 
-      - name: Download modules
-        run: go mod download
+      - name: Synchronize workspace
+        run: go work sync
 
-      - name: Format check
-        run: test -z "$(gofmt -l $(find platform services runtime-connectors -type f -name '*.go'))"
+      - name: Download dependencies
+        run: |
+          go mod download
+          go -C tools mod download
+
+      - name: Verify formatting
+        run: |
+          files="$(find platform services runtime-connectors gen -type f -name '*.go')"
+          test -z "$(gofmt -l ${files})"
 
       - name: Vet
         run: go vet ./...
@@ -35,38 +49,67 @@ jobs:
         run: bash scripts/build-services.sh
 
   contracts:
+    name: Contracts
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v5
 
-      - uses: bufbuild/buf-setup-action@v2
+      - uses: actions/setup-go@v6
         with:
-          version: "1.72.0"
+          go-version: "1.26.x"
+          cache: true
 
-      - run: buf lint
+      - name: Download tool dependencies
+        run: go -C tools mod download
+
+      - name: Install generators
+        run: go -C tools install tool
+
+      - name: Lint contracts
+        run: go tool buf lint
+
+      - name: Check contract formatting
+        run: go tool buf format --diff --exit-code
+
+      - name: Generate contracts
+        run: |
+          rm -rf gen/go
+          mkdir -p gen/go
+          go tool buf generate
+          go mod tidy
+
+      - name: Verify generated files
+        run: git diff --exit-code -- gen/go go.mod go.sum
 
   frontend:
+    name: Frontend
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v5
-
-      - uses: actions/setup-node@v5
-        with:
-          node-version: "24"
-
 
       - uses: pnpm/action-setup@v6
         with:
           version: "11.4.0"
           run_install: false
 
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: pnpm
+
       - name: Install dependencies
-        run: |
-          if [ -f pnpm-lock.yaml ]; then
-            pnpm install --frozen-lockfile
-          else
-            pnpm install
-          fi
-      - run: pnpm -r typecheck
-      - run: pnpm -r test
-      - run: pnpm -r build
+        run: pnpm install --frozen-lockfile
+
+      - name: Check formatting
+        run: pnpm format:check
+
+      - name: Type-check
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
