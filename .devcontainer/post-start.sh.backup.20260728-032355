@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+echo
+echo "Gereh development container started."
+echo "Core dependencies:"
+docker compose -f .devcontainer/compose.yaml ps \
+  --format 'table {{.Service}}\t{{.Status}}\t{{.Ports}}' || true
+echo
+echo "Run 'task doctor' for a complete check."

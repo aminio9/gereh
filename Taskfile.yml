@@ -1,0 +1,113 @@
+version: "3"
+
+silent: false
+
+vars:
+  COMPOSE: docker compose -f .devcontainer/compose.yaml
+
+tasks:
+  default:
+    cmds:
+      - task --list
+
+  bootstrap:
+    desc: Install Go and frontend dependencies
+    cmds:
+      - go mod download
+      - pnpm install
+      - buf lint
+
+  doctor:
+    desc: Verify development tools and infrastructure
+    cmds:
+      - bash scripts/doctor.sh
+
+  infra:up:
+    desc: Start core local infrastructure
+    cmds:
+      - >-
+        {{.COMPOSE}} up -d
+        postgres redis kafka kafka-init temporal minio minio-init
+
+  infra:observability:
+    desc: Start the optional local OpenTelemetry/Grafana stack
+    cmds:
+      - '{{.COMPOSE}} --profile observability up -d otel-lgtm'
+
+  infra:full:
+    desc: Start core infrastructure plus optional observability
+    cmds:
+      - task: infra:up
+      - task: infra:observability
+
+  infra:ps:
+    desc: Show local infrastructure status
+    cmds:
+      - '{{.COMPOSE}} ps'
+
+  infra:logs:
+    desc: Follow local infrastructure logs
+    cmds:
+      - '{{.COMPOSE}} logs -f --tail=200'
+
+  infra:down:
+    desc: Stop local infrastructure without deleting data
+    cmds:
+      - '{{.COMPOSE}} down --remove-orphans'
+
+  infra:reset:
+    desc: Permanently delete local development infrastructure and volumes
+    prompt: This permanently deletes local PostgreSQL, Kafka, Redis, Temporal and MinIO data. Continue?
+    cmds:
+      - '{{.COMPOSE}} down -v --remove-orphans'
+
+  dev:web:
+    desc: Run the React application
+    cmds:
+      - pnpm --dir apps/web dev --host 0.0.0.0
+
+  dev:api:
+    desc: Run the API BFF with live reload
+    cmds:
+      - bash scripts/dev-service.sh api-bff
+
+  dev:service:
+    desc: "Run a Go service with live reload. Example: task dev:service SERVICE=tenant"
+    requires:
+      vars: [SERVICE]
+    cmds:
+      - bash scripts/dev-service.sh {{.SERVICE}}
+
+  generate:
+    desc: Generate code from Protocol Buffer contracts
+    cmds:
+      - rm -rf gen/go
+      - buf generate
+
+  fmt:
+    desc: Format Go, Proto and frontend code
+    cmds:
+      - go fmt ./...
+      - buf format -w
+      - pnpm --dir apps/web format
+
+  lint:
+    desc: Run static checks
+    cmds:
+      - go vet ./...
+      - golangci-lint run
+      - buf lint
+      - pnpm -r lint
+      - pnpm -r typecheck
+
+  test:
+    desc: Run unit tests
+    cmds:
+      - go test -race -count=1 ./...
+      - pnpm -r test
+
+  build:
+    desc: Build all Go services and frontend applications
+    cmds:
+      - bash scripts/build-services.sh
+      - pnpm -r build

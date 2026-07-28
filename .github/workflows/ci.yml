@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.26.x"
+          cache: true
+
+      - name: Download modules
+        run: go mod download
+
+      - name: Format check
+        run: test -z "$(gofmt -l $(find platform services runtime-connectors -type f -name '*.go'))"
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test -race -count=1 ./...
+
+      - name: Build services
+        run: bash scripts/build-services.sh
+
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: bufbuild/buf-setup-action@v2
+        with:
+          version: "1.72.0"
+
+      - run: buf lint
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: "11.4.0"
+          run_install: false
+
+      - name: Install dependencies
+        run: |
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm install --frozen-lockfile
+          else
+            pnpm install
+          fi
+      - run: pnpm -r typecheck
+      - run: pnpm -r test
+      - run: pnpm -r build

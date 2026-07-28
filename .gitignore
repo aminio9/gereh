@@ -1,0 +1,38 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Go
+bin/
+.tmp/
+coverage/
+*.test
+*.out
+
+# Node
+node_modules/
+.pnpm-store/
+dist/
+.vite/
+coverage/
+
+# IDE
+.idea/
+*.swp
+.DS_Store
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+!*.tfvars.example
+
+# Local generated files
+gen/
+repo-files.txt
+upstream-references.txt

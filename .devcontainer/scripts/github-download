@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+url="${1:-}"
+output="${2:-}"
+
+if [[ -z "$url" || -z "$output" ]]; then
+  echo "Usage: github-download <github-url> <output-file>" >&2
+  exit 2
+fi
+
+case "$url" in
+  https://github.com/*|https://raw.githubusercontent.com/*) ;;
+  *)
+    echo "Only github.com and raw.githubusercontent.com URLs are accepted." >&2
+    exit 2
+    ;;
+esac
+
+mkdir -p "$(dirname "$output")"
+temporary="${output}.partial"
+rm -f "$temporary"
+trap 'rm -f "$temporary"' EXIT
+
+curl \
+  --fail \
+  --location \
+  --retry 5 \
+  --retry-all-errors \
+  --retry-delay 2 \
+  --connect-timeout 20 \
+  --max-time 1800 \
+  --output "$temporary" \
+  "$url"
+
+mv "$temporary" "$output"
+trap - EXIT
+
+echo "Saved: $output"

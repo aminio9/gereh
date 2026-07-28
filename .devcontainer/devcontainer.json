@@ -1,0 +1,112 @@
+{
+  "name": "Gereh Platform",
+  "dockerComposeFile": "compose.yaml",
+  "service": "workspace",
+  "workspaceFolder": "/workspaces/gereh-platform",
+  "runServices": [
+    "workspace",
+    "postgres",
+    "redis",
+    "kafka",
+    "kafka-init",
+    "temporal",
+    "minio",
+    "minio-init"
+  ],
+  "shutdownAction": "stopCompose",
+  "remoteUser": "vscode",
+  "updateRemoteUserUID": true,
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "8gb",
+    "storage": "32gb"
+  },
+  "containerEnv": {
+    "GOTOOLCHAIN": "local",
+    "GOWORK": "off",
+    "GOPROXY": "https://goproxy.cn,direct",
+    "GO111MODULE": "on",
+    "NPM_CONFIG_REGISTRY": "https://registry.npmmirror.com",
+    "npm_config_registry": "https://registry.npmmirror.com",
+    "PIP_INDEX_URL": "https://mirrors.ustc.edu.cn/pypi/simple",
+    "UV_DEFAULT_INDEX": "https://mirrors.ustc.edu.cn/pypi/simple"
+  },
+  "forwardPorts": [
+    5173,
+    8080,
+    5432,
+    6379,
+    9092,
+    8233,
+    9000,
+    9001,
+    3001,
+    4317,
+    4318
+  ],
+  "portsAttributes": {
+    "5173": {
+      "label": "Gereh Web",
+      "onAutoForward": "openPreview"
+    },
+    "8080": {
+      "label": "API BFF",
+      "onAutoForward": "notify"
+    },
+    "8233": {
+      "label": "Temporal UI",
+      "onAutoForward": "notify"
+    },
+    "9001": {
+      "label": "MinIO Console",
+      "onAutoForward": "notify"
+    },
+    "3001": {
+      "label": "Grafana",
+      "onAutoForward": "notify"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "ms-azuretools.vscode-docker",
+        "redhat.vscode-yaml",
+        "bufbuild.vscode-buf",
+        "hashicorp.terraform",
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        "github.vscode-github-actions",
+        "eamodio.gitlens",
+        "editorconfig.editorconfig",
+        "timonwong.shellcheck"
+      ],
+      "settings": {
+        "files.eol": "\n",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+          "source.organizeImports": "explicit"
+        },
+        "go.useLanguageServer": true,
+        "go.toolsManagement.autoUpdate": false,
+        "go.lintTool": "golangci-lint",
+        "go.lintOnSave": "package",
+        "go.formatTool": "gofmt",
+        "typescript.tsdk": "apps/web/node_modules/typescript/lib",
+        "eslint.workingDirectories": [
+          {
+            "mode": "auto"
+          }
+        ],
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "yaml.schemas": {
+          "https://json.schemastore.org/github-workflow.json": ".github/workflows/*.yml"
+        }
+      }
+    }
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "postStartCommand": "bash .devcontainer/post-start.sh"
+}

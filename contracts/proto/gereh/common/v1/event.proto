@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package gereh.common.v1;
+
+option go_package = "github.com/aminio9/gereh-platform/gen/go/gereh/common/v1;commonv1";
+
+import "google/protobuf/timestamp.proto";
+
+message EventEnvelope {
+  string event_id = 1;
+  string event_type = 2;
+  uint32 event_version = 3;
+
+  string tenant_id = 4;
+  string aggregate_type = 5;
+  string aggregate_id = 6;
+  uint64 aggregate_version = 7;
+
+  google.protobuf.Timestamp occurred_at = 8;
+  string producer = 9;
+  string trace_id = 10;
+  string correlation_id = 11;
+  string causation_id = 12;
+
+  bytes payload = 13;
+}
