@@ -1,0 +1,242 @@
+name: Containers
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: containers-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  services:
+    name: Service image — ${{ matrix.service }}
+
+    if: >-
+      github.event_name != 'pull_request' ||
+      matrix.service == 'api-bff' ||
+      matrix.service == 'tenant'
+
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        service:
+          - api-bff
+          - identity-access
+          - tenant
+          - organization-agent
+          - work-management
+          - policy-approval
+          - model-access
+          - model-gateway
+          - execution-orchestrator
+          - runtime-manager
+          - integration-gateway
+          - usage-billing
+          - notification-realtime
+          - projection
+          - audit
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Create Buildx builder
+        run: |
+          docker buildx create \
+            --name gereh-builder \
+            --driver docker-container \
+            --use
+
+          docker buildx inspect --bootstrap
+
+      - name: Build pull-request image
+        if: github.event_name == 'pull_request'
+        env:
+          SERVICE: ${{ matrix.service }}
+        run: |
+          docker buildx build \
+            --file build/package/service.Dockerfile \
+            --platform linux/amd64 \
+            --build-arg SERVICE="${SERVICE}" \
+            --build-arg VERSION="pr-${GITHUB_RUN_NUMBER}" \
+            --build-arg REVISION="${GITHUB_SHA}" \
+            --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --cache-from type=gha,scope="${SERVICE}" \
+            --cache-to type=gha,mode=max,scope="${SERVICE}" \
+            --load \
+            --tag "gereh-pr/${SERVICE}:${GITHUB_SHA}" \
+            .
+
+      - name: Smoke-test pull-request image
+        if: github.event_name == 'pull_request'
+        env:
+          SERVICE: ${{ matrix.service }}
+        run: |
+          bash scripts/container/smoke-test.sh \
+            "gereh-pr/${SERVICE}:${GITHUB_SHA}" \
+            /health/live
+
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "${GHCR_TOKEN}" \
+            | docker login \
+                ghcr.io \
+                --username "${GITHUB_ACTOR}" \
+                --password-stdin
+
+      - name: Build and publish service image
+        if: github.event_name != 'pull_request'
+        env:
+          SERVICE: ${{ matrix.service }}
+        shell: bash
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          image="ghcr.io/${owner}/gereh-${SERVICE}"
+          short_sha="${GITHUB_SHA:0:12}"
+          version="${GITHUB_REF_NAME}"
+
+          tags=(
+            --tag "${image}:sha-${short_sha}"
+          )
+
+          if [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
+            tags+=(
+              --tag "${image}:latest"
+            )
+          fi
+
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            tags+=(
+              --tag "${image}:${version#v}"
+            )
+          fi
+
+          docker buildx build \
+            --file build/package/service.Dockerfile \
+            --platform linux/amd64 \
+            --build-arg SERVICE="${SERVICE}" \
+            --build-arg VERSION="${version}" \
+            --build-arg REVISION="${GITHUB_SHA}" \
+            --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --cache-from type=gha,scope="${SERVICE}" \
+            --cache-to type=gha,mode=max,scope="${SERVICE}" \
+            --sbom=true \
+            --provenance=mode=max \
+            --push \
+            "${tags[@]}" \
+            .
+
+  web:
+    name: Web image
+
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Create Buildx builder
+        run: |
+          docker buildx create \
+            --name gereh-web-builder \
+            --driver docker-container \
+            --use
+
+          docker buildx inspect --bootstrap
+
+      - name: Build pull-request image
+        if: github.event_name == 'pull_request'
+        run: |
+          docker buildx build \
+            --file build/package/web.Dockerfile \
+            --platform linux/amd64 \
+            --build-arg VERSION="pr-${GITHUB_RUN_NUMBER}" \
+            --build-arg REVISION="${GITHUB_SHA}" \
+            --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --cache-from type=gha,scope=web \
+            --cache-to type=gha,mode=max,scope=web \
+            --load \
+            --tag "gereh-pr/web:${GITHUB_SHA}" \
+            .
+
+      - name: Smoke-test pull-request image
+        if: github.event_name == 'pull_request'
+        run: |
+          bash scripts/container/smoke-test.sh \
+            "gereh-pr/web:${GITHUB_SHA}" \
+            /healthz
+
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "${GHCR_TOKEN}" \
+            | docker login \
+                ghcr.io \
+                --username "${GITHUB_ACTOR}" \
+                --password-stdin
+
+      - name: Build and publish web image
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          image="ghcr.io/${owner}/gereh-web"
+          short_sha="${GITHUB_SHA:0:12}"
+          version="${GITHUB_REF_NAME}"
+
+          tags=(
+            --tag "${image}:sha-${short_sha}"
+          )
+
+          if [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
+            tags+=(
+              --tag "${image}:latest"
+            )
+          fi
+
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            tags+=(
+              --tag "${image}:${version#v}"
+            )
+          fi
+
+          docker buildx build \
+            --file build/package/web.Dockerfile \
+            --platform linux/amd64 \
+            --build-arg VERSION="${version}" \
+            --build-arg REVISION="${GITHUB_SHA}" \
+            --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --cache-from type=gha,scope=web \
+            --cache-to type=gha,mode=max,scope=web \
+            --sbom=true \
+            --provenance=mode=max \
+            --push \
+            "${tags[@]}" \
+            .

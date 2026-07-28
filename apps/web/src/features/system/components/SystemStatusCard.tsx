@@ -1,8 +1,8 @@
 import type { SystemStatus } from "../api/getSystemStatus";
 
-type SystemStatusCardProps = {
+interface SystemStatusCardProps {
   readonly status: SystemStatus;
-};
+}
 
 export function SystemStatusCard({ status }: SystemStatusCardProps) {
   return (

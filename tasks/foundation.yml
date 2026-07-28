@@ -1,0 +1,179 @@
+version: "3"
+
+vars:
+  STANDALONE_INFRA_COMPOSE: deployments/local/compose.yaml
+  STANDALONE_INFRA_ENV: deployments/local/.env
+  LOCAL_IMAGE_PREFIX: gereh-local
+
+tasks:
+  infra:standalone:env:
+    internal: true
+    cmds:
+      - |
+        if [[ ! -f "{{.STANDALONE_INFRA_ENV}}" ]]; then
+          cp \
+            deployments/local/.env.example \
+            "{{.STANDALONE_INFRA_ENV}}"
+        fi
+
+  infra:standalone:config:
+    desc: Validate the standalone development infrastructure manifest
+    deps:
+      - infra:standalone:env
+    cmds:
+      - >-
+        docker compose
+        --env-file {{.STANDALONE_INFRA_ENV}}
+        -f {{.STANDALONE_INFRA_COMPOSE}}
+        config --quiet
+
+  infra:standalone:up:
+    desc: Start PostgreSQL, Redis, Kafka and Temporal
+    deps:
+      - infra:standalone:env
+    cmds:
+      - >-
+        docker compose
+        --env-file {{.STANDALONE_INFRA_ENV}}
+        -f {{.STANDALONE_INFRA_COMPOSE}}
+        up -d --wait --wait-timeout 240
+        postgres redis kafka temporal
+      - >-
+        docker compose
+        --env-file {{.STANDALONE_INFRA_ENV}}
+        -f {{.STANDALONE_INFRA_COMPOSE}}
+        run --rm kafka-init
+      - task: infra:standalone:smoke
+
+  infra:standalone:smoke:
+    desc: Validate standalone PostgreSQL, Redis, Kafka and Temporal
+    deps:
+      - infra:standalone:env
+    cmds:
+      - >-
+        POSTGRES_USER=gereh
+        bash scripts/infra/smoke-test.sh
+        {{.STANDALONE_INFRA_COMPOSE}}
+        {{.STANDALONE_INFRA_ENV}}
+
+  infra:standalone:ps:
+    desc: Show standalone infrastructure status
+    deps:
+      - infra:standalone:env
+    cmds:
+      - >-
+        docker compose
+        --env-file {{.STANDALONE_INFRA_ENV}}
+        -f {{.STANDALONE_INFRA_COMPOSE}}
+        ps -a
+
+  infra:standalone:logs:
+    desc: Follow standalone infrastructure logs
+    deps:
+      - infra:standalone:env
+    cmds:
+      - >-
+        docker compose
+        --env-file {{.STANDALONE_INFRA_ENV}}
+        -f {{.STANDALONE_INFRA_COMPOSE}}
+        logs -f --tail=200
+
+  infra:standalone:down:
+    desc: Stop standalone development infrastructure
+    deps:
+      - infra:standalone:env
+    cmds:
+      - >-
+        docker compose
+        --env-file {{.STANDALONE_INFRA_ENV}}
+        -f {{.STANDALONE_INFRA_COMPOSE}}
+        down --remove-orphans
+
+  infra:standalone:reset:
+    desc: Delete standalone infrastructure containers and data
+    prompt: This permanently deletes standalone local development data. Continue?
+    deps:
+      - infra:standalone:env
+    cmds:
+      - >-
+        docker compose
+        --env-file {{.STANDALONE_INFRA_ENV}}
+        -f {{.STANDALONE_INFRA_COMPOSE}}
+        down -v --remove-orphans
+
+  security:go:
+    desc: Scan reachable Go vulnerabilities
+    cmds:
+      - go tool govulncheck ./...
+
+  security:node:
+    desc: Scan production JavaScript dependencies
+    cmds:
+      - pnpm audit --prod --audit-level high
+
+  security:repository:
+    desc: Scan dependencies, IaC and secrets with Trivy
+    cmds:
+      - bash scripts/security/install-trivy.sh .cache/bin
+      - >-
+        .cache/bin/trivy fs
+        --exit-code 1
+        --ignore-unfixed
+        --severity HIGH,CRITICAL
+        --scanners vuln,misconfig,secret
+        .
+
+  security:
+    desc: Run all local security scans
+    cmds:
+      - task: security:go
+      - task: security:node
+      - task: security:repository
+
+  container:service:
+    desc: "Build one service image. Example: task container:service SERVICE=tenant"
+    requires:
+      vars:
+        - SERVICE
+    cmds:
+      - >-
+        docker build
+        --file build/package/service.Dockerfile
+        --build-arg SERVICE={{.SERVICE}}
+        --build-arg VERSION=dev
+        --build-arg REVISION=$(git rev-parse HEAD)
+        --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+        --tag {{.LOCAL_IMAGE_PREFIX}}/{{.SERVICE}}:dev
+        .
+      - >-
+        bash scripts/container/smoke-test.sh
+        {{.LOCAL_IMAGE_PREFIX}}/{{.SERVICE}}:dev
+        /health/live
+
+  container:web:
+    desc: Build and smoke-test the web image
+    cmds:
+      - >-
+        docker build
+        --file build/package/web.Dockerfile
+        --build-arg VERSION=dev
+        --build-arg REVISION=$(git rev-parse HEAD)
+        --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+        --tag {{.LOCAL_IMAGE_PREFIX}}/web:dev
+        .
+      - >-
+        bash scripts/container/smoke-test.sh
+        {{.LOCAL_IMAGE_PREFIX}}/web:dev
+        /healthz
+
+  foundation:ci:validate:
+    desc: Validate Foundation CI, security, containers and infrastructure
+    cmds:
+      - go tool golangci-lint run
+      - go test -race -shuffle=on -count=1 ./...
+      - go tool buf lint
+      - pnpm lint
+      - pnpm test
+      - pnpm build
+      - task: security:go
+      - task: infra:standalone:config
