@@ -177,3 +177,35 @@ tasks:
       - pnpm build
       - task: security:go
       - task: infra:standalone:config
+
+  shared:unit:
+    desc: Run shared runtime package unit tests
+    cmds:
+      - >-
+        go test
+        -race
+        -shuffle=on
+        -count=1
+        ./platform/go/observability/...
+        ./platform/go/grpcx/...
+        ./platform/go/events/...
+
+  shared:kafka:integration:
+    desc: Run Kafka integration tests against the development cluster
+    env:
+      KAFKA_BROKERS: '{{default "kafka:19092" .KAFKA_BROKERS}}'
+      KAFKA_INTEGRATION_TOPIC: '{{default "gereh.audit.events.v1" .KAFKA_INTEGRATION_TOPIC}}'
+    cmds:
+      - >-
+        go test
+        -race
+        -tags=integration
+        -count=1
+        ./platform/go/events/kafka
+
+  shared:check:
+    desc: Validate all shared runtime packages
+    cmds:
+      - go vet ./platform/go/...
+      - go tool golangci-lint run ./platform/go/...
+      - task: shared:unit
