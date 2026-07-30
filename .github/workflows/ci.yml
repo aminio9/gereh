@@ -93,6 +93,29 @@ jobs:
             go.sum
             tools/go.sum
 
+      - name: Install Protobuf code generators
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          tool_bin="${RUNNER_TEMP}/gereh-go-tools"
+          mkdir -p "${tool_bin}"
+
+          GOBIN="${tool_bin}" \
+            go -C tools install \
+            google.golang.org/protobuf/cmd/protoc-gen-go
+
+          GOBIN="${tool_bin}" \
+            go -C tools install \
+            google.golang.org/grpc/cmd/protoc-gen-go-grpc
+
+          test -x "${tool_bin}/protoc-gen-go"
+          test -x "${tool_bin}/protoc-gen-go-grpc"
+
+          "${tool_bin}/protoc-gen-go" --version
+          "${tool_bin}/protoc-gen-go-grpc" --version
+
+          echo "${tool_bin}" >> "${GITHUB_PATH}"
       - name: Download tool dependencies
         run: go -C tools mod download
 
@@ -111,7 +134,14 @@ jobs:
           go mod tidy
 
       - name: Verify generated contracts
-        run: git diff --exit-code -- gen/go go.mod go.sum
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          rm -rf gen/go
+          buf generate
+
+          git diff --exit-code -- gen/go
 
   frontend:
     name: Frontend validation

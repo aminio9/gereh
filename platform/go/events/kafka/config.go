@@ -141,15 +141,13 @@ func ConfigFromEnv(clientID string) (Config, error) {
 		return Config{}, err
 	}
 
-	producerBatchBytes, err := integerEnvironment(
+	config.ProducerBatchMaxBytes, err = int32Environment(
 		"KAFKA_PRODUCER_BATCH_MAX_BYTES",
-		int(config.ProducerBatchMaxBytes),
+		config.ProducerBatchMaxBytes,
 	)
 	if err != nil {
 		return Config{}, err
 	}
-
-	config.ProducerBatchMaxBytes = int32(producerBatchBytes)
 
 	config.TLS.Enabled, err = booleanEnvironment(
 		"KAFKA_TLS_ENABLED",
@@ -325,6 +323,23 @@ func integerEnvironment(
 	}
 
 	return integer, nil
+}
+
+func int32Environment(
+	name string,
+	fallback int32,
+) (int32, error) {
+	value := strings.TrimSpace(os.Getenv(name))
+	if value == "" {
+		return fallback, nil
+	}
+
+	integer, err := strconv.ParseInt(value, 10, 32)
+	if err != nil {
+		return 0, fmt.Errorf("parse %s: %w", name, err)
+	}
+
+	return int32(integer), nil
 }
 
 func booleanEnvironment(

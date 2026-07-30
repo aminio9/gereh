@@ -62,3 +62,48 @@ func TestValidateConsumerRequiresGroup(t *testing.T) {
 		t.Fatal("ValidateConsumer() error = nil, want group error")
 	}
 }
+
+func TestInt32EnvironmentRejectsOverflow(t *testing.T) {
+	t.Setenv(
+		"KAFKA_PRODUCER_BATCH_MAX_BYTES",
+		"2147483648",
+	)
+
+	_, err := int32Environment(
+		"KAFKA_PRODUCER_BATCH_MAX_BYTES",
+		defaultProducerBatchBytes,
+	)
+	if err == nil {
+		t.Fatal(
+			"int32Environment() error = nil, want overflow error",
+		)
+	}
+}
+
+func TestInt32EnvironmentAcceptsMaximum(t *testing.T) {
+	t.Setenv(
+		"KAFKA_PRODUCER_BATCH_MAX_BYTES",
+		"2147483647",
+	)
+
+	actual, err := int32Environment(
+		"KAFKA_PRODUCER_BATCH_MAX_BYTES",
+		defaultProducerBatchBytes,
+	)
+	if err != nil {
+		t.Fatalf(
+			"int32Environment() error = %v",
+			err,
+		)
+	}
+
+	const expected int32 = 2147483647
+
+	if actual != expected {
+		t.Fatalf(
+			"int32Environment() = %d, want %d",
+			actual,
+			expected,
+		)
+	}
+}

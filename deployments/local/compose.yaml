@@ -48,7 +48,7 @@ services:
       - gereh-local
 
   redis:
-    image: ${REDIS_IMAGE:-redis:8.8-bookworm}
+    image: ${REDIS_IMAGE:-redis:8.8.1-alpine}
     init: true
     restart: unless-stopped
 

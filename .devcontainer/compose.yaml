@@ -71,7 +71,7 @@ services:
       - gereh-dev
 
   redis:
-    image: redis:8.8.0-alpine
+    image: redis:8.8.1-alpine
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "allkeys-lru"]
     ports:
