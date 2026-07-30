@@ -1,0 +1,103 @@
+// Package grpcx provides shared, secure gRPC server and client construction.
+package grpcx
+
+import (
+	"context"
+	"crypto/tls"
+	"fmt"
+	"net"
+	"strings"
+	"time"
+)
+
+const defaultMessageSize = 4 * 1024 * 1024
+
+// ServerConfig defines shared gRPC server behavior.
+type ServerConfig struct {
+	MaxReceiveMessageBytes int
+	MaxSendMessageBytes    int
+	EnableReflection       bool
+	GracefulStopTimeout    time.Duration
+}
+
+// DefaultServerConfig returns conservative gRPC server defaults.
+func DefaultServerConfig() ServerConfig {
+	return ServerConfig{
+		MaxReceiveMessageBytes: defaultMessageSize,
+		MaxSendMessageBytes:    defaultMessageSize,
+		EnableReflection:       false,
+		GracefulStopTimeout:    15 * time.Second,
+	}
+}
+
+// Validate validates server configuration.
+func (config ServerConfig) Validate() error {
+	if config.MaxReceiveMessageBytes <= 0 {
+		return fmt.Errorf(
+			"maximum receive message size must be greater than zero",
+		)
+	}
+
+	if config.MaxSendMessageBytes <= 0 {
+		return fmt.Errorf(
+			"maximum send message size must be greater than zero",
+		)
+	}
+
+	if config.GracefulStopTimeout <= 0 {
+		return fmt.Errorf(
+			"graceful stop timeout must be greater than zero",
+		)
+	}
+
+	return nil
+}
+
+// ContextDialer provides custom transport dialing, primarily for tests.
+type ContextDialer func(
+	ctx context.Context,
+	address string,
+) (net.Conn, error)
+
+// ClientConfig defines shared gRPC client behavior.
+type ClientConfig struct {
+	Target                 string
+	Insecure               bool
+	ServerName             string
+	TLSConfig              *tls.Config
+	MaxReceiveMessageBytes int
+	MaxSendMessageBytes    int
+	DefaultServiceConfig   string
+	Dialer                 ContextDialer
+}
+
+// DefaultClientConfig returns conservative gRPC client defaults.
+func DefaultClientConfig(target string) ClientConfig {
+	return ClientConfig{
+		Target:                 target,
+		Insecure:               false,
+		MaxReceiveMessageBytes: defaultMessageSize,
+		MaxSendMessageBytes:    defaultMessageSize,
+	}
+}
+
+// Validate validates client configuration.
+func (config ClientConfig) Validate() error {
+	if strings.TrimSpace(config.Target) == "" {
+		return fmt.Errorf("gRPC target is required")
+	}
+
+	if config.MaxReceiveMessageBytes <= 0 {
+		return fmt.Errorf(
+			"maximum receive message size must be greater than zero",
+		)
+	}
+
+	if config.MaxSendMessageBytes <= 0 {
+		return fmt.Errorf(
+			"maximum send message size must be greater than zero",
+		)
+	}
+
+	return nil
+}

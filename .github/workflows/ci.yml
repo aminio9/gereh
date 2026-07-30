@@ -3,70 +3,277 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches:
+      - main
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  backend:
-    runs-on: ubuntu-latest
+  go:
+    name: Go validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
     steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/setup-go@v6
+      - name: Check out repository
+        uses: actions/checkout@v6
         with:
-          go-version: "1.26.x"
+          persist-credentials: false
+
+      - name: Install Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
           cache: true
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
 
-      - name: Download modules
-        run: go mod download
+      - name: Synchronize workspace
+        run: go work sync
 
-      - name: Format check
-        run: test -z "$(gofmt -l $(find platform services runtime-connectors -type f -name '*.go'))"
+      - name: Download dependencies
+        run: |
+          go mod download
+          go -C tools mod download
+
+      - name: Check formatting
+        run: |
+          files="$(
+            find \
+              platform \
+              services \
+              runtime-connectors \
+              gen \
+              -type f \
+              -name '*.go'
+          )"
+
+          unformatted="$(gofmt -l ${files})"
+
+          if [[ -n "${unformatted}" ]]; then
+            echo "${unformatted}"
+            exit 1
+          fi
 
       - name: Vet
         run: go vet ./...
 
+      - name: Lint
+        run: go tool golangci-lint run
+
       - name: Test
-        run: go test -race -count=1 ./...
+        run: go test -race -shuffle=on -count=1 ./...
 
       - name: Build services
         run: bash scripts/build-services.sh
 
   contracts:
+    name: Contract validation
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
 
-      - uses: bufbuild/buf-setup-action@v2
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
+
+      - name: Set up Buf
+        uses: bufbuild/buf-action@v1
         with:
           version: "1.72.0"
+          setup_only: true
+          github_token: ${{ github.token }}
 
-      - run: buf lint
+      - name: Install Protobuf generators
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          tool_bin="${RUNNER_TEMP}/gereh-go-tools"
+          mkdir -p "${tool_bin}"
+
+          GOBIN="${tool_bin}" \
+            go -C tools install \
+            google.golang.org/protobuf/cmd/protoc-gen-go
+
+          GOBIN="${tool_bin}" \
+            go -C tools install \
+            google.golang.org/grpc/cmd/protoc-gen-go-grpc
+
+          test -x "${tool_bin}/protoc-gen-go"
+          test -x "${tool_bin}/protoc-gen-go-grpc"
+
+          "${tool_bin}/protoc-gen-go" --version
+          "${tool_bin}/protoc-gen-go-grpc" --version
+
+          echo "${tool_bin}" >> "${GITHUB_PATH}"
+
+      - name: Verify contract tools
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          buf --version
+          command -v protoc-gen-go
+          command -v protoc-gen-go-grpc
+
+          protoc-gen-go --version
+          protoc-gen-go-grpc --version
+
+      - name: Lint Protobuf contracts
+        run: buf lint
+
+      - name: Check Protobuf formatting
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          buf format \
+            --diff \
+            --exit-code
+
+      - name: Verify generated contracts
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          rm -rf gen/go
+          buf generate
+
+          git diff \
+            --exit-code \
+            -- gen/go
 
   frontend:
-    runs-on: ubuntu-latest
+    name: Frontend validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
     steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/setup-node@v5
+      - name: Check out repository
+        uses: actions/checkout@v6
         with:
-          node-version: "24"
+          persist-credentials: false
 
-
-      - uses: pnpm/action-setup@v6
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
         with:
-          version: "11.4.0"
+          version: 11.4.0
           run_install: false
 
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.18.0
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
       - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+  infrastructure:
+    name: Development infrastructure
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Create development environment
         run: |
-          if [ -f pnpm-lock.yaml ]; then
-            pnpm install --frozen-lockfile
-          else
-            pnpm install
-          fi
-      - run: pnpm -r typecheck
-      - run: pnpm -r test
-      - run: pnpm -r build
+          cp \
+            deployments/local/.env.example \
+            deployments/local/.env
+
+      - name: Validate Compose model
+        run: |
+          docker compose \
+            --env-file deployments/local/.env \
+            -f deployments/local/compose.yaml \
+            config --quiet
+
+      - name: Start infrastructure
+        run: |
+          docker compose \
+            --env-file deployments/local/.env \
+            -f deployments/local/compose.yaml \
+            up \
+              -d \
+              --wait \
+              --wait-timeout 240 \
+              postgres \
+              redis \
+              kafka \
+              temporal
+
+          docker compose \
+            --env-file deployments/local/.env \
+            -f deployments/local/compose.yaml \
+            run \
+              --rm \
+              kafka-init
+
+      - name: Smoke-test infrastructure
+        env:
+          POSTGRES_USER: gereh
+        run: |
+          bash scripts/infra/smoke-test.sh \
+            deployments/local/compose.yaml \
+            deployments/local/.env
+
+      - name: Test shared Kafka transport
+        env:
+          KAFKA_BROKERS: localhost:9092
+          KAFKA_INTEGRATION_TOPIC: gereh.audit.events.v1
+        run: |
+          go test \
+            -race \
+            -tags=integration \
+            -count=1 \
+            ./platform/go/events/kafka
+
+      - name: Show logs after failure
+        if: failure()
+        run: |
+          docker compose \
+            --env-file deployments/local/.env \
+            -f deployments/local/compose.yaml \
+            ps -a
+
+          docker compose \
+            --env-file deployments/local/.env \
+            -f deployments/local/compose.yaml \
+            logs --no-color --tail=300
+
+      - name: Stop infrastructure
+        if: always()
+        run: |
+          docker compose \
+            --env-file deployments/local/.env \
+            -f deployments/local/compose.yaml \
+            down -v --remove-orphans

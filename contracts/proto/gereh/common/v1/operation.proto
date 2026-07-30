@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package gereh.common.v1;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+enum OperationState {
+  OPERATION_STATE_UNSPECIFIED = 0;
+  OPERATION_STATE_PENDING = 1;
+  OPERATION_STATE_RUNNING = 2;
+  OPERATION_STATE_SUCCEEDED = 3;
+  OPERATION_STATE_FAILED = 4;
+  OPERATION_STATE_CANCELED = 5;
+}
+
+message OperationError {
+  string code = 1;
+  string message = 2;
+  bool retryable = 3;
+  google.protobuf.Struct details = 4;
+}
+
+// Operation represents an asynchronous command accepted by the platform.
+message Operation {
+  string operation_id = 1;
+  OperationState state = 2;
+
+  // Canonical resource name created or modified by the operation.
+  string resource_name = 3;
+
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
+
+  OperationError error = 6;
+
+  map<string, string> metadata = 7;
+}

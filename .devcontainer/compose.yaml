@@ -36,7 +36,6 @@ services:
       S3_SECRET_ACCESS_KEY: gereh-local-secret
       S3_FORCE_PATH_STYLE: "true"
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-lgtm:4317
-      VITE_API_BASE_URL: http://localhost:8080
     depends_on:
       postgres:
         condition: service_healthy
@@ -72,7 +71,7 @@ services:
       - gereh-dev
 
   redis:
-    image: redis:8.8.0-alpine
+    image: redis:8.8.1-alpine
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "allkeys-lru"]
     ports:
@@ -234,12 +233,17 @@ services:
     image: grafana/otel-lgtm:0.29.2
     profiles: ["observability"]
     restart: unless-stopped
+
     ports:
-      - "3001:3000"
-      - "4317:4317"
-      - "4318:4318"
+      - "127.0.0.1:13001:3000"
+
+    expose:
+      - "4317"
+      - "4318"
+
     volumes:
       - otel-lgtm-data:/data
+
     networks:
       - gereh-dev
 

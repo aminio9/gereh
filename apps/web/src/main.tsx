@@ -1,31 +1,21 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter } from "react-router-dom";
-import { App } from "./App";
-import "./styles.css";
+import { RouterProvider } from "react-router";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 30_000,
-      retry: 1,
-    },
-  },
-});
+import { AppProviders } from "./app/AppProviders";
+import { router } from "./app/router";
+import "./styles/index.css";
 
-const root = document.getElementById("root");
+const rootElement = document.getElementById("root");
 
-if (!root) {
-  throw new Error("Root element is missing");
+if (!rootElement) {
+  throw new Error("The root HTML element is missing");
 }
 
-createRoot(root).render(
+createRoot(rootElement).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    </QueryClientProvider>
+    <AppProviders>
+      <RouterProvider router={router} />
+    </AppProviders>
   </StrictMode>,
 );

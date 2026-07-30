@@ -1,0 +1,240 @@
+name: gereh-local
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-file: "3"
+    max-size: "10m"
+
+services:
+  postgres:
+    image: ${POSTGRES_IMAGE:-postgres:18.4-bookworm}
+    init: true
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-gereh}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gereh-local-only}
+      POSTGRES_INITDB_ARGS: >-
+        --data-checksums
+        --encoding=UTF8
+      PGDATA: /var/lib/postgresql/18/docker
+
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER} -d postgres",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging: *default-logging
+
+    networks:
+      - gereh-local
+
+  redis:
+    image: ${REDIS_IMAGE:-redis:8.8.1-alpine}
+    init: true
+    restart: unless-stopped
+
+    command:
+      - redis-server
+      - /usr/local/etc/redis/redis.conf
+
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+
+    volumes:
+      - redis-data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "redis-cli",
+          "ping",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging: *default-logging
+
+    networks:
+      - gereh-local
+
+  kafka:
+    image: ${KAFKA_IMAGE:-apache/kafka:4.3.1}
+    hostname: kafka
+    init: true
+    restart: unless-stopped
+
+    environment:
+      CLUSTER_ID: 4L6g3nShT-eMCtK--X86sw
+
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: >-
+        CONTROLLER:PLAINTEXT,
+        INTERNAL:PLAINTEXT,
+        HOST:PLAINTEXT
+
+      KAFKA_LISTENERS: >-
+        INTERNAL://0.0.0.0:19092,
+        CONTROLLER://0.0.0.0:29093,
+        HOST://0.0.0.0:9092
+
+      KAFKA_ADVERTISED_LISTENERS: >-
+        INTERNAL://kafka:19092,
+        HOST://localhost:${KAFKA_PORT:-9092}
+
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_SHARE_COORDINATOR_STATE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_SHARE_COORDINATOR_STATE_TOPIC_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_DELETE_TOPIC_ENABLE: "true"
+
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824
+
+    ports:
+      - "${KAFKA_PORT:-9092}:9092"
+
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:19092 --list >/dev/null 2>&1",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 20s
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging: *default-logging
+
+    networks:
+      - gereh-local
+
+  kafka-init:
+    image: ${KAFKA_IMAGE:-apache/kafka:4.3.1}
+    restart: "no"
+
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+    environment:
+      KAFKA_BOOTSTRAP_SERVER: kafka:19092
+
+    entrypoint:
+      - /bin/bash
+      - /usr/local/bin/create-topics.sh
+
+    volumes:
+      - ./kafka/create-topics.sh:/usr/local/bin/create-topics.sh:ro
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging: *default-logging
+
+    networks:
+      - gereh-local
+
+  temporal:
+    image: ${TEMPORAL_IMAGE:-temporalio/temporal:1.8.1}
+    init: true
+    restart: unless-stopped
+
+    command:
+      - server
+      - start-dev
+      - --ip
+      - 0.0.0.0
+      - --db-filename
+      - /home/temporal/temporal.db
+      - --metrics-port
+      - "8000"
+      - --namespace
+      - default
+
+    ports:
+      - "${TEMPORAL_GRPC_PORT:-7233}:7233"
+      - "${TEMPORAL_UI_PORT:-8233}:8233"
+      - "${TEMPORAL_METRICS_PORT:-8000}:8000"
+
+    volumes:
+      - temporal-data:/home/temporal
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "temporal",
+          "operator",
+          "cluster",
+          "health",
+          "--address",
+          "127.0.0.1:7233",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 15s
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging: *default-logging
+
+    networks:
+      - gereh-local
+
+networks:
+  gereh-local:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:
+  kafka-data:
+  temporal-data:

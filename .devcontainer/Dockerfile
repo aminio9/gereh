@@ -91,4 +91,4 @@ RUN mkdir -p /home/vscode/.config/pip /home/vscode/.local/share/pnpm/store \
     && npm config set registry "${NPM_REGISTRY}" \
     && pnpm config set registry "${NPM_REGISTRY}" \
     && go env -w GO111MODULE=on GOPROXY="${GOPROXY_URL}"
-USER root
+USER vscode

@@ -33,6 +33,33 @@ crash.log
 !*.tfvars.example
 
 # Local generated files
-gen/
 repo-files.txt
 upstream-references.txt
+
+# Frontend generated/cache output
+apps/*/dist/
+apps/*/coverage/
+apps/*/node_modules/
+packages/*/node_modules/
+*.tsbuildinfo
+
+# Local frontend environment
+.env.local
+.env.*.local
+
+# Tool caches
+node_modules/
+.pnpm-store/
+*.backup.*
+.devcontainer.backup.*
+
+# Standalone development infrastructure
+deployments/local/.env
+
+# Local security tools and reports
+.cache/
+trivy-results.*
+*.sarif
+
+# Local container metadata
+docker-metadata.json

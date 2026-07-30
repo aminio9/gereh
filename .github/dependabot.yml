@@ -1,0 +1,84 @@
+version: 2
+
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Europe/Berlin
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "chore(actions)"
+
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:15"
+      timezone: Europe/Berlin
+    groups:
+      go-runtime:
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: "chore(go)"
+
+  - package-ecosystem: gomod
+    directory: /tools
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:30"
+      timezone: Europe/Berlin
+    groups:
+      go-tools:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "chore(tools)"
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:45"
+      timezone: Europe/Berlin
+    groups:
+      frontend-minor:
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: "chore(frontend)"
+
+  - package-ecosystem: docker
+    directory: /build/package
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: "04:00"
+      timezone: Europe/Berlin
+    groups:
+      application-images:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "chore(containers)"
+
+  - package-ecosystem: devcontainers
+    directory: /.devcontainer
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: "04:30"
+      timezone: Europe/Berlin
+    commit-message:
+      prefix: "chore(devcontainer)"

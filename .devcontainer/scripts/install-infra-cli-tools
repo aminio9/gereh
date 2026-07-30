@@ -13,7 +13,7 @@ case "$(uname -m)" in
     terraform_arch="amd64"
     gh_arch="amd64"
     ;;
-  aarch64|arm64)
+  aarch64 | arm64)
     kubectl_arch="arm64"
     helm_arch="arm64"
     terraform_arch="arm64"
@@ -26,14 +26,31 @@ case "$(uname -m)" in
 esac
 
 workdir="$(mktemp -d)"
-trap 'rm -rf "$workdir"' EXIT
+
+cleanup() {
+  rm -rf "$workdir"
+}
+
+trap cleanup EXIT
+
+require_command() {
+  local command_name="$1"
+
+  if ! command -v "$command_name" >/dev/null 2>&1; then
+    echo "Required command not found: $command_name" >&2
+    exit 1
+  fi
+}
 
 download() {
   local url="$1"
   local output="$2"
+
   echo "Downloading: $url"
+
   curl \
     --fail \
+    --show-error \
     --location \
     --retry 5 \
     --retry-all-errors \
@@ -44,6 +61,79 @@ download() {
     "$url"
 }
 
+validate_sha256() {
+  local checksum="$1"
+
+  if [[ ! "$checksum" =~ ^[0-9a-fA-F]{64}$ ]]; then
+    echo "Invalid SHA-256 checksum: $checksum" >&2
+    exit 1
+  fi
+}
+
+verify_checksum_value() {
+  local file="$1"
+  local expected_checksum="$2"
+
+  validate_sha256 "$expected_checksum"
+
+  printf '%s  %s\n' \
+    "$expected_checksum" \
+    "$file" \
+    | sha256sum --check -
+}
+
+verify_checksum_file() {
+  local file="$1"
+  local checksum_file="$2"
+  local expected_checksum
+
+  expected_checksum="$(
+    awk '
+      NF > 0 {
+        print $1
+        exit
+      }
+    ' "$checksum_file"
+  )"
+
+  if [[ -z "$expected_checksum" ]]; then
+    echo "Checksum file is empty: $checksum_file" >&2
+    exit 1
+  fi
+
+  verify_checksum_value "$file" "$expected_checksum"
+}
+
+verify_checksum_manifest() {
+  local file="$1"
+  local manifest="$2"
+  local filename
+  local expected_checksum
+
+  filename="$(basename "$file")"
+
+  expected_checksum="$(
+    awk -v filename="$filename" '
+      {
+        manifest_filename = $2
+        sub(/^\*/, "", manifest_filename)
+
+        if (manifest_filename == filename) {
+          print $1
+          exit
+        }
+      }
+    ' "$manifest"
+  )"
+
+  if [[ -z "$expected_checksum" ]]; then
+    echo "No checksum found for $filename in $manifest" >&2
+    exit 1
+  fi
+
+  verify_checksum_value "$file" "$expected_checksum"
+}
+
 install_kubectl() {
   local binary="$workdir/kubectl"
   local checksum="$workdir/kubectl.sha256"
@@ -51,38 +141,74 @@ install_kubectl() {
 
   download "$base/kubectl" "$binary"
   download "$base/kubectl.sha256" "$checksum"
-  echo "$(cat "$checksum")  $binary" | sha256sum --check -
-  sudo install -m 0755 "$binary" /usr/local/bin/kubectl
+
+  verify_checksum_file "$binary" "$checksum"
+
+  sudo install \
+    -m 0755 \
+    "$binary" \
+    /usr/local/bin/kubectl
+
+  echo "Installed kubectl ${KUBECTL_VERSION}"
 }
 
 install_helm() {
   local archive_name="helm-${HELM_VERSION}-linux-${helm_arch}.tar.gz"
   local archive="$workdir/$archive_name"
   local checksum="$workdir/${archive_name}.sha256sum"
+  local extract_dir="$workdir/helm"
   local base="https://get.helm.sh"
 
   download "$base/$archive_name" "$archive"
   download "$base/${archive_name}.sha256sum" "$checksum"
-  echo "$(cat "$checksum")  $archive" | sha256sum --check -
-  tar -xzf "$archive" -C "$workdir"
-  sudo install -m 0755 "$workdir/linux-${helm_arch}/helm" /usr/local/bin/helm
+
+  # The Helm checksum file may contain either only the hash or
+  # "<hash>  <filename>". Extracting the first field supports both.
+  verify_checksum_file "$archive" "$checksum"
+
+  mkdir -p "$extract_dir"
+
+  tar \
+    --extract \
+    --gzip \
+    --file "$archive" \
+    --directory "$extract_dir"
+
+  sudo install \
+    -m 0755 \
+    "$extract_dir/linux-${helm_arch}/helm" \
+    /usr/local/bin/helm
+
+  echo "Installed Helm ${HELM_VERSION}"
 }
 
 install_terraform() {
   local archive_name="terraform_${TERRAFORM_VERSION}_linux_${terraform_arch}.zip"
   local archive="$workdir/$archive_name"
   local checksums="$workdir/terraform_${TERRAFORM_VERSION}_SHA256SUMS"
+  local extract_dir="$workdir/terraform"
   local base="https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}"
 
   download "$base/$archive_name" "$archive"
-  download "$base/terraform_${TERRAFORM_VERSION}_SHA256SUMS" "$checksums"
-  (
-    cd "$workdir"
-    grep " $archive_name$" "$checksums" | sha256sum --check -
-  )
-  mkdir -p "$workdir/terraform"
-  unzip -q "$archive" -d "$workdir/terraform"
-  sudo install -m 0755 "$workdir/terraform/terraform" /usr/local/bin/terraform
+  download \
+    "$base/terraform_${TERRAFORM_VERSION}_SHA256SUMS" \
+    "$checksums"
+
+  verify_checksum_manifest "$archive" "$checksums"
+
+  mkdir -p "$extract_dir"
+
+  unzip \
+    -q \
+    "$archive" \
+    -d "$extract_dir"
+
+  sudo install \
+    -m 0755 \
+    "$extract_dir/terraform" \
+    /usr/local/bin/terraform
+
+  echo "Installed Terraform ${TERRAFORM_VERSION}"
 }
 
 install_gh() {
@@ -90,21 +216,58 @@ install_gh() {
   local archive_name="gh_${version}_linux_${gh_arch}.tar.gz"
   local archive="$workdir/$archive_name"
   local checksums="$workdir/gh_${version}_checksums.txt"
+  local extract_dir="$workdir/gh"
   local base="https://github.com/cli/cli/releases/download/v${version}"
 
-  github-download "$base/$archive_name" "$archive"
-  github-download "$base/gh_${version}_checksums.txt" "$checksums"
-  (
-    cd "$workdir"
-    grep "  $archive_name$" "$checksums" | sha256sum --check -
-  )
-  tar -xzf "$archive" -C "$workdir"
-  sudo install -m 0755 "$workdir/gh_${version}_linux_${gh_arch}/bin/gh" /usr/local/bin/gh
+  mkdir -p "$extract_dir"
+
+  github-download \
+    "$base/$archive_name" \
+    "$archive"
+
+  github-download \
+    "$base/gh_${version}_checksums.txt" \
+    "$checksums"
+
+  verify_checksum_manifest "$archive" "$checksums"
+
+  tar \
+    --extract \
+    --gzip \
+    --file "$archive" \
+    --directory "$extract_dir"
+
+  sudo install \
+    -m 0755 \
+    "$extract_dir/gh_${version}_linux_${gh_arch}/bin/gh" \
+    /usr/local/bin/gh
+
+  echo "Installed GitHub CLI ${version}"
 }
+
+verify_installations() {
+  echo
+  echo "Installed infrastructure tools:"
+
+  kubectl version --client=true
+  helm version --short
+  terraform version
+  gh version
+}
+
+require_command curl
+require_command sha256sum
+require_command tar
+require_command unzip
+require_command sudo
+require_command github-download
 
 install_kubectl
 install_helm
 install_terraform
 install_gh
 
+verify_installations
+
+echo
 echo "Infrastructure CLI tools installed successfully."

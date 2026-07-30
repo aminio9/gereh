@@ -1,16 +1,22 @@
 {
-  "name": "gereh-platform",
+  "name": "@gereh/root",
   "private": true,
+  "version": "0.1.0",
   "packageManager": "pnpm@11.4.0",
   "engines": {
     "node": ">=24 <25",
     "pnpm": ">=11 <12"
   },
   "scripts": {
-    "dev:web": "pnpm --dir apps/web dev --host 0.0.0.0",
-    "build": "pnpm -r build",
-    "test": "pnpm -r test",
-    "lint": "pnpm -r lint",
-    "typecheck": "pnpm -r typecheck"
+    "dev:web": "pnpm --filter @gereh/web dev",
+    "build": "pnpm -r --if-present build",
+    "test": "pnpm -r --if-present test",
+    "test:watch": "pnpm --filter @gereh/web test:watch",
+    "test:coverage": "pnpm --filter @gereh/web test:coverage",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "lint": "pnpm -r --if-present lint",
+    "format": "pnpm -r --if-present format",
+    "format:check": "pnpm -r --if-present format:check",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   }
 }

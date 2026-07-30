@@ -1,25 +1,105 @@
 openapi: 3.1.0
+
 info:
   title: Gereh Public API
   version: 0.1.0
+  description: |
+    Public REST API exposed by the Gereh API BFF.
+
 servers:
-  - url: http://localhost:8080
+  - url: /
+
+tags:
+  - name: System
+    description: Platform status and metadata
+
 paths:
   /v1/status:
     get:
-      operationId: getStatus
+      operationId: getSystemStatus
+      summary: Get API status
+      description: Returns API BFF health and version information.
+      tags:
+        - System
       responses:
         "200":
-          description: Service status
+          description: The API is available.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestId"
           content:
             application/json:
               schema:
-                type: object
-                required: [status, service, version]
-                properties:
-                  status:
-                    type: string
-                  service:
-                    type: string
-                  version:
-                    type: string
+                $ref: "#/components/schemas/SystemStatus"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+  headers:
+    RequestId:
+      description: Identifier used to correlate logs and traces.
+      schema:
+        type: string
+        minLength: 1
+
+  schemas:
+    SystemStatus:
+      type: object
+      additionalProperties: false
+      required:
+        - status
+        - service
+        - version
+      properties:
+        status:
+          type: string
+          const: ok
+        service:
+          type: string
+          minLength: 1
+          examples:
+            - api-bff
+        version:
+          type: string
+          minLength: 1
+          examples:
+            - dev
+
+    Error:
+      type: object
+      additionalProperties: false
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          minLength: 1
+          examples:
+            - internal_error
+        message:
+          type: string
+          minLength: 1
+        requestId:
+          type:
+            - string
+            - "null"
+        details:
+          type:
+            - object
+            - array
+            - string
+            - number
+            - boolean
+            - "null"
+
+  responses:
+    InternalServerError:
+      description: An unexpected internal error occurred.
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"

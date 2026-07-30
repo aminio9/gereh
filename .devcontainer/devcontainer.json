@@ -23,7 +23,7 @@
   },
   "containerEnv": {
     "GOTOOLCHAIN": "local",
-    "GOWORK": "off",
+    "GOWORK": "auto",
     "GOPROXY": "https://goproxy.cn,direct",
     "GO111MODULE": "on",
     "NPM_CONFIG_REGISTRY": "https://registry.npmmirror.com",
@@ -108,5 +108,8 @@
     }
   },
   "postCreateCommand": "bash .devcontainer/post-create.sh",
-  "postStartCommand": "bash .devcontainer/post-start.sh"
+  "postStartCommand": "bash .devcontainer/post-start.sh",
+  "remoteEnv": {
+    "PATH": "${containerEnv:PATH}:/home/vscode/go/bin:/home/vscode/.local/share/pnpm"
+  }
 }

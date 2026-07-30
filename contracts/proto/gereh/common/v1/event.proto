@@ -2,25 +2,50 @@ syntax = "proto3";
 
 package gereh.common.v1;
 
-option go_package = "github.com/aminio9/gereh-platform/gen/go/gereh/common/v1;commonv1";
-
 import "google/protobuf/timestamp.proto";
 
+// EventEnvelope provides routing, traceability, ordering, and
+// idempotency metadata for all Kafka events.
 message EventEnvelope {
+  // Globally unique immutable event identifier.
   string event_id = 1;
+
+  // Stable semantic name, for example "tenant.created".
   string event_type = 2;
+
+  // Schema version for the event payload.
   uint32 event_version = 3;
 
+  // Tenant boundary associated with the event.
   string tenant_id = 4;
+
+  // Domain aggregate that emitted the event.
   string aggregate_type = 5;
+
+  // Identifier of the aggregate that emitted the event.
   string aggregate_id = 6;
+
+  // Monotonic aggregate version used for ordering and stale-event checks.
   uint64 aggregate_version = 7;
 
+  // Time at which the business event occurred.
   google.protobuf.Timestamp occurred_at = 8;
+
+  // Service that emitted the event.
   string producer = 9;
+
+  // Distributed trace identifier.
   string trace_id = 10;
+
+  // Identifier connecting all actions in one business operation.
   string correlation_id = 11;
+
+  // Identifier of the command or event that caused this event.
   string causation_id = 12;
 
+  // Serialized versioned Protobuf payload.
   bytes payload = 13;
+
+  // Small routing metadata. Never place secrets or large data here.
+  map<string, string> attributes = 14;
 }

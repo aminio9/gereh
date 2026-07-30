@@ -3,7 +3,12 @@ version: "3"
 silent: false
 
 vars:
-  COMPOSE: docker compose -f .devcontainer/compose.yaml
+  COMPOSE: docker compose --project-name gereh-platform-dev -f .devcontainer/compose.yaml
+
+includes:
+  foundation:
+    taskfile: ./tasks/foundation.yml
+    flatten: true
 
 tasks:
   default:
@@ -11,60 +16,81 @@ tasks:
       - task --list
 
   bootstrap:
-    desc: Install Go and frontend dependencies
+    desc: Install repository dependencies and pinned tools
     cmds:
+      - go work sync
       - go mod download
+      - go -C tools mod download
+      - go -C tools install tool
       - pnpm install
-      - buf lint
+      - go tool buf lint
 
   doctor:
     desc: Verify development tools and infrastructure
     cmds:
       - bash scripts/doctor.sh
 
+  tools:install:
+    desc: Install all Go tools pinned by the tools module
+    cmds:
+      - go -C tools install tool
+
+  contracts:lint:
+    desc: Lint all Protobuf contracts
+    cmds:
+      - go tool buf lint
+
+  contracts:generate:
+    desc: Generate Go code from Protobuf contracts
+    cmds:
+      - rm -rf gen/go
+      - mkdir -p gen/go
+      - go tool buf generate
+      - go mod tidy
+
+  contracts:check-generated:
+    desc: Verify committed generated contracts are current
+    cmds:
+      - task: contracts:generate
+      - git diff --exit-code -- gen/go go.mod go.sum
+
   infra:up:
-    desc: Start core local infrastructure
+    desc: Start local infrastructure
     cmds:
       - >-
         {{.COMPOSE}} up -d
         postgres redis kafka kafka-init temporal minio minio-init
 
   infra:observability:
-    desc: Start the optional local OpenTelemetry/Grafana stack
+    desc: Start optional local observability
     cmds:
-      - '{{.COMPOSE}} --profile observability up -d otel-lgtm'
-
-  infra:full:
-    desc: Start core infrastructure plus optional observability
-    cmds:
-      - task: infra:up
-      - task: infra:observability
+      - "{{.COMPOSE}} --profile observability up -d otel-lgtm"
 
   infra:ps:
-    desc: Show local infrastructure status
+    desc: Show infrastructure status
     cmds:
-      - '{{.COMPOSE}} ps'
+      - "{{.COMPOSE}} ps -a"
 
   infra:logs:
-    desc: Follow local infrastructure logs
+    desc: Follow infrastructure logs
     cmds:
-      - '{{.COMPOSE}} logs -f --tail=200'
+      - "{{.COMPOSE}} logs -f --tail=200"
 
   infra:down:
-    desc: Stop local infrastructure without deleting data
+    desc: Stop local infrastructure
     cmds:
-      - '{{.COMPOSE}} down --remove-orphans'
+      - "{{.COMPOSE}} down --remove-orphans"
 
   infra:reset:
-    desc: Permanently delete local development infrastructure and volumes
-    prompt: This permanently deletes local PostgreSQL, Kafka, Redis, Temporal and MinIO data. Continue?
+    desc: Permanently delete local infrastructure volumes
+    prompt: This permanently deletes all local development data. Continue?
     cmds:
-      - '{{.COMPOSE}} down -v --remove-orphans'
+      - "{{.COMPOSE}} down -v --remove-orphans"
 
   dev:web:
-    desc: Run the React application
+    desc: Run the React development server
     cmds:
-      - pnpm --dir apps/web dev --host 0.0.0.0
+      - pnpm --filter @gereh/web dev
 
   dev:api:
     desc: Run the API BFF with live reload
@@ -72,42 +98,60 @@ tasks:
       - bash scripts/dev-service.sh api-bff
 
   dev:service:
-    desc: "Run a Go service with live reload. Example: task dev:service SERVICE=tenant"
+    desc: "Run a Go service. Example: task dev:service SERVICE=tenant"
     requires:
-      vars: [SERVICE]
+      vars:
+        - SERVICE
     cmds:
       - bash scripts/dev-service.sh {{.SERVICE}}
 
-  generate:
-    desc: Generate code from Protocol Buffer contracts
-    cmds:
-      - rm -rf gen/go
-      - buf generate
-
-  fmt:
-    desc: Format Go, Proto and frontend code
+  format:
+    desc: Format Go, Protobuf and frontend source
     cmds:
       - go fmt ./...
-      - buf format -w
-      - pnpm --dir apps/web format
+      - go tool buf format -w
+      - pnpm -r --if-present format
+
+  format:check:
+    desc: Verify source formatting
+    cmds:
+      - |
+        files="$(find platform services runtime-connectors gen -type f -name '*.go' 2>/dev/null)"
+        if [[ -n "${files}" ]]; then
+          unformatted="$(gofmt -l ${files})"
+          if [[ -n "${unformatted}" ]]; then
+            echo "${unformatted}"
+            exit 1
+          fi
+        fi
+      - go tool buf format --diff --exit-code
+      - pnpm -r --if-present format:check
 
   lint:
-    desc: Run static checks
+    desc: Run static analysis
     cmds:
       - go vet ./...
-      - golangci-lint run
-      - buf lint
-      - pnpm -r lint
-      - pnpm -r typecheck
+      - go tool golangci-lint run
+      - go tool buf lint
+      - pnpm -r --if-present lint
 
   test:
-    desc: Run unit tests
+    desc: Run backend and frontend tests
     cmds:
       - go test -race -count=1 ./...
-      - pnpm -r test
+      - pnpm -r --if-present test
 
   build:
-    desc: Build all Go services and frontend applications
+    desc: Build all services and frontend applications
     cmds:
       - bash scripts/build-services.sh
-      - pnpm -r build
+      - pnpm -r --if-present build
+
+  check:
+    desc: Run all validation required before committing
+    cmds:
+      - task: format:check
+      - task: lint
+      - task: test
+      - task: build
+      - task: contracts:check-generated

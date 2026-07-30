@@ -1,6 +1,7 @@
+// Package main runs the execution-orchestrator service.
 package main
 
-import "github.com/aminio9/gereh-platform/platform/go/service"
+import "github.com/aminio9/gereh/platform/go/service"
 
 var version = "dev"
 
