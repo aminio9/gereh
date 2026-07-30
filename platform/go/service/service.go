@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/aminio9/gereh/platform/go/observability"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
@@ -46,7 +47,10 @@ func Run(config Config, register RouteRegistrar) {
 	}
 }
 
-func run(config Config, register RouteRegistrar) error {
+func run(
+	config Config,
+	register RouteRegistrar,
+) (runErr error) {
 	if config.Name == "" {
 		return errors.New("service name is required")
 	}
@@ -59,14 +63,60 @@ func run(config Config, register RouteRegistrar) error {
 		config.DefaultAddress = ":8080"
 	}
 
+	ctx, stop := signal.NotifyContext(
+		context.Background(),
+		syscall.SIGINT,
+		syscall.SIGTERM,
+	)
+	defer stop()
+
+	telemetryConfig, err := observability.ConfigFromEnv(
+		config.Name,
+		config.Version,
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"configure observability: %w",
+			err,
+		)
+	}
+
+	telemetry, err := observability.Setup(
+		ctx,
+		telemetryConfig,
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"initialize observability: %w",
+			err,
+		)
+	}
+
+	defer func() {
+		shutdownContext, cancel := context.WithTimeout(
+			context.Background(),
+			telemetryConfig.ShutdownTimeout,
+		)
+		defer cancel()
+
+		runErr = errors.Join(
+			runErr,
+			telemetry.Shutdown(shutdownContext),
+		)
+	}()
+
 	logger := slog.New(
-		slog.NewJSONHandler(
-			os.Stdout,
-			&slog.HandlerOptions{
-				Level: slog.LevelInfo,
-			},
+		observability.NewTraceHandler(
+			slog.NewJSONHandler(
+				os.Stdout,
+				&slog.HandlerOptions{
+					Level: slog.LevelInfo,
+				},
+			),
 		),
 	)
+
+	slog.SetDefault(logger)
 
 	router := chi.NewRouter()
 
@@ -125,26 +175,25 @@ func run(config Config, register RouteRegistrar) error {
 		config.DefaultAddress,
 	)
 
+	handler := telemetry.HTTPHandler(
+		config.Name,
+		router,
+	)
+
 	server := &http.Server{
 		Addr:              address,
-		Handler:           router,
+		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      30 * time.Second,
 		IdleTimeout:       120 * time.Second,
 	}
 
-	ctx, stop := signal.NotifyContext(
-		context.Background(),
-		syscall.SIGINT,
-		syscall.SIGTERM,
-	)
-	defer stop()
-
 	serverErrors := make(chan error, 1)
 
 	go func() {
-		logger.Info(
+		logger.InfoContext(
+			ctx,
 			"service listening",
 			"service",
 			config.Name,
@@ -152,6 +201,8 @@ func run(config Config, register RouteRegistrar) error {
 			config.Version,
 			"address",
 			address,
+			"telemetry_enabled",
+			telemetryConfig.Enabled,
 		)
 
 		serverErrors <- server.ListenAndServe()
@@ -170,20 +221,21 @@ func run(config Config, register RouteRegistrar) error {
 		return nil
 
 	case <-ctx.Done():
-		logger.Info(
+		logger.InfoContext(
+			ctx,
 			"shutdown requested",
 			"service",
 			config.Name,
 		)
 	}
 
-	shutdownCtx, cancel := context.WithTimeout(
+	shutdownContext, cancel := context.WithTimeout(
 		context.Background(),
 		15*time.Second,
 	)
 	defer cancel()
 
-	if err := server.Shutdown(shutdownCtx); err != nil {
+	if err := server.Shutdown(shutdownContext); err != nil {
 		return fmt.Errorf(
 			"shut down HTTP server: %w",
 			err,

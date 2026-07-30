@@ -202,6 +202,17 @@ jobs:
             deployments/local/compose.yaml \
             deployments/local/.env
 
+      - name: Test shared Kafka transport
+        env:
+          KAFKA_BROKERS: localhost:9092
+          KAFKA_INTEGRATION_TOPIC: gereh.audit.events.v1
+        run: |
+          go test \
+            -race \
+            -tags=integration \
+            -count=1 \
+            ./platform/go/events/kafka
+
       - name: Show logs after failure
         if: failure()
         run: |

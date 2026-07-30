@@ -233,12 +233,17 @@ services:
     image: grafana/otel-lgtm:0.29.2
     profiles: ["observability"]
     restart: unless-stopped
+
     ports:
-      - "3001:3000"
-      - "4317:4317"
-      - "4318:4318"
+      - "127.0.0.1:13001:3000"
+
+    expose:
+      - "4317"
+      - "4318"
+
     volumes:
       - otel-lgtm-data:/data
+
     networks:
       - gereh-dev
 
