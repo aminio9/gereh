@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter } from "react-router";
 
 import { HomePage } from "../features/system/pages/HomePage";
 import { NotFoundPage } from "../pages/NotFoundPage";
