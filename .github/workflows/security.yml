@@ -58,8 +58,19 @@ jobs:
       - name: Scan reachable Go vulnerabilities
         run: go tool govulncheck ./...
 
-      - name: Audit production JavaScript dependencies
-        run: pnpm audit --prod --audit-level high
+      - name: Audit production dependencies
+        shell: bash
+        env:
+          pnpm_config_registry: https://registry.npmjs.org/
+        run: |
+          set -Eeuo pipefail
+
+          echo "Audit registry:"
+          pnpm config get registry
+
+          pnpm audit \
+            --prod \
+            --audit-level high
 
       - name: Install verified Trivy
         run: |

@@ -75,16 +75,13 @@ jobs:
 
   contracts:
     name: Contract validation
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    runs-on: ubuntu-latest
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
-        with:
-          persist-credentials: false
 
-      - name: Install Go
+      - name: Set up Go
         uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
@@ -93,7 +90,14 @@ jobs:
             go.sum
             tools/go.sum
 
-      - name: Install Protobuf code generators
+      - name: Set up Buf
+        uses: bufbuild/buf-action@v1
+        with:
+          version: "1.72.0"
+          setup_only: true
+          github_token: ${{ github.token }}
+
+      - name: Install Protobuf generators
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -116,22 +120,30 @@ jobs:
           "${tool_bin}/protoc-gen-go-grpc" --version
 
           echo "${tool_bin}" >> "${GITHUB_PATH}"
-      - name: Download tool dependencies
-        run: go -C tools mod download
 
-      - name: Lint Protobuf
-        run: go tool buf lint
+      - name: Verify contract tools
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          buf --version
+          command -v protoc-gen-go
+          command -v protoc-gen-go-grpc
+
+          protoc-gen-go --version
+          protoc-gen-go-grpc --version
+
+      - name: Lint Protobuf contracts
+        run: buf lint
 
       - name: Check Protobuf formatting
-        run: go tool buf format --diff --exit-code
-
-      - name: Regenerate contracts
+        shell: bash
         run: |
-          rm -rf gen/go
-          mkdir -p gen/go
+          set -Eeuo pipefail
 
-          go tool buf generate
-          go mod tidy
+          buf format \
+            --diff \
+            --exit-code
 
       - name: Verify generated contracts
         shell: bash
@@ -141,7 +153,9 @@ jobs:
           rm -rf gen/go
           buf generate
 
-          git diff --exit-code -- gen/go
+          git diff \
+            --exit-code \
+            -- gen/go
 
   frontend:
     name: Frontend validation
