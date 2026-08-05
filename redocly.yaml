@@ -1,0 +1,8 @@
+extends:
+  - recommended
+
+rules:
+  # OIDC login and callback operations legitimately succeed with an HTTP
+  # redirect. Requiring a synthetic 2xx response would make the contract
+  # inaccurate.
+  operation-2xx-response: off

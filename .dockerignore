@@ -1,7 +1,6 @@
 .git
 .github
 .vscode
-.devcontainer
 
 **/.DS_Store
 **/*.backup.*
