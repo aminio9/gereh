@@ -19,16 +19,18 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	TenantService_CreateTenant_FullMethodName     = "/gereh.tenant.v1.TenantService/CreateTenant"
-	TenantService_GetTenant_FullMethodName        = "/gereh.tenant.v1.TenantService/GetTenant"
-	TenantService_ListTenants_FullMethodName      = "/gereh.tenant.v1.TenantService/ListTenants"
-	TenantService_UpdateTenant_FullMethodName     = "/gereh.tenant.v1.TenantService/UpdateTenant"
-	TenantService_ArchiveTenant_FullMethodName    = "/gereh.tenant.v1.TenantService/ArchiveTenant"
-	TenantService_GetTenantContext_FullMethodName = "/gereh.tenant.v1.TenantService/GetTenantContext"
-	TenantService_ListMembers_FullMethodName      = "/gereh.tenant.v1.TenantService/ListMembers"
-	TenantService_AddMember_FullMethodName        = "/gereh.tenant.v1.TenantService/AddMember"
-	TenantService_UpdateMemberRole_FullMethodName = "/gereh.tenant.v1.TenantService/UpdateMemberRole"
-	TenantService_RemoveMember_FullMethodName     = "/gereh.tenant.v1.TenantService/RemoveMember"
+	TenantService_CreateTenant_FullMethodName            = "/gereh.tenant.v1.TenantService/CreateTenant"
+	TenantService_GetTenant_FullMethodName               = "/gereh.tenant.v1.TenantService/GetTenant"
+	TenantService_ListTenants_FullMethodName             = "/gereh.tenant.v1.TenantService/ListTenants"
+	TenantService_UpdateTenant_FullMethodName            = "/gereh.tenant.v1.TenantService/UpdateTenant"
+	TenantService_ArchiveTenant_FullMethodName           = "/gereh.tenant.v1.TenantService/ArchiveTenant"
+	TenantService_GetTenantContext_FullMethodName        = "/gereh.tenant.v1.TenantService/GetTenantContext"
+	TenantService_CheckAuthorization_FullMethodName      = "/gereh.tenant.v1.TenantService/CheckAuthorization"
+	TenantService_BatchCheckAuthorization_FullMethodName = "/gereh.tenant.v1.TenantService/BatchCheckAuthorization"
+	TenantService_ListMembers_FullMethodName             = "/gereh.tenant.v1.TenantService/ListMembers"
+	TenantService_AddMember_FullMethodName               = "/gereh.tenant.v1.TenantService/AddMember"
+	TenantService_UpdateMemberRole_FullMethodName        = "/gereh.tenant.v1.TenantService/UpdateMemberRole"
+	TenantService_RemoveMember_FullMethodName            = "/gereh.tenant.v1.TenantService/RemoveMember"
 )
 
 // TenantServiceClient is the client API for TenantService service.
@@ -44,6 +46,8 @@ type TenantServiceClient interface {
 	UpdateTenant(ctx context.Context, in *UpdateTenantRequest, opts ...grpc.CallOption) (*UpdateTenantResponse, error)
 	ArchiveTenant(ctx context.Context, in *ArchiveTenantRequest, opts ...grpc.CallOption) (*ArchiveTenantResponse, error)
 	GetTenantContext(ctx context.Context, in *GetTenantContextRequest, opts ...grpc.CallOption) (*GetTenantContextResponse, error)
+	CheckAuthorization(ctx context.Context, in *CheckAuthorizationRequest, opts ...grpc.CallOption) (*CheckAuthorizationResponse, error)
+	BatchCheckAuthorization(ctx context.Context, in *BatchCheckAuthorizationRequest, opts ...grpc.CallOption) (*BatchCheckAuthorizationResponse, error)
 	ListMembers(ctx context.Context, in *ListMembersRequest, opts ...grpc.CallOption) (*ListMembersResponse, error)
 	AddMember(ctx context.Context, in *AddMemberRequest, opts ...grpc.CallOption) (*AddMemberResponse, error)
 	UpdateMemberRole(ctx context.Context, in *UpdateMemberRoleRequest, opts ...grpc.CallOption) (*UpdateMemberRoleResponse, error)
@@ -118,6 +122,26 @@ func (c *tenantServiceClient) GetTenantContext(ctx context.Context, in *GetTenan
 	return out, nil
 }
 
+func (c *tenantServiceClient) CheckAuthorization(ctx context.Context, in *CheckAuthorizationRequest, opts ...grpc.CallOption) (*CheckAuthorizationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CheckAuthorizationResponse)
+	err := c.cc.Invoke(ctx, TenantService_CheckAuthorization_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tenantServiceClient) BatchCheckAuthorization(ctx context.Context, in *BatchCheckAuthorizationRequest, opts ...grpc.CallOption) (*BatchCheckAuthorizationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BatchCheckAuthorizationResponse)
+	err := c.cc.Invoke(ctx, TenantService_BatchCheckAuthorization_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *tenantServiceClient) ListMembers(ctx context.Context, in *ListMembersRequest, opts ...grpc.CallOption) (*ListMembersResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListMembersResponse)
@@ -171,6 +195,8 @@ type TenantServiceServer interface {
 	UpdateTenant(context.Context, *UpdateTenantRequest) (*UpdateTenantResponse, error)
 	ArchiveTenant(context.Context, *ArchiveTenantRequest) (*ArchiveTenantResponse, error)
 	GetTenantContext(context.Context, *GetTenantContextRequest) (*GetTenantContextResponse, error)
+	CheckAuthorization(context.Context, *CheckAuthorizationRequest) (*CheckAuthorizationResponse, error)
+	BatchCheckAuthorization(context.Context, *BatchCheckAuthorizationRequest) (*BatchCheckAuthorizationResponse, error)
 	ListMembers(context.Context, *ListMembersRequest) (*ListMembersResponse, error)
 	AddMember(context.Context, *AddMemberRequest) (*AddMemberResponse, error)
 	UpdateMemberRole(context.Context, *UpdateMemberRoleRequest) (*UpdateMemberRoleResponse, error)
@@ -202,6 +228,12 @@ func (UnimplementedTenantServiceServer) ArchiveTenant(context.Context, *ArchiveT
 }
 func (UnimplementedTenantServiceServer) GetTenantContext(context.Context, *GetTenantContextRequest) (*GetTenantContextResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetTenantContext not implemented")
+}
+func (UnimplementedTenantServiceServer) CheckAuthorization(context.Context, *CheckAuthorizationRequest) (*CheckAuthorizationResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CheckAuthorization not implemented")
+}
+func (UnimplementedTenantServiceServer) BatchCheckAuthorization(context.Context, *BatchCheckAuthorizationRequest) (*BatchCheckAuthorizationResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BatchCheckAuthorization not implemented")
 }
 func (UnimplementedTenantServiceServer) ListMembers(context.Context, *ListMembersRequest) (*ListMembersResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListMembers not implemented")
@@ -344,6 +376,42 @@ func _TenantService_GetTenantContext_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TenantService_CheckAuthorization_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckAuthorizationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TenantServiceServer).CheckAuthorization(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TenantService_CheckAuthorization_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TenantServiceServer).CheckAuthorization(ctx, req.(*CheckAuthorizationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TenantService_BatchCheckAuthorization_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchCheckAuthorizationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TenantServiceServer).BatchCheckAuthorization(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TenantService_BatchCheckAuthorization_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TenantServiceServer).BatchCheckAuthorization(ctx, req.(*BatchCheckAuthorizationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _TenantService_ListMembers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListMembersRequest)
 	if err := dec(in); err != nil {
@@ -446,6 +514,14 @@ var TenantService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTenantContext",
 			Handler:    _TenantService_GetTenantContext_Handler,
+		},
+		{
+			MethodName: "CheckAuthorization",
+			Handler:    _TenantService_CheckAuthorization_Handler,
+		},
+		{
+			MethodName: "BatchCheckAuthorization",
+			Handler:    _TenantService_BatchCheckAuthorization_Handler,
 		},
 		{
 			MethodName: "ListMembers",

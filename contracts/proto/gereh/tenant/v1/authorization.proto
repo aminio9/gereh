@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package gereh.tenant.v1;
+
+option go_package = "github.com/aminio9/gereh/gen/go/gereh/tenant/v1;tenantv1";
+
+// Permission identifies one tenant-scoped capability.
+//
+// New values may be added compatibly. Existing numeric values must never be
+// reused or renumbered.
+enum Permission {
+  PERMISSION_UNSPECIFIED = 0;
+
+  PERMISSION_TENANT_READ = 1;
+  PERMISSION_TENANT_UPDATE = 2;
+  PERMISSION_TENANT_ARCHIVE = 3;
+
+  PERMISSION_MEMBER_LIST = 10;
+  PERMISSION_MEMBER_ADD = 11;
+  PERMISSION_MEMBER_UPDATE_ROLE = 12;
+  PERMISSION_MEMBER_REMOVE = 13;
+
+  PERMISSION_ENTITLEMENT_READ = 20;
+}
+
+// TenantRole is a tenant-scoped membership role that grants permissions.
+enum TenantRole {
+  TENANT_ROLE_UNSPECIFIED = 0;
+  TENANT_ROLE_OWNER = 1;
+  TENANT_ROLE_ADMIN = 2;
+  TENANT_ROLE_MEMBER = 3;
+  TENANT_ROLE_VIEWER = 4;
+}
+
+// AuthorizationDenialReason provides a stable machine-readable reason without
+// exposing internal database or implementation details.
+enum AuthorizationDenialReason {
+  AUTHORIZATION_DENIAL_REASON_UNSPECIFIED = 0;
+  AUTHORIZATION_DENIAL_REASON_NONE = 1;
+  AUTHORIZATION_DENIAL_REASON_NOT_A_MEMBER = 2;
+  AUTHORIZATION_DENIAL_REASON_TENANT_ARCHIVED = 3;
+  AUTHORIZATION_DENIAL_REASON_PERMISSION_NOT_GRANTED = 4;
+}
+
+// AuthorizationDecision is a tenant-scoped authorization result.
+message AuthorizationDecision {
+  bool allowed = 1;
+  string tenant_id = 2;
+  string actor_user_id = 3;
+  Permission permission = 4;
+  TenantRole role = 5;
+  int64 tenant_version = 6;
+  int64 membership_version = 7;
+  AuthorizationDenialReason denial_reason = 8;
+}
+
+message CheckAuthorizationRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  Permission permission = 3;
+}
+
+message CheckAuthorizationResponse {
+  AuthorizationDecision decision = 1;
+}
+
+message BatchCheckAuthorizationRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+
+  // Limited by the server to 64 permissions per request.
+  repeated Permission permissions = 3;
+}
+
+message BatchCheckAuthorizationResponse {
+  repeated AuthorizationDecision decisions = 1;
+}

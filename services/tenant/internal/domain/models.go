@@ -58,11 +58,12 @@ type Entitlements struct {
 	UpdatedAt time.Time
 }
 
-// TenantContext is the trusted tenant authorization result for one user.
+// TenantContext is the trusted tenant authorization context for one user.
 type TenantContext struct {
 	Tenant       Tenant
 	Membership   Membership
 	Entitlements Entitlements
+	Permissions  []Permission
 }
 
 // OutboxEvent is an event committed atomically with a domain mutation.

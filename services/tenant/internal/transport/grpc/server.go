@@ -168,6 +168,80 @@ func (server *Server) GetTenantContext(
 	}, nil
 }
 
+// CheckAuthorization evaluates one tenant permission.
+func (server *Server) CheckAuthorization(
+	ctx context.Context,
+	request *tenantv1.CheckAuthorizationRequest,
+) (*tenantv1.CheckAuthorizationResponse, error) {
+	decision, err := server.service.CheckAuthorization(
+		ctx,
+		request.GetActorUserId(),
+		request.GetTenantId(),
+		protoutil.DomainPermission(
+			request.GetPermission(),
+		),
+	)
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	return &tenantv1.CheckAuthorizationResponse{
+		Decision: protoutil.AuthorizationDecision(
+			decision,
+		),
+	}, nil
+}
+
+// BatchCheckAuthorization evaluates multiple permissions using one membership
+// lookup.
+func (server *Server) BatchCheckAuthorization(
+	ctx context.Context,
+	request *tenantv1.BatchCheckAuthorizationRequest,
+) (*tenantv1.BatchCheckAuthorizationResponse, error) {
+	permissions := make(
+		[]domain.Permission,
+		0,
+		len(request.GetPermissions()),
+	)
+
+	for _, permission := range request.GetPermissions() {
+		permissions = append(
+			permissions,
+			protoutil.DomainPermission(permission),
+		)
+	}
+
+	decisions, err :=
+		server.service.BatchCheckAuthorization(
+			ctx,
+			request.GetActorUserId(),
+			request.GetTenantId(),
+			permissions,
+		)
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	response := &tenantv1.BatchCheckAuthorizationResponse{
+		Decisions: make(
+			[]*tenantv1.AuthorizationDecision,
+			0,
+			len(decisions),
+		),
+	}
+
+	for _, decision := range decisions {
+		response.Decisions = append(
+			response.Decisions,
+			protoutil.AuthorizationDecision(
+				decision,
+			),
+		)
+	}
+
+	return response, nil
+}
+
 // ListMembers lists tenant memberships.
 func (server *Server) ListMembers(
 	ctx context.Context,

@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package gereh.tenant.v1;
 
+import "gereh/tenant/v1/authorization.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/aminio9/gereh/gen/go/gereh/tenant/v1;tenantv1";
@@ -17,6 +18,10 @@ service TenantService {
 
   rpc GetTenantContext(GetTenantContextRequest) returns (GetTenantContextResponse);
 
+  rpc CheckAuthorization(CheckAuthorizationRequest) returns (CheckAuthorizationResponse);
+
+  rpc BatchCheckAuthorization(BatchCheckAuthorizationRequest) returns (BatchCheckAuthorizationResponse);
+
   rpc ListMembers(ListMembersRequest) returns (ListMembersResponse);
   rpc AddMember(AddMemberRequest) returns (AddMemberResponse);
   rpc UpdateMemberRole(UpdateMemberRoleRequest) returns (UpdateMemberRoleResponse);
@@ -27,14 +32,6 @@ enum TenantStatus {
   TENANT_STATUS_UNSPECIFIED = 0;
   TENANT_STATUS_ACTIVE = 1;
   TENANT_STATUS_ARCHIVED = 2;
-}
-
-enum TenantRole {
-  TENANT_ROLE_UNSPECIFIED = 0;
-  TENANT_ROLE_OWNER = 1;
-  TENANT_ROLE_ADMIN = 2;
-  TENANT_ROLE_MEMBER = 3;
-  TENANT_ROLE_VIEWER = 4;
 }
 
 message Tenant {
@@ -74,6 +71,9 @@ message TenantContext {
   Tenant tenant = 1;
   TenantMembership membership = 2;
   TenantEntitlements entitlements = 3;
+
+  // Effective permissions for the current membership and tenant state.
+  repeated Permission permissions = 4;
 }
 
 message CreateTenantRequest {

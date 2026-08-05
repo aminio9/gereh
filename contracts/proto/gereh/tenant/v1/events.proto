@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package gereh.tenant.v1;
 
+import "gereh/tenant/v1/authorization.proto";
 import "gereh/tenant/v1/tenant.proto";
 import "google/protobuf/timestamp.proto";
 
