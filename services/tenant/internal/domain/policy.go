@@ -5,27 +5,40 @@ func IsKnownRole(role Role) bool {
 	switch role {
 	case RoleOwner, RoleAdmin, RoleMember, RoleViewer:
 		return true
+
 	default:
 		return false
 	}
 }
 
-// CanReadTenant reports whether a role can read tenant state.
+// CanReadTenant remains as a compatibility helper for repository enforcement.
 func CanReadTenant(role Role) bool {
-	return IsKnownRole(role)
+	return RoleAllows(
+		role,
+		PermissionTenantRead,
+	)
 }
 
-// CanUpdateTenant reports whether a role can update tenant settings.
+// CanUpdateTenant remains as a compatibility helper for repository enforcement.
 func CanUpdateTenant(role Role) bool {
-	return role == RoleOwner || role == RoleAdmin
+	return RoleAllows(
+		role,
+		PermissionTenantUpdate,
+	)
 }
 
-// CanArchiveTenant reports whether a role can archive a tenant.
+// CanArchiveTenant remains as a compatibility helper for repository enforcement.
 func CanArchiveTenant(role Role) bool {
-	return role == RoleOwner
+	return RoleAllows(
+		role,
+		PermissionTenantArchive,
+	)
 }
 
-// CanManageMember reports whether an actor may manage a target membership.
+// CanManageMember validates target-role constraints.
+//
+// Capability authorization must be checked before this function. This function
+// enforces hierarchy rules that cannot be represented by a simple permission.
 func CanManageMember(
 	actor Role,
 	target Role,

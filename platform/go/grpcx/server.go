@@ -39,6 +39,16 @@ func NewServer(
 		logger = slog.Default()
 	}
 
+	unaryInterceptors := append(
+		UnaryServerInterceptors(logger),
+		config.UnaryInterceptors...,
+	)
+
+	streamInterceptors := append(
+		StreamServerInterceptors(logger),
+		config.StreamInterceptors...,
+	)
+
 	serverOptions := []grpc.ServerOption{
 		grpc.MaxRecvMsgSize(config.MaxReceiveMessageBytes),
 		grpc.MaxSendMsgSize(config.MaxSendMessageBytes),
@@ -56,10 +66,10 @@ func NewServer(
 			),
 		),
 		grpc.ChainUnaryInterceptor(
-			UnaryServerInterceptors(logger)...,
+			unaryInterceptors...,
 		),
 		grpc.ChainStreamInterceptor(
-			StreamServerInterceptors(logger)...,
+			streamInterceptors...,
 		),
 	}
 

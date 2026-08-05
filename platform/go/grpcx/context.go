@@ -22,6 +22,9 @@ const (
 	// This value must not be treated as authenticated identity until an
 	// authorization layer has validated or replaced it.
 	TenantIDMetadataKey = "x-tenant-id"
+
+	// ActorUserIDMetadataKey carries the authenticated internal user identifier.
+	ActorUserIDMetadataKey = "x-actor-user-id"
 )
 
 type requestMetadataContextKey struct{}
@@ -33,6 +36,7 @@ type requestMetadataContextKey struct{}
 type RequestMetadata struct {
 	RequestID     string
 	CorrelationID string
+	ActorUserID   string
 	TenantID      string
 }
 
@@ -74,6 +78,10 @@ func RequestMetadataFromIncoming(
 			incoming,
 			CorrelationIDMetadataKey,
 		),
+		ActorUserID: firstMetadataValue(
+			incoming,
+			ActorUserIDMetadataKey,
+		),
 		TenantID: firstMetadataValue(
 			incoming,
 			TenantIDMetadataKey,
@@ -112,6 +120,13 @@ func InjectOutgoingMetadata(ctx context.Context) context.Context {
 		outgoing.Set(
 			CorrelationIDMetadataKey,
 			requestMetadata.CorrelationID,
+		)
+	}
+
+	if requestMetadata.ActorUserID != "" {
+		outgoing.Set(
+			ActorUserIDMetadataKey,
+			requestMetadata.ActorUserID,
 		)
 	}
 

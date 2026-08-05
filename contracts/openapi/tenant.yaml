@@ -319,6 +319,18 @@ components:
       type: string
       enum: [TENANT_ROLE_OWNER, TENANT_ROLE_ADMIN, TENANT_ROLE_MEMBER, TENANT_ROLE_VIEWER]
 
+    Permission:
+      type: string
+      enum:
+        - PERMISSION_TENANT_READ
+        - PERMISSION_TENANT_UPDATE
+        - PERMISSION_TENANT_ARCHIVE
+        - PERMISSION_MEMBER_LIST
+        - PERMISSION_MEMBER_ADD
+        - PERMISSION_MEMBER_UPDATE_ROLE
+        - PERMISSION_MEMBER_REMOVE
+        - PERMISSION_ENTITLEMENT_READ
+
     CreateTenantRequest:
       type: object
       additionalProperties: false
@@ -340,6 +352,12 @@ components:
 
     TenantContextResponse:
       type: object
+      properties:
+        permissions:
+          type: array
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/Permission"
 
     ListTenantsResponse:
       type: object

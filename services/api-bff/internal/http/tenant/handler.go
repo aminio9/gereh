@@ -59,6 +59,12 @@ type Client interface {
 		...grpc.CallOption,
 	) (*tenantv1.GetTenantContextResponse, error)
 
+	CheckAuthorization(
+		context.Context,
+		*tenantv1.CheckAuthorizationRequest,
+		...grpc.CallOption,
+	) (*tenantv1.CheckAuthorizationResponse, error)
+
 	ListMembers(
 		context.Context,
 		*tenantv1.ListMembersRequest,
@@ -105,7 +111,7 @@ func New(
 	}
 }
 
-// Register registers authenticated tenant routes.
+// Register registers authenticated and authorized tenant routes.
 func (handler *Handler) Register(
 	router chi.Router,
 	authHandler *authhttp.Handler,
@@ -117,6 +123,8 @@ func (handler *Handler) Register(
 				authHandler.RequireSession,
 			)
 
+			// These operations are scoped only to the authenticated user,
+			// because no tenant exists or has been selected yet.
 			tenantRouter.Get(
 				"/",
 				handler.listTenants,
@@ -132,12 +140,19 @@ func (handler *Handler) Register(
 			tenantRouter.Route(
 				"/{tenantID}",
 				func(resource chi.Router) {
-					resource.Get(
+					resource.With(
+						handler.RequirePermission(
+							tenantv1.Permission_PERMISSION_TENANT_READ,
+						),
+					).Get(
 						"/",
 						handler.getTenant,
 					)
 
 					resource.With(
+						handler.RequirePermission(
+							tenantv1.Permission_PERMISSION_TENANT_UPDATE,
+						),
 						authHandler.RequireCSRF,
 					).Patch(
 						"/",
@@ -145,18 +160,28 @@ func (handler *Handler) Register(
 					)
 
 					resource.With(
+						handler.RequirePermission(
+							tenantv1.Permission_PERMISSION_TENANT_ARCHIVE,
+						),
 						authHandler.RequireCSRF,
 					).Post(
 						"/archive",
 						handler.archiveTenant,
 					)
 
-					resource.Get(
+					resource.With(
+						handler.RequirePermission(
+							tenantv1.Permission_PERMISSION_MEMBER_LIST,
+						),
+					).Get(
 						"/members",
 						handler.listMembers,
 					)
 
 					resource.With(
+						handler.RequirePermission(
+							tenantv1.Permission_PERMISSION_MEMBER_ADD,
+						),
 						authHandler.RequireCSRF,
 					).Post(
 						"/members",
@@ -164,6 +189,9 @@ func (handler *Handler) Register(
 					)
 
 					resource.With(
+						handler.RequirePermission(
+							tenantv1.Permission_PERMISSION_MEMBER_UPDATE_ROLE,
+						),
 						authHandler.RequireCSRF,
 					).Patch(
 						"/members/{userID}",
@@ -171,6 +199,9 @@ func (handler *Handler) Register(
 					)
 
 					resource.With(
+						handler.RequirePermission(
+							tenantv1.Permission_PERMISSION_MEMBER_REMOVE,
+						),
 						authHandler.RequireCSRF,
 					).Delete(
 						"/members/{userID}",

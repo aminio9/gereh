@@ -178,8 +178,15 @@ func run() error {
 
 	go relay.Run(ctx)
 
+	serverConfig := grpcx.DefaultServerConfig()
+
+	serverConfig.UnaryInterceptors = append(
+		serverConfig.UnaryInterceptors,
+		tenantgrpc.ActorBindingUnaryInterceptor(),
+	)
+
 	server, err := grpcx.NewServer(
-		grpcx.DefaultServerConfig(),
+		serverConfig,
 		telemetry,
 		logger,
 	)

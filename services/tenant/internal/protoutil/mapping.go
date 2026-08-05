@@ -63,10 +63,130 @@ func Entitlements(
 func Context(
 	value domain.TenantContext,
 ) *tenantv1.TenantContext {
+	permissions := make(
+		[]tenantv1.Permission,
+		0,
+		len(value.Permissions),
+	)
+
+	for _, permission := range value.Permissions {
+		permissions = append(
+			permissions,
+			Permission(permission),
+		)
+	}
+
 	return &tenantv1.TenantContext{
 		Tenant:       Tenant(value.Tenant),
 		Membership:   Membership(value.Membership),
 		Entitlements: Entitlements(value.Entitlements),
+		Permissions:  permissions,
+	}
+}
+
+// Permission maps a domain permission to Protobuf.
+func Permission(
+	value domain.Permission,
+) tenantv1.Permission {
+	switch value {
+	case domain.PermissionTenantRead:
+		return tenantv1.Permission_PERMISSION_TENANT_READ
+
+	case domain.PermissionTenantUpdate:
+		return tenantv1.Permission_PERMISSION_TENANT_UPDATE
+
+	case domain.PermissionTenantArchive:
+		return tenantv1.Permission_PERMISSION_TENANT_ARCHIVE
+
+	case domain.PermissionMemberList:
+		return tenantv1.Permission_PERMISSION_MEMBER_LIST
+
+	case domain.PermissionMemberAdd:
+		return tenantv1.Permission_PERMISSION_MEMBER_ADD
+
+	case domain.PermissionMemberUpdateRole:
+		return tenantv1.Permission_PERMISSION_MEMBER_UPDATE_ROLE
+
+	case domain.PermissionMemberRemove:
+		return tenantv1.Permission_PERMISSION_MEMBER_REMOVE
+
+	case domain.PermissionEntitlementRead:
+		return tenantv1.Permission_PERMISSION_ENTITLEMENT_READ
+
+	default:
+		return tenantv1.Permission_PERMISSION_UNSPECIFIED
+	}
+}
+
+// DomainPermission maps a Protobuf permission to the domain.
+func DomainPermission(
+	value tenantv1.Permission,
+) domain.Permission {
+	switch value {
+	case tenantv1.Permission_PERMISSION_TENANT_READ:
+		return domain.PermissionTenantRead
+
+	case tenantv1.Permission_PERMISSION_TENANT_UPDATE:
+		return domain.PermissionTenantUpdate
+
+	case tenantv1.Permission_PERMISSION_TENANT_ARCHIVE:
+		return domain.PermissionTenantArchive
+
+	case tenantv1.Permission_PERMISSION_MEMBER_LIST:
+		return domain.PermissionMemberList
+
+	case tenantv1.Permission_PERMISSION_MEMBER_ADD:
+		return domain.PermissionMemberAdd
+
+	case tenantv1.Permission_PERMISSION_MEMBER_UPDATE_ROLE:
+		return domain.PermissionMemberUpdateRole
+
+	case tenantv1.Permission_PERMISSION_MEMBER_REMOVE:
+		return domain.PermissionMemberRemove
+
+	case tenantv1.Permission_PERMISSION_ENTITLEMENT_READ:
+		return domain.PermissionEntitlementRead
+
+	default:
+		return ""
+	}
+}
+
+// DenialReason maps a domain denial reason to Protobuf.
+func DenialReason(
+	value domain.DenialReason,
+) tenantv1.AuthorizationDenialReason {
+	switch value {
+	case domain.DenialReasonNone:
+		return tenantv1.AuthorizationDenialReason_AUTHORIZATION_DENIAL_REASON_NONE
+
+	case domain.DenialReasonNotMember:
+		return tenantv1.AuthorizationDenialReason_AUTHORIZATION_DENIAL_REASON_NOT_A_MEMBER
+
+	case domain.DenialReasonTenantArchived:
+		return tenantv1.AuthorizationDenialReason_AUTHORIZATION_DENIAL_REASON_TENANT_ARCHIVED
+
+	case domain.DenialReasonPermissionNotGranted:
+		return tenantv1.AuthorizationDenialReason_AUTHORIZATION_DENIAL_REASON_PERMISSION_NOT_GRANTED
+
+	default:
+		return tenantv1.AuthorizationDenialReason_AUTHORIZATION_DENIAL_REASON_UNSPECIFIED
+	}
+}
+
+// AuthorizationDecision maps a domain decision to Protobuf.
+func AuthorizationDecision(
+	value domain.AuthorizationDecision,
+) *tenantv1.AuthorizationDecision {
+	return &tenantv1.AuthorizationDecision{
+		Allowed:           value.Allowed,
+		TenantId:          value.TenantID,
+		ActorUserId:       value.ActorUserID,
+		Permission:        Permission(value.Permission),
+		Role:              Role(value.Role),
+		TenantVersion:     value.TenantVersion,
+		MembershipVersion: value.MembershipVersion,
+		DenialReason:      DenialReason(value.DenialReason),
 	}
 }
 

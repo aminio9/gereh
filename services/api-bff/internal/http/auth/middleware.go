@@ -7,6 +7,7 @@ import (
 
 	identityv1 "github.com/aminio9/gereh/gen/go/gereh/identity/v1"
 	platformauth "github.com/aminio9/gereh/platform/go/auth"
+	"github.com/aminio9/gereh/platform/go/grpcx"
 )
 
 // RequireSession validates the browser session and stores a Principal.
@@ -65,6 +66,17 @@ func (handler *Handler) RequireSession(
 			ctx := platformauth.WithPrincipal(
 				request.Context(),
 				principal,
+			)
+
+			requestMetadata, _ :=
+				grpcx.RequestMetadataFromContext(ctx)
+
+			requestMetadata.ActorUserID =
+				principal.UserID
+
+			ctx = grpcx.WithRequestMetadata(
+				ctx,
+				requestMetadata,
 			)
 
 			next.ServeHTTP(

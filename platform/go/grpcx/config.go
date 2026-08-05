@@ -8,6 +8,8 @@ import (
 	"net"
 	"strings"
 	"time"
+
+	"google.golang.org/grpc"
 )
 
 const defaultMessageSize = 4 * 1024 * 1024
@@ -18,6 +20,9 @@ type ServerConfig struct {
 	MaxSendMessageBytes    int
 	EnableReflection       bool
 	GracefulStopTimeout    time.Duration
+
+	UnaryInterceptors  []grpc.UnaryServerInterceptor
+	StreamInterceptors []grpc.StreamServerInterceptor
 }
 
 // DefaultServerConfig returns conservative gRPC server defaults.
@@ -48,6 +53,24 @@ func (config ServerConfig) Validate() error {
 		return fmt.Errorf(
 			"graceful stop timeout must be greater than zero",
 		)
+	}
+
+	for index, interceptor := range config.UnaryInterceptors {
+		if interceptor == nil {
+			return fmt.Errorf(
+				"unary interceptor %d is nil",
+				index,
+			)
+		}
+	}
+
+	for index, interceptor := range config.StreamInterceptors {
+		if interceptor == nil {
+			return fmt.Errorf(
+				"stream interceptor %d is nil",
+				index,
+			)
+		}
 	}
 
 	return nil

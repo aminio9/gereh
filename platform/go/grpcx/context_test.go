@@ -11,6 +11,7 @@ func TestRequestMetadataRoundTrip(t *testing.T) {
 	expected := RequestMetadata{
 		RequestID:     "request-1",
 		CorrelationID: "correlation-1",
+		ActorUserID:   "0198abc0-0000-7000-8000-000000000001",
 		TenantID:      "tenant-1",
 	}
 

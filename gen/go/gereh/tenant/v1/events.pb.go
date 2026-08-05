@@ -386,7 +386,7 @@ var File_gereh_tenant_v1_events_proto protoreflect.FileDescriptor
 
 const file_gereh_tenant_v1_events_proto_rawDesc = "" +
 	"\n" +
-	"\x1cgereh/tenant/v1/events.proto\x12\x0fgereh.tenant.v1\x1a\x1cgereh/tenant/v1/tenant.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"I\n" +
+	"\x1cgereh/tenant/v1/events.proto\x12\x0fgereh.tenant.v1\x1a#gereh/tenant/v1/authorization.proto\x1a\x1cgereh/tenant/v1/tenant.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"I\n" +
 	"\rTenantCreated\x128\n" +
 	"\acontext\x18\x01 \x01(\v2\x1e.gereh.tenant.v1.TenantContextR\acontext\"m\n" +
 	"\rTenantUpdated\x12/\n" +
@@ -465,6 +465,7 @@ func file_gereh_tenant_v1_events_proto_init() {
 	if File_gereh_tenant_v1_events_proto != nil {
 		return
 	}
+	file_gereh_tenant_v1_authorization_proto_init()
 	file_gereh_tenant_v1_tenant_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{

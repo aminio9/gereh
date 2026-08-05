@@ -271,11 +271,24 @@ func (service *Service) GetTenantContext(
 		return domain.TenantContext{}, err
 	}
 
-	return service.repository.GetTenantContext(
-		ctx,
-		tenantID,
-		actorUserID,
-	)
+	contextValue, err :=
+		service.repository.GetTenantContext(
+			ctx,
+			tenantID,
+			actorUserID,
+		)
+	if err != nil {
+		return domain.TenantContext{}, err
+	}
+
+	if err := requirePermission(
+		contextValue,
+		domain.PermissionTenantRead,
+	); err != nil {
+		return domain.TenantContext{}, err
+	}
+
+	return decorateTenantContext(contextValue), nil
 }
 
 // ListTenants lists tenants visible to the actor.
@@ -334,6 +347,11 @@ func (service *Service) ListTenants(
 		)
 	}
 
+	for index := range contexts {
+		contexts[index] =
+			decorateTenantContext(contexts[index])
+	}
+
 	return contexts, nextToken, nil
 }
 
@@ -355,10 +373,11 @@ func (service *Service) UpdateTenant(
 		return domain.TenantContext{}, domain.ErrArchived
 	}
 
-	if !domain.CanUpdateTenant(
-		current.Membership.Role,
-	) {
-		return domain.TenantContext{}, domain.ErrForbidden
+	if err := requirePermission(
+		current,
+		domain.PermissionTenantUpdate,
+	); err != nil {
+		return domain.TenantContext{}, err
 	}
 
 	if input.ExpectedVersion != current.Tenant.Version {
@@ -453,10 +472,12 @@ func (service *Service) ArchiveTenant(
 		return domain.TenantContext{}, err
 	}
 
-	if !domain.CanArchiveTenant(
+	if !domain.RoleAllows(
 		current.Membership.Role,
+		domain.PermissionTenantArchive,
 	) {
-		return domain.TenantContext{}, domain.ErrForbidden
+		return domain.TenantContext{},
+			domain.ErrForbidden
 	}
 
 	if expectedVersion != current.Tenant.Version {
@@ -510,10 +531,18 @@ func (service *Service) ListMembers(
 	pageSize int32,
 	pageToken string,
 ) ([]domain.Membership, string, error) {
-	if _, err := service.GetTenantContext(
+	current, err := service.GetTenantContext(
 		ctx,
 		actorUserID,
 		tenantID,
+	)
+	if err != nil {
+		return nil, "", err
+	}
+
+	if err := requirePermission(
+		current,
+		domain.PermissionMemberList,
 	); err != nil {
 		return nil, "", err
 	}
@@ -594,6 +623,13 @@ func (service *Service) AddMember(
 
 	if current.Tenant.Status != domain.StatusActive {
 		return domain.Membership{}, 0, domain.ErrArchived
+	}
+
+	if err := requirePermission(
+		current,
+		domain.PermissionMemberAdd,
+	); err != nil {
+		return domain.Membership{}, 0, err
 	}
 
 	if !domain.CanManageMember(
@@ -681,6 +717,13 @@ func (service *Service) UpdateMemberRole(
 		return domain.Membership{}, 0, err
 	}
 
+	if err := requirePermission(
+		current,
+		domain.PermissionMemberUpdateRole,
+	); err != nil {
+		return domain.Membership{}, 0, err
+	}
+
 	if !domain.CanManageMember(
 		current.Membership.Role,
 		target.Role,
@@ -759,6 +802,13 @@ func (service *Service) RemoveMember(
 		input.UserID,
 	)
 	if err != nil {
+		return 0, err
+	}
+
+	if err := requirePermission(
+		current,
+		domain.PermissionMemberRemove,
+	); err != nil {
 		return 0, err
 	}
 

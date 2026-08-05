@@ -71,61 +71,6 @@ func (TenantStatus) EnumDescriptor() ([]byte, []int) {
 	return file_gereh_tenant_v1_tenant_proto_rawDescGZIP(), []int{0}
 }
 
-type TenantRole int32
-
-const (
-	TenantRole_TENANT_ROLE_UNSPECIFIED TenantRole = 0
-	TenantRole_TENANT_ROLE_OWNER       TenantRole = 1
-	TenantRole_TENANT_ROLE_ADMIN       TenantRole = 2
-	TenantRole_TENANT_ROLE_MEMBER      TenantRole = 3
-	TenantRole_TENANT_ROLE_VIEWER      TenantRole = 4
-)
-
-// Enum value maps for TenantRole.
-var (
-	TenantRole_name = map[int32]string{
-		0: "TENANT_ROLE_UNSPECIFIED",
-		1: "TENANT_ROLE_OWNER",
-		2: "TENANT_ROLE_ADMIN",
-		3: "TENANT_ROLE_MEMBER",
-		4: "TENANT_ROLE_VIEWER",
-	}
-	TenantRole_value = map[string]int32{
-		"TENANT_ROLE_UNSPECIFIED": 0,
-		"TENANT_ROLE_OWNER":       1,
-		"TENANT_ROLE_ADMIN":       2,
-		"TENANT_ROLE_MEMBER":      3,
-		"TENANT_ROLE_VIEWER":      4,
-	}
-)
-
-func (x TenantRole) Enum() *TenantRole {
-	p := new(TenantRole)
-	*p = x
-	return p
-}
-
-func (x TenantRole) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (TenantRole) Descriptor() protoreflect.EnumDescriptor {
-	return file_gereh_tenant_v1_tenant_proto_enumTypes[1].Descriptor()
-}
-
-func (TenantRole) Type() protoreflect.EnumType {
-	return &file_gereh_tenant_v1_tenant_proto_enumTypes[1]
-}
-
-func (x TenantRole) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use TenantRole.Descriptor instead.
-func (TenantRole) EnumDescriptor() ([]byte, []int) {
-	return file_gereh_tenant_v1_tenant_proto_rawDescGZIP(), []int{1}
-}
-
 type Tenant struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	TenantId        string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
@@ -427,10 +372,12 @@ func (x *TenantEntitlements) GetUpdatedAt() *timestamppb.Timestamp {
 }
 
 type TenantContext struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Tenant        *Tenant                `protobuf:"bytes,1,opt,name=tenant,proto3" json:"tenant,omitempty"`
-	Membership    *TenantMembership      `protobuf:"bytes,2,opt,name=membership,proto3" json:"membership,omitempty"`
-	Entitlements  *TenantEntitlements    `protobuf:"bytes,3,opt,name=entitlements,proto3" json:"entitlements,omitempty"`
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	Tenant       *Tenant                `protobuf:"bytes,1,opt,name=tenant,proto3" json:"tenant,omitempty"`
+	Membership   *TenantMembership      `protobuf:"bytes,2,opt,name=membership,proto3" json:"membership,omitempty"`
+	Entitlements *TenantEntitlements    `protobuf:"bytes,3,opt,name=entitlements,proto3" json:"entitlements,omitempty"`
+	// Effective permissions for the current membership and tenant state.
+	Permissions   []Permission `protobuf:"varint,4,rep,packed,name=permissions,proto3,enum=gereh.tenant.v1.Permission" json:"permissions,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -482,6 +429,13 @@ func (x *TenantContext) GetMembership() *TenantMembership {
 func (x *TenantContext) GetEntitlements() *TenantEntitlements {
 	if x != nil {
 		return x.Entitlements
+	}
+	return nil
+}
+
+func (x *TenantContext) GetPermissions() []Permission {
+	if x != nil {
+		return x.Permissions
 	}
 	return nil
 }
@@ -1634,7 +1588,7 @@ var File_gereh_tenant_v1_tenant_proto protoreflect.FileDescriptor
 
 const file_gereh_tenant_v1_tenant_proto_rawDesc = "" +
 	"\n" +
-	"\x1cgereh/tenant/v1/tenant.proto\x12\x0fgereh.tenant.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xcc\x03\n" +
+	"\x1cgereh/tenant/v1/tenant.proto\x12\x0fgereh.tenant.v1\x1a#gereh/tenant/v1/authorization.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xcc\x03\n" +
 	"\x06Tenant\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x12\n" +
 	"\x04slug\x18\x02 \x01(\tR\x04slug\x12!\n" +
@@ -1674,13 +1628,14 @@ const file_gereh_tenant_v1_tenant_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\bR\x05value:\x028\x01\x1a9\n" +
 	"\vLimitsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x03R\x05value:\x028\x01\"\xcc\x01\n" +
+	"\x05value\x18\x02 \x01(\x03R\x05value:\x028\x01\"\x8b\x02\n" +
 	"\rTenantContext\x12/\n" +
 	"\x06tenant\x18\x01 \x01(\v2\x17.gereh.tenant.v1.TenantR\x06tenant\x12A\n" +
 	"\n" +
 	"membership\x18\x02 \x01(\v2!.gereh.tenant.v1.TenantMembershipR\n" +
 	"membership\x12G\n" +
-	"\fentitlements\x18\x03 \x01(\v2#.gereh.tenant.v1.TenantEntitlementsR\fentitlements\"\xce\x01\n" +
+	"\fentitlements\x18\x03 \x01(\v2#.gereh.tenant.v1.TenantEntitlementsR\fentitlements\x12=\n" +
+	"\vpermissions\x18\x04 \x03(\x0e2\x1b.gereh.tenant.v1.PermissionR\vpermissions\"\xce\x01\n" +
 	"\x13CreateTenantRequest\x12\"\n" +
 	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\x12\x1d\n" +
 	"\n" +
@@ -1767,21 +1722,16 @@ const file_gereh_tenant_v1_tenant_proto_rawDesc = "" +
 	"\fTenantStatus\x12\x1d\n" +
 	"\x19TENANT_STATUS_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14TENANT_STATUS_ACTIVE\x10\x01\x12\x1a\n" +
-	"\x16TENANT_STATUS_ARCHIVED\x10\x02*\x87\x01\n" +
-	"\n" +
-	"TenantRole\x12\x1b\n" +
-	"\x17TENANT_ROLE_UNSPECIFIED\x10\x00\x12\x15\n" +
-	"\x11TENANT_ROLE_OWNER\x10\x01\x12\x15\n" +
-	"\x11TENANT_ROLE_ADMIN\x10\x02\x12\x16\n" +
-	"\x12TENANT_ROLE_MEMBER\x10\x03\x12\x16\n" +
-	"\x12TENANT_ROLE_VIEWER\x10\x042\xb4\a\n" +
+	"\x16TENANT_STATUS_ARCHIVED\x10\x022\xa1\t\n" +
 	"\rTenantService\x12[\n" +
 	"\fCreateTenant\x12$.gereh.tenant.v1.CreateTenantRequest\x1a%.gereh.tenant.v1.CreateTenantResponse\x12R\n" +
 	"\tGetTenant\x12!.gereh.tenant.v1.GetTenantRequest\x1a\".gereh.tenant.v1.GetTenantResponse\x12X\n" +
 	"\vListTenants\x12#.gereh.tenant.v1.ListTenantsRequest\x1a$.gereh.tenant.v1.ListTenantsResponse\x12[\n" +
 	"\fUpdateTenant\x12$.gereh.tenant.v1.UpdateTenantRequest\x1a%.gereh.tenant.v1.UpdateTenantResponse\x12^\n" +
 	"\rArchiveTenant\x12%.gereh.tenant.v1.ArchiveTenantRequest\x1a&.gereh.tenant.v1.ArchiveTenantResponse\x12g\n" +
-	"\x10GetTenantContext\x12(.gereh.tenant.v1.GetTenantContextRequest\x1a).gereh.tenant.v1.GetTenantContextResponse\x12X\n" +
+	"\x10GetTenantContext\x12(.gereh.tenant.v1.GetTenantContextRequest\x1a).gereh.tenant.v1.GetTenantContextResponse\x12m\n" +
+	"\x12CheckAuthorization\x12*.gereh.tenant.v1.CheckAuthorizationRequest\x1a+.gereh.tenant.v1.CheckAuthorizationResponse\x12|\n" +
+	"\x17BatchCheckAuthorization\x12/.gereh.tenant.v1.BatchCheckAuthorizationRequest\x1a0.gereh.tenant.v1.BatchCheckAuthorizationResponse\x12X\n" +
 	"\vListMembers\x12#.gereh.tenant.v1.ListMembersRequest\x1a$.gereh.tenant.v1.ListMembersResponse\x12R\n" +
 	"\tAddMember\x12!.gereh.tenant.v1.AddMemberRequest\x1a\".gereh.tenant.v1.AddMemberResponse\x12g\n" +
 	"\x10UpdateMemberRole\x12(.gereh.tenant.v1.UpdateMemberRoleRequest\x1a).gereh.tenant.v1.UpdateMemberRoleResponse\x12[\n" +
@@ -1800,89 +1750,99 @@ func file_gereh_tenant_v1_tenant_proto_rawDescGZIP() []byte {
 	return file_gereh_tenant_v1_tenant_proto_rawDescData
 }
 
-var file_gereh_tenant_v1_tenant_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_gereh_tenant_v1_tenant_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_gereh_tenant_v1_tenant_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
 var file_gereh_tenant_v1_tenant_proto_goTypes = []any{
-	(TenantStatus)(0),                // 0: gereh.tenant.v1.TenantStatus
-	(TenantRole)(0),                  // 1: gereh.tenant.v1.TenantRole
-	(*Tenant)(nil),                   // 2: gereh.tenant.v1.Tenant
-	(*TenantMembership)(nil),         // 3: gereh.tenant.v1.TenantMembership
-	(*TenantEntitlements)(nil),       // 4: gereh.tenant.v1.TenantEntitlements
-	(*TenantContext)(nil),            // 5: gereh.tenant.v1.TenantContext
-	(*CreateTenantRequest)(nil),      // 6: gereh.tenant.v1.CreateTenantRequest
-	(*CreateTenantResponse)(nil),     // 7: gereh.tenant.v1.CreateTenantResponse
-	(*GetTenantRequest)(nil),         // 8: gereh.tenant.v1.GetTenantRequest
-	(*GetTenantResponse)(nil),        // 9: gereh.tenant.v1.GetTenantResponse
-	(*ListTenantsRequest)(nil),       // 10: gereh.tenant.v1.ListTenantsRequest
-	(*ListTenantsResponse)(nil),      // 11: gereh.tenant.v1.ListTenantsResponse
-	(*UpdateTenantRequest)(nil),      // 12: gereh.tenant.v1.UpdateTenantRequest
-	(*UpdateTenantResponse)(nil),     // 13: gereh.tenant.v1.UpdateTenantResponse
-	(*ArchiveTenantRequest)(nil),     // 14: gereh.tenant.v1.ArchiveTenantRequest
-	(*ArchiveTenantResponse)(nil),    // 15: gereh.tenant.v1.ArchiveTenantResponse
-	(*GetTenantContextRequest)(nil),  // 16: gereh.tenant.v1.GetTenantContextRequest
-	(*GetTenantContextResponse)(nil), // 17: gereh.tenant.v1.GetTenantContextResponse
-	(*ListMembersRequest)(nil),       // 18: gereh.tenant.v1.ListMembersRequest
-	(*ListMembersResponse)(nil),      // 19: gereh.tenant.v1.ListMembersResponse
-	(*AddMemberRequest)(nil),         // 20: gereh.tenant.v1.AddMemberRequest
-	(*AddMemberResponse)(nil),        // 21: gereh.tenant.v1.AddMemberResponse
-	(*UpdateMemberRoleRequest)(nil),  // 22: gereh.tenant.v1.UpdateMemberRoleRequest
-	(*UpdateMemberRoleResponse)(nil), // 23: gereh.tenant.v1.UpdateMemberRoleResponse
-	(*RemoveMemberRequest)(nil),      // 24: gereh.tenant.v1.RemoveMemberRequest
-	(*RemoveMemberResponse)(nil),     // 25: gereh.tenant.v1.RemoveMemberResponse
-	nil,                              // 26: gereh.tenant.v1.TenantEntitlements.FeaturesEntry
-	nil,                              // 27: gereh.tenant.v1.TenantEntitlements.LimitsEntry
-	(*timestamppb.Timestamp)(nil),    // 28: google.protobuf.Timestamp
+	(TenantStatus)(0),                       // 0: gereh.tenant.v1.TenantStatus
+	(*Tenant)(nil),                          // 1: gereh.tenant.v1.Tenant
+	(*TenantMembership)(nil),                // 2: gereh.tenant.v1.TenantMembership
+	(*TenantEntitlements)(nil),              // 3: gereh.tenant.v1.TenantEntitlements
+	(*TenantContext)(nil),                   // 4: gereh.tenant.v1.TenantContext
+	(*CreateTenantRequest)(nil),             // 5: gereh.tenant.v1.CreateTenantRequest
+	(*CreateTenantResponse)(nil),            // 6: gereh.tenant.v1.CreateTenantResponse
+	(*GetTenantRequest)(nil),                // 7: gereh.tenant.v1.GetTenantRequest
+	(*GetTenantResponse)(nil),               // 8: gereh.tenant.v1.GetTenantResponse
+	(*ListTenantsRequest)(nil),              // 9: gereh.tenant.v1.ListTenantsRequest
+	(*ListTenantsResponse)(nil),             // 10: gereh.tenant.v1.ListTenantsResponse
+	(*UpdateTenantRequest)(nil),             // 11: gereh.tenant.v1.UpdateTenantRequest
+	(*UpdateTenantResponse)(nil),            // 12: gereh.tenant.v1.UpdateTenantResponse
+	(*ArchiveTenantRequest)(nil),            // 13: gereh.tenant.v1.ArchiveTenantRequest
+	(*ArchiveTenantResponse)(nil),           // 14: gereh.tenant.v1.ArchiveTenantResponse
+	(*GetTenantContextRequest)(nil),         // 15: gereh.tenant.v1.GetTenantContextRequest
+	(*GetTenantContextResponse)(nil),        // 16: gereh.tenant.v1.GetTenantContextResponse
+	(*ListMembersRequest)(nil),              // 17: gereh.tenant.v1.ListMembersRequest
+	(*ListMembersResponse)(nil),             // 18: gereh.tenant.v1.ListMembersResponse
+	(*AddMemberRequest)(nil),                // 19: gereh.tenant.v1.AddMemberRequest
+	(*AddMemberResponse)(nil),               // 20: gereh.tenant.v1.AddMemberResponse
+	(*UpdateMemberRoleRequest)(nil),         // 21: gereh.tenant.v1.UpdateMemberRoleRequest
+	(*UpdateMemberRoleResponse)(nil),        // 22: gereh.tenant.v1.UpdateMemberRoleResponse
+	(*RemoveMemberRequest)(nil),             // 23: gereh.tenant.v1.RemoveMemberRequest
+	(*RemoveMemberResponse)(nil),            // 24: gereh.tenant.v1.RemoveMemberResponse
+	nil,                                     // 25: gereh.tenant.v1.TenantEntitlements.FeaturesEntry
+	nil,                                     // 26: gereh.tenant.v1.TenantEntitlements.LimitsEntry
+	(*timestamppb.Timestamp)(nil),           // 27: google.protobuf.Timestamp
+	(TenantRole)(0),                         // 28: gereh.tenant.v1.TenantRole
+	(Permission)(0),                         // 29: gereh.tenant.v1.Permission
+	(*CheckAuthorizationRequest)(nil),       // 30: gereh.tenant.v1.CheckAuthorizationRequest
+	(*BatchCheckAuthorizationRequest)(nil),  // 31: gereh.tenant.v1.BatchCheckAuthorizationRequest
+	(*CheckAuthorizationResponse)(nil),      // 32: gereh.tenant.v1.CheckAuthorizationResponse
+	(*BatchCheckAuthorizationResponse)(nil), // 33: gereh.tenant.v1.BatchCheckAuthorizationResponse
 }
 var file_gereh_tenant_v1_tenant_proto_depIdxs = []int32{
 	0,  // 0: gereh.tenant.v1.Tenant.status:type_name -> gereh.tenant.v1.TenantStatus
-	28, // 1: gereh.tenant.v1.Tenant.created_at:type_name -> google.protobuf.Timestamp
-	28, // 2: gereh.tenant.v1.Tenant.updated_at:type_name -> google.protobuf.Timestamp
-	28, // 3: gereh.tenant.v1.Tenant.archived_at:type_name -> google.protobuf.Timestamp
-	1,  // 4: gereh.tenant.v1.TenantMembership.role:type_name -> gereh.tenant.v1.TenantRole
-	28, // 5: gereh.tenant.v1.TenantMembership.created_at:type_name -> google.protobuf.Timestamp
-	28, // 6: gereh.tenant.v1.TenantMembership.updated_at:type_name -> google.protobuf.Timestamp
-	26, // 7: gereh.tenant.v1.TenantEntitlements.features:type_name -> gereh.tenant.v1.TenantEntitlements.FeaturesEntry
-	27, // 8: gereh.tenant.v1.TenantEntitlements.limits:type_name -> gereh.tenant.v1.TenantEntitlements.LimitsEntry
-	28, // 9: gereh.tenant.v1.TenantEntitlements.updated_at:type_name -> google.protobuf.Timestamp
-	2,  // 10: gereh.tenant.v1.TenantContext.tenant:type_name -> gereh.tenant.v1.Tenant
-	3,  // 11: gereh.tenant.v1.TenantContext.membership:type_name -> gereh.tenant.v1.TenantMembership
-	4,  // 12: gereh.tenant.v1.TenantContext.entitlements:type_name -> gereh.tenant.v1.TenantEntitlements
-	5,  // 13: gereh.tenant.v1.CreateTenantResponse.context:type_name -> gereh.tenant.v1.TenantContext
-	5,  // 14: gereh.tenant.v1.GetTenantResponse.context:type_name -> gereh.tenant.v1.TenantContext
-	5,  // 15: gereh.tenant.v1.ListTenantsResponse.contexts:type_name -> gereh.tenant.v1.TenantContext
-	5,  // 16: gereh.tenant.v1.UpdateTenantResponse.context:type_name -> gereh.tenant.v1.TenantContext
-	5,  // 17: gereh.tenant.v1.ArchiveTenantResponse.context:type_name -> gereh.tenant.v1.TenantContext
-	5,  // 18: gereh.tenant.v1.GetTenantContextResponse.context:type_name -> gereh.tenant.v1.TenantContext
-	3,  // 19: gereh.tenant.v1.ListMembersResponse.memberships:type_name -> gereh.tenant.v1.TenantMembership
-	1,  // 20: gereh.tenant.v1.AddMemberRequest.role:type_name -> gereh.tenant.v1.TenantRole
-	3,  // 21: gereh.tenant.v1.AddMemberResponse.membership:type_name -> gereh.tenant.v1.TenantMembership
-	1,  // 22: gereh.tenant.v1.UpdateMemberRoleRequest.role:type_name -> gereh.tenant.v1.TenantRole
-	3,  // 23: gereh.tenant.v1.UpdateMemberRoleResponse.membership:type_name -> gereh.tenant.v1.TenantMembership
-	6,  // 24: gereh.tenant.v1.TenantService.CreateTenant:input_type -> gereh.tenant.v1.CreateTenantRequest
-	8,  // 25: gereh.tenant.v1.TenantService.GetTenant:input_type -> gereh.tenant.v1.GetTenantRequest
-	10, // 26: gereh.tenant.v1.TenantService.ListTenants:input_type -> gereh.tenant.v1.ListTenantsRequest
-	12, // 27: gereh.tenant.v1.TenantService.UpdateTenant:input_type -> gereh.tenant.v1.UpdateTenantRequest
-	14, // 28: gereh.tenant.v1.TenantService.ArchiveTenant:input_type -> gereh.tenant.v1.ArchiveTenantRequest
-	16, // 29: gereh.tenant.v1.TenantService.GetTenantContext:input_type -> gereh.tenant.v1.GetTenantContextRequest
-	18, // 30: gereh.tenant.v1.TenantService.ListMembers:input_type -> gereh.tenant.v1.ListMembersRequest
-	20, // 31: gereh.tenant.v1.TenantService.AddMember:input_type -> gereh.tenant.v1.AddMemberRequest
-	22, // 32: gereh.tenant.v1.TenantService.UpdateMemberRole:input_type -> gereh.tenant.v1.UpdateMemberRoleRequest
-	24, // 33: gereh.tenant.v1.TenantService.RemoveMember:input_type -> gereh.tenant.v1.RemoveMemberRequest
-	7,  // 34: gereh.tenant.v1.TenantService.CreateTenant:output_type -> gereh.tenant.v1.CreateTenantResponse
-	9,  // 35: gereh.tenant.v1.TenantService.GetTenant:output_type -> gereh.tenant.v1.GetTenantResponse
-	11, // 36: gereh.tenant.v1.TenantService.ListTenants:output_type -> gereh.tenant.v1.ListTenantsResponse
-	13, // 37: gereh.tenant.v1.TenantService.UpdateTenant:output_type -> gereh.tenant.v1.UpdateTenantResponse
-	15, // 38: gereh.tenant.v1.TenantService.ArchiveTenant:output_type -> gereh.tenant.v1.ArchiveTenantResponse
-	17, // 39: gereh.tenant.v1.TenantService.GetTenantContext:output_type -> gereh.tenant.v1.GetTenantContextResponse
-	19, // 40: gereh.tenant.v1.TenantService.ListMembers:output_type -> gereh.tenant.v1.ListMembersResponse
-	21, // 41: gereh.tenant.v1.TenantService.AddMember:output_type -> gereh.tenant.v1.AddMemberResponse
-	23, // 42: gereh.tenant.v1.TenantService.UpdateMemberRole:output_type -> gereh.tenant.v1.UpdateMemberRoleResponse
-	25, // 43: gereh.tenant.v1.TenantService.RemoveMember:output_type -> gereh.tenant.v1.RemoveMemberResponse
-	34, // [34:44] is the sub-list for method output_type
-	24, // [24:34] is the sub-list for method input_type
-	24, // [24:24] is the sub-list for extension type_name
-	24, // [24:24] is the sub-list for extension extendee
-	0,  // [0:24] is the sub-list for field type_name
+	27, // 1: gereh.tenant.v1.Tenant.created_at:type_name -> google.protobuf.Timestamp
+	27, // 2: gereh.tenant.v1.Tenant.updated_at:type_name -> google.protobuf.Timestamp
+	27, // 3: gereh.tenant.v1.Tenant.archived_at:type_name -> google.protobuf.Timestamp
+	28, // 4: gereh.tenant.v1.TenantMembership.role:type_name -> gereh.tenant.v1.TenantRole
+	27, // 5: gereh.tenant.v1.TenantMembership.created_at:type_name -> google.protobuf.Timestamp
+	27, // 6: gereh.tenant.v1.TenantMembership.updated_at:type_name -> google.protobuf.Timestamp
+	25, // 7: gereh.tenant.v1.TenantEntitlements.features:type_name -> gereh.tenant.v1.TenantEntitlements.FeaturesEntry
+	26, // 8: gereh.tenant.v1.TenantEntitlements.limits:type_name -> gereh.tenant.v1.TenantEntitlements.LimitsEntry
+	27, // 9: gereh.tenant.v1.TenantEntitlements.updated_at:type_name -> google.protobuf.Timestamp
+	1,  // 10: gereh.tenant.v1.TenantContext.tenant:type_name -> gereh.tenant.v1.Tenant
+	2,  // 11: gereh.tenant.v1.TenantContext.membership:type_name -> gereh.tenant.v1.TenantMembership
+	3,  // 12: gereh.tenant.v1.TenantContext.entitlements:type_name -> gereh.tenant.v1.TenantEntitlements
+	29, // 13: gereh.tenant.v1.TenantContext.permissions:type_name -> gereh.tenant.v1.Permission
+	4,  // 14: gereh.tenant.v1.CreateTenantResponse.context:type_name -> gereh.tenant.v1.TenantContext
+	4,  // 15: gereh.tenant.v1.GetTenantResponse.context:type_name -> gereh.tenant.v1.TenantContext
+	4,  // 16: gereh.tenant.v1.ListTenantsResponse.contexts:type_name -> gereh.tenant.v1.TenantContext
+	4,  // 17: gereh.tenant.v1.UpdateTenantResponse.context:type_name -> gereh.tenant.v1.TenantContext
+	4,  // 18: gereh.tenant.v1.ArchiveTenantResponse.context:type_name -> gereh.tenant.v1.TenantContext
+	4,  // 19: gereh.tenant.v1.GetTenantContextResponse.context:type_name -> gereh.tenant.v1.TenantContext
+	2,  // 20: gereh.tenant.v1.ListMembersResponse.memberships:type_name -> gereh.tenant.v1.TenantMembership
+	28, // 21: gereh.tenant.v1.AddMemberRequest.role:type_name -> gereh.tenant.v1.TenantRole
+	2,  // 22: gereh.tenant.v1.AddMemberResponse.membership:type_name -> gereh.tenant.v1.TenantMembership
+	28, // 23: gereh.tenant.v1.UpdateMemberRoleRequest.role:type_name -> gereh.tenant.v1.TenantRole
+	2,  // 24: gereh.tenant.v1.UpdateMemberRoleResponse.membership:type_name -> gereh.tenant.v1.TenantMembership
+	5,  // 25: gereh.tenant.v1.TenantService.CreateTenant:input_type -> gereh.tenant.v1.CreateTenantRequest
+	7,  // 26: gereh.tenant.v1.TenantService.GetTenant:input_type -> gereh.tenant.v1.GetTenantRequest
+	9,  // 27: gereh.tenant.v1.TenantService.ListTenants:input_type -> gereh.tenant.v1.ListTenantsRequest
+	11, // 28: gereh.tenant.v1.TenantService.UpdateTenant:input_type -> gereh.tenant.v1.UpdateTenantRequest
+	13, // 29: gereh.tenant.v1.TenantService.ArchiveTenant:input_type -> gereh.tenant.v1.ArchiveTenantRequest
+	15, // 30: gereh.tenant.v1.TenantService.GetTenantContext:input_type -> gereh.tenant.v1.GetTenantContextRequest
+	30, // 31: gereh.tenant.v1.TenantService.CheckAuthorization:input_type -> gereh.tenant.v1.CheckAuthorizationRequest
+	31, // 32: gereh.tenant.v1.TenantService.BatchCheckAuthorization:input_type -> gereh.tenant.v1.BatchCheckAuthorizationRequest
+	17, // 33: gereh.tenant.v1.TenantService.ListMembers:input_type -> gereh.tenant.v1.ListMembersRequest
+	19, // 34: gereh.tenant.v1.TenantService.AddMember:input_type -> gereh.tenant.v1.AddMemberRequest
+	21, // 35: gereh.tenant.v1.TenantService.UpdateMemberRole:input_type -> gereh.tenant.v1.UpdateMemberRoleRequest
+	23, // 36: gereh.tenant.v1.TenantService.RemoveMember:input_type -> gereh.tenant.v1.RemoveMemberRequest
+	6,  // 37: gereh.tenant.v1.TenantService.CreateTenant:output_type -> gereh.tenant.v1.CreateTenantResponse
+	8,  // 38: gereh.tenant.v1.TenantService.GetTenant:output_type -> gereh.tenant.v1.GetTenantResponse
+	10, // 39: gereh.tenant.v1.TenantService.ListTenants:output_type -> gereh.tenant.v1.ListTenantsResponse
+	12, // 40: gereh.tenant.v1.TenantService.UpdateTenant:output_type -> gereh.tenant.v1.UpdateTenantResponse
+	14, // 41: gereh.tenant.v1.TenantService.ArchiveTenant:output_type -> gereh.tenant.v1.ArchiveTenantResponse
+	16, // 42: gereh.tenant.v1.TenantService.GetTenantContext:output_type -> gereh.tenant.v1.GetTenantContextResponse
+	32, // 43: gereh.tenant.v1.TenantService.CheckAuthorization:output_type -> gereh.tenant.v1.CheckAuthorizationResponse
+	33, // 44: gereh.tenant.v1.TenantService.BatchCheckAuthorization:output_type -> gereh.tenant.v1.BatchCheckAuthorizationResponse
+	18, // 45: gereh.tenant.v1.TenantService.ListMembers:output_type -> gereh.tenant.v1.ListMembersResponse
+	20, // 46: gereh.tenant.v1.TenantService.AddMember:output_type -> gereh.tenant.v1.AddMemberResponse
+	22, // 47: gereh.tenant.v1.TenantService.UpdateMemberRole:output_type -> gereh.tenant.v1.UpdateMemberRoleResponse
+	24, // 48: gereh.tenant.v1.TenantService.RemoveMember:output_type -> gereh.tenant.v1.RemoveMemberResponse
+	37, // [37:49] is the sub-list for method output_type
+	25, // [25:37] is the sub-list for method input_type
+	25, // [25:25] is the sub-list for extension type_name
+	25, // [25:25] is the sub-list for extension extendee
+	0,  // [0:25] is the sub-list for field type_name
 }
 
 func init() { file_gereh_tenant_v1_tenant_proto_init() }
@@ -1890,13 +1850,14 @@ func file_gereh_tenant_v1_tenant_proto_init() {
 	if File_gereh_tenant_v1_tenant_proto != nil {
 		return
 	}
+	file_gereh_tenant_v1_authorization_proto_init()
 	file_gereh_tenant_v1_tenant_proto_msgTypes[10].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_gereh_tenant_v1_tenant_proto_rawDesc), len(file_gereh_tenant_v1_tenant_proto_rawDesc)),
-			NumEnums:      2,
+			NumEnums:      1,
 			NumMessages:   26,
 			NumExtensions: 0,
 			NumServices:   1,
