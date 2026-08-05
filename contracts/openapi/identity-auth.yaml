@@ -1,0 +1,348 @@
+openapi: 3.1.0
+
+info:
+  title: Gereh Identity Authentication API
+  version: 0.1.0
+  description: |
+    Browser-facing authentication endpoints exposed by the Gereh API BFF.
+
+    Authentication uses an OIDC authorization-code flow implemented by the
+    backend. The browser receives opaque session and CSRF cookies and never
+    receives provider access tokens, refresh tokens, or ID tokens.
+  license:
+    name: Proprietary
+
+servers:
+  - url: /
+    description: Same-origin API BFF
+
+tags:
+  - name: Authentication
+    description: OIDC login and opaque browser-session lifecycle operations.
+
+# Authentication endpoints are public unless an operation overrides this.
+security: []
+
+paths:
+  /v1/auth/login:
+    get:
+      tags:
+        - Authentication
+      operationId: beginLogin
+      summary: Begin an OIDC login
+      description: |
+        Creates a single-use OIDC login transaction and redirects the browser
+        to the configured OpenID Provider.
+
+        The BFF also creates a short-lived HttpOnly browser-binding cookie.
+      security: []
+      parameters:
+        - name: return_to
+          in: query
+          required: false
+          description: |
+            Relative application path to visit after authentication succeeds.
+            Absolute URLs and network-path references are rejected.
+          schema:
+            type: string
+            default: /
+            pattern: ^/(?!/).*
+            maxLength: 2048
+      responses:
+        "302":
+          description: Redirect to the configured OpenID Provider.
+          headers:
+            Location:
+              required: true
+              description: OpenID Provider authorization endpoint URL.
+              schema:
+                type: string
+                format: uri
+            Cache-Control:
+              description: Prevents caching of authentication responses.
+              schema:
+                type: string
+                example: no-store
+            Set-Cookie:
+              description: |
+                Sets the short-lived HttpOnly OIDC browser-binding cookie.
+              schema:
+                type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /v1/auth/callback:
+    get:
+      tags:
+        - Authentication
+      operationId: completeLogin
+      summary: Complete an OIDC authorization-code flow
+      description: |
+        Validates the provider callback, consumes the single-use login
+        transaction, exchanges the authorization code, verifies the ID Token,
+        creates an opaque browser session, and redirects to the validated
+        application path.
+      security: []
+      parameters:
+        - name: state
+          in: query
+          required: false
+          description: Opaque state returned by the OpenID Provider.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 1024
+
+        - name: code
+          in: query
+          required: false
+          description: Authorization code returned by the OpenID Provider.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 4096
+
+        - name: error
+          in: query
+          required: false
+          description: OAuth error code returned by the OpenID Provider.
+          schema:
+            type: string
+            maxLength: 256
+
+        - name: error_description
+          in: query
+          required: false
+          description: Human-readable provider error description.
+          schema:
+            type: string
+            maxLength: 2048
+
+      responses:
+        "302":
+          description: |
+            Authentication succeeded, session cookies were created, and the
+            browser was redirected to the validated application path.
+          headers:
+            Location:
+              required: true
+              description: Validated same-origin application destination.
+              schema:
+                type: string
+            Cache-Control:
+              description: Prevents caching of the callback response.
+              schema:
+                type: string
+                example: no-store
+            Set-Cookie:
+              description: |
+                Sets the opaque HttpOnly session cookie and readable CSRF
+                cookie while clearing the temporary transaction cookie.
+              schema:
+                type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /v1/auth/session:
+    get:
+      tags:
+        - Authentication
+      operationId: getSession
+      summary: Return the current browser session
+      description: |
+        Resolves the opaque session cookie and returns the authenticated
+        internal Gereh user. Provider tokens are never returned.
+      security:
+        - browserSession: []
+      responses:
+        "200":
+          description: Active authenticated browser session.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /v1/auth/logout:
+    post:
+      tags:
+        - Authentication
+      operationId: logout
+      summary: Revoke the current browser session
+      description: |
+        Validates the session cookie and CSRF header, deletes the server-side
+        session, and clears the browser cookies.
+      security:
+        - browserSession: []
+          csrfToken: []
+      responses:
+        "204":
+          description: Session revoked and browser cookies cleared.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                example: no-store
+            Set-Cookie:
+              description: Clears the session and CSRF cookies.
+              schema:
+                type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+components:
+  securitySchemes:
+    browserSession:
+      type: apiKey
+      in: cookie
+      name: gereh_session
+      description: |
+        Opaque HttpOnly browser-session identifier. In production, the cookie
+        should use a Secure host-only name such as __Host-gereh_session.
+
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+      description: |
+        CSRF token matching the server-side hash associated with the current
+        browser session.
+
+  schemas:
+    Session:
+      type: object
+      additionalProperties: false
+      required:
+        - user
+        - createdAt
+        - expiresAt
+      properties:
+        user:
+          $ref: "#/components/schemas/AuthenticatedUser"
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+
+    AuthenticatedUser:
+      type: object
+      additionalProperties: false
+      required:
+        - userId
+        - issuer
+        - subject
+        - email
+        - emailVerified
+        - displayName
+        - pictureUrl
+      properties:
+        userId:
+          type: string
+          format: uuid
+        issuer:
+          type: string
+          format: uri
+        subject:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
+        emailVerified:
+          type: boolean
+        displayName:
+          type: string
+        pictureUrl:
+          type: string
+
+    Problem:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+          description: Stable machine-readable problem identifier.
+        title:
+          type: string
+          description: Human-readable problem summary.
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        detail:
+          type: string
+          description: Optional non-sensitive problem detail.
+        requestId:
+          type: string
+          description: Request identifier used for operational correlation.
+
+  responses:
+    BadRequest:
+      description: Authentication request parameters are invalid.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+
+    Unauthorized:
+      description: Authentication is missing, expired, or invalid.
+      headers:
+        Cache-Control:
+          schema:
+            type: string
+            example: no-store
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+
+    Forbidden:
+      description: The request failed CSRF or authorization validation.
+      headers:
+        Cache-Control:
+          schema:
+            type: string
+            example: no-store
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+
+    ServiceUnavailable:
+      description: The identity service or OpenID Provider is unavailable.
+      headers:
+        Retry-After:
+          description: Optional retry delay in seconds.
+          schema:
+            type: integer
+            minimum: 1
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"

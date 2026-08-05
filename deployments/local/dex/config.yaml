@@ -1,0 +1,42 @@
+issuer: http://dex.gereh.localhost:5556/dex
+
+storage:
+  type: memory
+
+web:
+  http: 0.0.0.0:5556
+
+logger:
+  level: info
+  format: json
+  excludeFields:
+    - email
+    - username
+    - preferred_username
+    - groups
+
+oauth2:
+  skipApprovalScreen: true
+
+  pkce:
+    enforce: true
+    codeChallengeMethodsSupported:
+      - S256
+
+enablePasswordDB: true
+
+staticPasswords:
+  - email: admin@example.com
+    hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
+    username: admin
+    name: Admin User
+    preferredUsername: admin
+    emailVerified: true
+    userID: 08a8684b-db88-4b73-90a9-3cd1661f5466
+
+staticClients:
+  - id: gereh-web
+    name: Gereh Web
+    secret: gereh-local-oidc-secret
+    redirectURIs:
+      - http://localhost:8080/v1/auth/callback

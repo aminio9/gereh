@@ -9,33 +9,83 @@ services:
         NPM_REGISTRY: https://registry.npmmirror.com
         PYPI_INDEX: https://mirrors.ustc.edu.cn/pypi/simple
         GOPROXY_URL: https://goproxy.cn,direct
+
     init: true
     command: sleep infinity
+
     volumes:
       - ..:/workspaces/gereh-platform:cached
       - /var/run/docker.sock:/var/run/docker.sock
       - go-mod-cache:/go/pkg/mod
       - go-build-cache:/home/vscode/.cache/go-build
       - pnpm-store:/home/vscode/.local/share/pnpm/store
+
+    extra_hosts:
+      - "dex.gereh.localhost:host-gateway"
+
     environment:
+      # Application environment
       GEREH_ENV: development
+      GEREH_ENVIRONMENT: development
+
+      # Download mirrors
       GOPROXY: https://goproxy.cn,direct
       GO111MODULE: "on"
       NPM_CONFIG_REGISTRY: https://registry.npmmirror.com
       npm_config_registry: https://registry.npmmirror.com
       PIP_INDEX_URL: https://mirrors.ustc.edu.cn/pypi/simple
       UV_DEFAULT_INDEX: https://mirrors.ustc.edu.cn/pypi/simple
-      DATABASE_URL: postgres://gereh:gereh@postgres:5432/gereh?sslmode=disable
+
+      # PostgreSQL
+      DATABASE_URL: postgres://gereh:gereh@postgres:5432/iam_db?sslmode=disable
+
+      # Redis
+      REDIS_URL: redis://redis:6379/0
+
+      # Keep this temporarily if existing services still read REDIS_ADDR.
       REDIS_ADDR: redis:6379
+
+      # Identity service
+      IDENTITY_GRPC_ADDRESS: ":18081"
+      IDENTITY_ACCESS_GRPC_TARGET: passthrough:///127.0.0.1:18081
+      IDENTITY_ACCESS_GRPC_INSECURE: "true"
+
+      # Local OIDC provider
+      OIDC_ISSUER_URL: http://dex.gereh.localhost:5556/dex
+      OIDC_CLIENT_ID: gereh-web
+      OIDC_CLIENT_SECRET: gereh-local-oidc-secret
+      OIDC_REDIRECT_URL: http://localhost:8080/v1/auth/callback
+      OIDC_SCOPES: openid,profile,email
+      OIDC_SUPPORTED_SIGNING_ALGS: RS256
+      OIDC_REQUIRE_VERIFIED_EMAIL: "true"
+      OIDC_FETCH_USERINFO: "true"
+      OIDC_REQUIRE_PKCE_ADVERTISED: "true"
+      OIDC_ALLOW_INSECURE_HTTP: "true"
+      OIDC_TRANSACTION_TTL: 10m
+
+      # Authentication sessions and cookies
+      AUTH_SESSION_TTL: 8h
+      AUTH_COOKIE_SECURE: "false"
+      AUTH_SESSION_COOKIE_NAME: gereh_session
+      AUTH_TRANSACTION_COOKIE_NAME: gereh_oidc_transaction
+      AUTH_CSRF_COOKIE_NAME: gereh_csrf
+
+      # Browser-visible web origin
+      GEREH_WEB_ORIGIN: http://localhost:5173
+
+      # Existing infrastructure
       KAFKA_BROKERS: kafka:19092
       TEMPORAL_ADDRESS: temporal:7233
       TEMPORAL_NAMESPACE: default
+
       S3_ENDPOINT: http://minio:9000
       S3_REGION: local
       S3_ACCESS_KEY_ID: gereh
       S3_SECRET_ACCESS_KEY: gereh-local-secret
       S3_FORCE_PATH_STYLE: "true"
+
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-lgtm:4317
+
     depends_on:
       postgres:
         condition: service_healthy
@@ -47,6 +97,7 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+
     networks:
       - gereh-dev
 
@@ -246,6 +297,32 @@ services:
 
     networks:
       - gereh-dev
+
+  dex:
+    image: dexidp/dex:v2.45.1-alpine
+    profiles:
+      - identity
+    restart: unless-stopped
+    command:
+      - dex
+      - serve
+      - /etc/dex/config.yaml
+    ports:
+      - "127.0.0.1:5556:5556"
+    volumes:
+      - ../deployments/local/dex/config.yaml:/etc/dex/config.yaml:ro
+    networks:
+      - gereh-dev
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -q --spider http://127.0.0.1:5556/dex/.well-known/openid-configuration || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
 
 volumes:
   postgres-data:

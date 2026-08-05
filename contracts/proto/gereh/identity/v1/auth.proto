@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+package gereh.identity.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aminio9/gereh/gen/go/gereh/identity/v1;identityv1";
+
+service IdentityService {
+  rpc BeginLogin(BeginLoginRequest) returns (BeginLoginResponse);
+
+  rpc CompleteLogin(CompleteLoginRequest) returns (CompleteLoginResponse);
+
+  rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
+
+  rpc DeleteSession(DeleteSessionRequest) returns (DeleteSessionResponse);
+}
+
+message BeginLoginRequest {
+  string return_to = 1;
+}
+
+message BeginLoginResponse {
+  string authorization_url = 1;
+
+  // Opaque browser-binding secret. The BFF places this in an HttpOnly,
+  // short-lived cookie and returns it during CompleteLogin.
+  string browser_binding = 2;
+
+  google.protobuf.Timestamp expires_at = 3;
+}
+
+message CompleteLoginRequest {
+  string state = 1;
+  string code = 2;
+  string browser_binding = 3;
+}
+
+message CompleteLoginResponse {
+  string session_id = 1;
+  string csrf_token = 2;
+  Session session = 3;
+  string return_to = 4;
+}
+
+message GetSessionRequest {
+  string session_id = 1;
+}
+
+message GetSessionResponse {
+  Session session = 1;
+}
+
+message DeleteSessionRequest {
+  string session_id = 1;
+  string csrf_token = 2;
+}
+
+message DeleteSessionResponse {}
+
+message Session {
+  AuthenticatedUser user = 1;
+  google.protobuf.Timestamp created_at = 2;
+  google.protobuf.Timestamp expires_at = 3;
+}
+
+message AuthenticatedUser {
+  string user_id = 1;
+  string issuer = 2;
+  string subject = 3;
+  string email = 4;
+  bool email_verified = 5;
+  string display_name = 6;
+  string picture_url = 7;
+}
