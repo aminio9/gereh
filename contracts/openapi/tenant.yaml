@@ -1,0 +1,408 @@
+openapi: 3.1.0
+
+info:
+  title: Gereh Tenant API
+  version: 0.1.0
+  description: |
+    Browser-facing tenant lifecycle and membership endpoints exposed by the
+    Gereh API BFF. Provider tokens are never accepted by this API.
+  license:
+    name: Proprietary
+
+servers:
+  - url: /
+    description: Same-origin API BFF
+
+tags:
+  - name: Tenants
+    description: Tenant lifecycle and trusted tenant context.
+  - name: Tenant Members
+    description: Tenant membership and role administration.
+
+security:
+  - browserSession: []
+
+paths:
+  /v1/tenants:
+    get:
+      tags: [Tenants]
+      operationId: listTenants
+      summary: List tenants visible to the current user
+      parameters:
+        - $ref: "#/components/parameters/PageSize"
+        - $ref: "#/components/parameters/PageToken"
+      responses:
+        "200":
+          description: Tenant list.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListTenantsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+    post:
+      tags: [Tenants]
+      operationId: createTenant
+      summary: Create a tenant
+      security:
+        - browserSession: []
+          csrfToken: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTenantRequest"
+      responses:
+        "201":
+          description: Tenant created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantContextResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/tenants/{tenantId}:
+    parameters:
+      - $ref: "#/components/parameters/TenantID"
+
+    get:
+      tags: [Tenants]
+      operationId: getTenant
+      summary: Get a tenant and current membership
+      responses:
+        "200":
+          description: Trusted tenant context.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantContextResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      tags: [Tenants]
+      operationId: updateTenant
+      summary: Update tenant settings
+      security:
+        - browserSession: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [expectedVersion]
+              properties:
+                expectedVersion:
+                  type: integer
+                  format: int64
+                  minimum: 1
+                displayName:
+                  type: string
+                  minLength: 1
+                  maxLength: 120
+                region:
+                  type: string
+                retentionDays:
+                  type: integer
+                  minimum: 1
+                  maximum: 3650
+      responses:
+        "200":
+          description: Updated tenant context.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantContextResponse"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/FailedPrecondition"
+
+  /v1/tenants/{tenantId}/archive:
+    parameters:
+      - $ref: "#/components/parameters/TenantID"
+
+    post:
+      tags: [Tenants]
+      operationId: archiveTenant
+      summary: Archive a tenant
+      security:
+        - browserSession: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [expectedVersion]
+              properties:
+                expectedVersion:
+                  type: integer
+                  format: int64
+                  minimum: 1
+      responses:
+        "200":
+          description: Archived tenant context.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantContextResponse"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/tenants/{tenantId}/members:
+    parameters:
+      - $ref: "#/components/parameters/TenantID"
+
+    get:
+      tags: [Tenant Members]
+      operationId: listTenantMembers
+      summary: List tenant memberships
+      parameters:
+        - $ref: "#/components/parameters/PageSize"
+        - $ref: "#/components/parameters/PageToken"
+      responses:
+        "200":
+          description: Membership list.
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+    post:
+      tags: [Tenant Members]
+      operationId: addTenantMember
+      summary: Add a tenant member
+      security:
+        - browserSession: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [userId, role]
+              properties:
+                userId:
+                  type: string
+                  format: uuid
+                role:
+                  $ref: "#/components/schemas/TenantRole"
+      responses:
+        "201":
+          description: Membership created.
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/tenants/{tenantId}/members/{userId}:
+    parameters:
+      - $ref: "#/components/parameters/TenantID"
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    patch:
+      tags: [Tenant Members]
+      operationId: updateTenantMemberRole
+      summary: Change a tenant member role
+      security:
+        - browserSession: []
+          csrfToken: []
+      responses:
+        "200":
+          description: Membership updated.
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/FailedPrecondition"
+
+    delete:
+      tags: [Tenant Members]
+      operationId: removeTenantMember
+      summary: Remove a tenant member
+      security:
+        - browserSession: []
+          csrfToken: []
+      parameters:
+        - name: expected_version
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        "200":
+          description: Membership removed.
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/FailedPrecondition"
+
+components:
+  securitySchemes:
+    browserSession:
+      type: apiKey
+      in: cookie
+      name: gereh_session
+
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+
+  parameters:
+    TenantID:
+      name: tenantId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    PageSize:
+      name: page_size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 50
+
+    PageToken:
+      name: page_token
+      in: query
+      schema:
+        type: string
+
+  schemas:
+    TenantRole:
+      type: string
+      enum: [TENANT_ROLE_OWNER, TENANT_ROLE_ADMIN, TENANT_ROLE_MEMBER, TENANT_ROLE_VIEWER]
+
+    CreateTenantRequest:
+      type: object
+      additionalProperties: false
+      required: [slug, displayName]
+      properties:
+        slug:
+          type: string
+          pattern: "^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])$"
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 120
+        region:
+          type: string
+        retentionDays:
+          type: integer
+          minimum: 1
+          maximum: 3650
+
+    TenantContextResponse:
+      type: object
+
+    ListTenantsResponse:
+      type: object
+
+    Problem:
+      type: object
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+
+  responses:
+    BadRequest:
+      description: Invalid request.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+
+    Unauthorized:
+      description: Authentication is required.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+
+    Forbidden:
+      description: Tenant operation forbidden.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+
+    NotFound:
+      description: Tenant resource not found.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+
+    Conflict:
+      description: Uniqueness or optimistic-concurrency conflict.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+
+    FailedPrecondition:
+      description: Tenant invariant prevents this operation.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+
+    ServiceUnavailable:
+      description: Tenant Service is unavailable.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"

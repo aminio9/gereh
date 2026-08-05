@@ -1,0 +1,190 @@
+syntax = "proto3";
+
+package gereh.tenant.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aminio9/gereh/gen/go/gereh/tenant/v1;tenantv1";
+
+// TenantService owns tenant lifecycle, memberships, entitlements, region,
+// and retention policy.
+service TenantService {
+  rpc CreateTenant(CreateTenantRequest) returns (CreateTenantResponse);
+  rpc GetTenant(GetTenantRequest) returns (GetTenantResponse);
+  rpc ListTenants(ListTenantsRequest) returns (ListTenantsResponse);
+  rpc UpdateTenant(UpdateTenantRequest) returns (UpdateTenantResponse);
+  rpc ArchiveTenant(ArchiveTenantRequest) returns (ArchiveTenantResponse);
+
+  rpc GetTenantContext(GetTenantContextRequest) returns (GetTenantContextResponse);
+
+  rpc ListMembers(ListMembersRequest) returns (ListMembersResponse);
+  rpc AddMember(AddMemberRequest) returns (AddMemberResponse);
+  rpc UpdateMemberRole(UpdateMemberRoleRequest) returns (UpdateMemberRoleResponse);
+  rpc RemoveMember(RemoveMemberRequest) returns (RemoveMemberResponse);
+}
+
+enum TenantStatus {
+  TENANT_STATUS_UNSPECIFIED = 0;
+  TENANT_STATUS_ACTIVE = 1;
+  TENANT_STATUS_ARCHIVED = 2;
+}
+
+enum TenantRole {
+  TENANT_ROLE_UNSPECIFIED = 0;
+  TENANT_ROLE_OWNER = 1;
+  TENANT_ROLE_ADMIN = 2;
+  TENANT_ROLE_MEMBER = 3;
+  TENANT_ROLE_VIEWER = 4;
+}
+
+message Tenant {
+  string tenant_id = 1;
+  string slug = 2;
+  string display_name = 3;
+  TenantStatus status = 4;
+  string region = 5;
+  int32 retention_days = 6;
+  int64 version = 7;
+  string created_by_user_id = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+  google.protobuf.Timestamp archived_at = 11;
+}
+
+message TenantMembership {
+  string tenant_id = 1;
+  string user_id = 2;
+  TenantRole role = 3;
+  int64 version = 4;
+  string created_by_user_id = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+message TenantEntitlements {
+  string tenant_id = 1;
+  string plan_key = 2;
+  map<string, bool> features = 3;
+  map<string, int64> limits = 4;
+  int64 version = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+message TenantContext {
+  Tenant tenant = 1;
+  TenantMembership membership = 2;
+  TenantEntitlements entitlements = 3;
+}
+
+message CreateTenantRequest {
+  string actor_user_id = 1;
+  string request_id = 2;
+  string slug = 3;
+  string display_name = 4;
+  string region = 5;
+  int32 retention_days = 6;
+}
+
+message CreateTenantResponse {
+  TenantContext context = 1;
+}
+
+message GetTenantRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+}
+
+message GetTenantResponse {
+  TenantContext context = 1;
+}
+
+message ListTenantsRequest {
+  string actor_user_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListTenantsResponse {
+  repeated TenantContext contexts = 1;
+  string next_page_token = 2;
+}
+
+message UpdateTenantRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  int64 expected_version = 3;
+  optional string display_name = 4;
+  optional string region = 5;
+  optional int32 retention_days = 6;
+}
+
+message UpdateTenantResponse {
+  TenantContext context = 1;
+}
+
+message ArchiveTenantRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  int64 expected_version = 3;
+}
+
+message ArchiveTenantResponse {
+  TenantContext context = 1;
+}
+
+message GetTenantContextRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+}
+
+message GetTenantContextResponse {
+  TenantContext context = 1;
+}
+
+message ListMembersRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  int32 page_size = 3;
+  string page_token = 4;
+}
+
+message ListMembersResponse {
+  repeated TenantMembership memberships = 1;
+  string next_page_token = 2;
+}
+
+message AddMemberRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string user_id = 3;
+  TenantRole role = 4;
+}
+
+message AddMemberResponse {
+  TenantMembership membership = 1;
+  int64 tenant_version = 2;
+}
+
+message UpdateMemberRoleRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string user_id = 3;
+  TenantRole role = 4;
+  int64 expected_membership_version = 5;
+}
+
+message UpdateMemberRoleResponse {
+  TenantMembership membership = 1;
+  int64 tenant_version = 2;
+}
+
+message RemoveMemberRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string user_id = 3;
+  int64 expected_membership_version = 4;
+}
+
+message RemoveMemberResponse {
+  int64 tenant_version = 1;
+}

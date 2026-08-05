@@ -1,2 +1,2 @@
-// Package ports contains the ports layer for the tenant service.
+// Package ports defines storage boundaries used by the tenant application.
 package ports

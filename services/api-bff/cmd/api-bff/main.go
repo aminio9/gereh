@@ -7,10 +7,12 @@ import (
 	"os"
 
 	identityv1 "github.com/aminio9/gereh/gen/go/gereh/identity/v1"
+	tenantv1 "github.com/aminio9/gereh/gen/go/gereh/tenant/v1"
 	"github.com/aminio9/gereh/platform/go/grpcx"
 	"github.com/aminio9/gereh/platform/go/service"
 	bffconfig "github.com/aminio9/gereh/services/api-bff/internal/config"
 	authhttp "github.com/aminio9/gereh/services/api-bff/internal/http/auth"
+	tenanthttp "github.com/aminio9/gereh/services/api-bff/internal/http/tenant"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -22,6 +24,17 @@ func main() {
 			"error",
 			err,
 		)
+		os.Exit(1)
+	}
+
+	tenantConfig, err := bffconfig.TenantConfigFromEnv()
+	if err != nil {
+		slog.Error(
+			"load Tenant Service configuration",
+			"error",
+			err,
+		)
+
 		os.Exit(1)
 	}
 
@@ -43,6 +56,47 @@ func main() {
 		os.Exit(1)
 	}
 
+	identityClient := identityv1.NewIdentityServiceClient(
+		connection,
+	)
+
+	authHandler := authhttp.NewHandler(
+		authConfig,
+		identityClient,
+		slog.Default(),
+	)
+
+	tenantClientConfig := grpcx.DefaultClientConfig(
+		tenantConfig.Target,
+	)
+
+	tenantClientConfig.Insecure =
+		tenantConfig.Insecure
+
+	tenantConnection, err := grpcx.NewClient(
+		tenantClientConfig,
+		nil,
+	)
+	if err != nil {
+		slog.Error(
+			"create Tenant Service gRPC client",
+			"error",
+			err,
+		)
+
+		os.Exit(1)
+	}
+
+	defer func() {
+		if err := tenantConnection.Close(); err != nil {
+			slog.Warn(
+				"close Tenant Service gRPC client",
+				"error",
+				err,
+			)
+		}
+	}()
+
 	defer func() {
 		if err := connection.Close(); err != nil {
 			slog.Warn(
@@ -53,13 +107,12 @@ func main() {
 		}
 	}()
 
-	identityClient := identityv1.NewIdentityServiceClient(
-		connection,
+	tenantClient := tenantv1.NewTenantServiceClient(
+		tenantConnection,
 	)
 
-	authHandler := authhttp.NewHandler(
-		authConfig,
-		identityClient,
+	tenantHandler := tenanthttp.New(
+		tenantClient,
 		slog.Default(),
 	)
 
@@ -71,6 +124,7 @@ func main() {
 		},
 		func(router chi.Router) {
 			authHandler.Register(router)
+			tenantHandler.Register(router, authHandler)
 
 			router.Get(
 				"/api/system/status",

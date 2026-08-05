@@ -1,2 +1,2 @@
-// Package domain contains the domain layer for the tenant service.
+// Package domain defines tenant aggregates, memberships, and authorization policy.
 package domain
