@@ -1,2 +1,2 @@
-// Package application contains the application layer for the tenant service.
+// Package application implements tenant lifecycle and membership use cases.
 package application

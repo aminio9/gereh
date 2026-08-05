@@ -1,10 +1,7 @@
 // Package auth provides authenticated-principal context helpers.
 package auth
 
-// Principal is the authenticated internal user identity.
-//
-// Tenant information is intentionally absent until tenant resolution is
-// implemented in the next identity and tenancy stage.
+// Principal is the authenticated internal user and validated tenant context.
 type Principal struct {
 	UserID        string
 	Issuer        string
@@ -13,4 +10,9 @@ type Principal struct {
 	EmailVerified bool
 	DisplayName   string
 	PictureURL    string
+
+	// TenantID and TenantRole are empty until a Tenant Service call validates
+	// the requested tenant membership.
+	TenantID   string
+	TenantRole string
 }
