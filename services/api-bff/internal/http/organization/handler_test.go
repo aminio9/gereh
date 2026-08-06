@@ -486,7 +486,8 @@ func TestCreateCompanyRequiresAuthentication(t *testing.T) {
 	authorizer := new(mockPermissionChecker)
 	handler := newTestHandler(client, authorizer)
 
-	request := httptest.NewRequest(
+	request := httptest.NewRequestWithContext(
+		context.Background(),
 		http.MethodPost,
 		"/v1/tenants/"+testTenantID+"/companies",
 		strings.NewReader(`{

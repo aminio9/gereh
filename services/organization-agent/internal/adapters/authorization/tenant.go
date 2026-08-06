@@ -65,7 +65,7 @@ func (authorizer *TenantAuthorizer) Require(
 
 	if decision == nil {
 		return errors.New(
-			"Tenant Service returned no authorization decision",
+			"tenant service returned no authorization decision",
 		)
 	}
 

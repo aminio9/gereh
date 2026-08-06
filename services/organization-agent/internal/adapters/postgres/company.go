@@ -105,7 +105,7 @@ func (repository *Repository) EnsureDefaultCompany(
 		return company, nil
 	}
 
-	if err != pgx.ErrNoRows {
+	if !errors.Is(err, pgx.ErrNoRows) {
 		return domain.Company{}, fmt.Errorf(
 			"query default-company bootstrap: %w",
 			err,
@@ -169,7 +169,7 @@ func (repository *Repository) EnsureDefaultCompany(
 		return company, nil
 	}
 
-	if err != pgx.ErrNoRows {
+	if !errors.Is(err, pgx.ErrNoRows) {
 		return domain.Company{}, err
 	}
 

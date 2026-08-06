@@ -3,7 +3,6 @@ package postgres
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -209,10 +208,4 @@ func insertOutbox(
 	}
 
 	return nil
-}
-
-func marshalAgentSnapshot(
-	agent domain.Agent,
-) ([]byte, error) {
-	return json.Marshal(agent)
 }

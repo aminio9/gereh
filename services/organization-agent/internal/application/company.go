@@ -323,7 +323,7 @@ func (service *Service) UpdateCompany(
 		company.Description = description
 	}
 
-	company.Version = company.Version + 1
+	company.Version++
 	company.UpdatedAt = now
 
 	event, err := newOutboxEvent(
@@ -405,7 +405,7 @@ func (service *Service) ArchiveCompany(
 
 	company.Status = domain.CompanyStatusArchived
 	company.ArchivedAt = &now
-	company.Version = company.Version + 1
+	company.Version++
 	company.UpdatedAt = now
 
 	event, err := newOutboxEvent(

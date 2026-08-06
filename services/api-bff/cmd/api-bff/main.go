@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -23,48 +24,49 @@ import (
 )
 
 func main() {
-	authConfig, err := bffconfig.AuthConfigFromEnv()
-	if err != nil {
+	if err := run(); err != nil {
 		slog.Error(
-			"load authentication configuration",
+			"start api-bff",
 			"error",
 			err,
 		)
+
 		os.Exit(1)
+	}
+}
+
+func run() error {
+	authConfig, err := bffconfig.AuthConfigFromEnv()
+	if err != nil {
+		return fmt.Errorf(
+			"load authentication configuration: %w",
+			err,
+		)
 	}
 
 	tenantConfig, err := bffconfig.TenantConfigFromEnv()
 	if err != nil {
-		slog.Error(
-			"load Tenant Service configuration",
-			"error",
+		return fmt.Errorf(
+			"load Tenant Service configuration: %w",
 			err,
 		)
-
-		os.Exit(1)
 	}
 
 	organizationConfig, err :=
 		bffconfig.OrganizationConfigFromEnv()
 	if err != nil {
-		slog.Error(
-			"load Organization Service configuration",
-			"error",
+		return fmt.Errorf(
+			"load Organization Service configuration: %w",
 			err,
 		)
-
-		os.Exit(1)
 	}
 
 	workConfig, err := bffconfig.WorkConfigFromEnv()
 	if err != nil {
-		slog.Error(
-			"load Work Management Service configuration",
-			"error",
+		return fmt.Errorf(
+			"load Work Management Service configuration: %w",
 			err,
 		)
-
-		os.Exit(1)
 	}
 
 	clientConfig := grpcx.DefaultClientConfig(
@@ -77,12 +79,10 @@ func main() {
 		nil,
 	)
 	if err != nil {
-		slog.Error(
-			"create identity gRPC client",
-			"error",
+		return fmt.Errorf(
+			"create identity gRPC client: %w",
 			err,
 		)
-		os.Exit(1)
 	}
 
 	identityClient := identityv1.NewIdentityServiceClient(
@@ -107,13 +107,10 @@ func main() {
 		nil,
 	)
 	if err != nil {
-		slog.Error(
-			"create Tenant Service gRPC client",
-			"error",
+		return fmt.Errorf(
+			"create Tenant Service gRPC client: %w",
 			err,
 		)
-
-		os.Exit(1)
 	}
 
 	defer func() {
@@ -158,13 +155,10 @@ func main() {
 		nil,
 	)
 	if err != nil {
-		slog.Error(
-			"create Organization Service gRPC client",
-			"error",
+		return fmt.Errorf(
+			"create Organization Service gRPC client: %w",
 			err,
 		)
-
-		os.Exit(1)
 	}
 
 	defer func() {
@@ -200,13 +194,10 @@ func main() {
 		nil,
 	)
 	if err != nil {
-		slog.Error(
-			"create Work Management Service gRPC client",
-			"error",
+		return fmt.Errorf(
+			"create Work Management Service gRPC client: %w",
 			err,
 		)
-
-		os.Exit(1)
 	}
 
 	defer func() {
@@ -274,6 +265,8 @@ func main() {
 			)
 		},
 	)
+
+	return nil
 }
 
 func envOrDefault(

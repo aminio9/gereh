@@ -455,7 +455,7 @@ func (service *Service) UpdateAgent(
 		current.Configuration = input.Configuration
 	}
 
-	current.Version = current.Version + 1
+	current.Version++
 	current.UpdatedAt = now
 
 	event, err := newOutboxEvent(
@@ -544,7 +544,7 @@ func (service *Service) SetAgentManager(
 
 	previousManager := current.ManagerAgentID
 	current.ManagerAgentID = input.ManagerAgentID
-	current.Version = current.Version + 1
+	current.Version++
 	current.UpdatedAt = now
 
 	event, err := newOutboxEvent(
@@ -649,7 +649,7 @@ func (service *Service) DeleteAgent(
 
 	current.Status = domain.AgentStatusDeleted
 	current.DeletedAt = &now
-	current.Version = current.Version + 1
+	current.Version++
 	current.UpdatedAt = now
 
 	event, err := newOutboxEvent(
@@ -766,7 +766,7 @@ func (service *Service) changeAgentStatus(
 
 	previousStatus := current.Status
 	current.Status = target
-	current.Version = current.Version + 1
+	current.Version++
 	current.UpdatedAt = service.now().UTC()
 
 	event, err := newOutboxEvent(

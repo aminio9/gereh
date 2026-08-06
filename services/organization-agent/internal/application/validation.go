@@ -155,8 +155,7 @@ func validateConfiguration(
 				)
 			}
 
-			switch nested := raw.(type) {
-			case map[string]any:
+			if nested, ok := raw.(map[string]any); ok {
 				if err := inspect(nested); err != nil {
 					return err
 				}
