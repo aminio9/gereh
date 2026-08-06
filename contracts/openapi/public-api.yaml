@@ -12,6 +12,8 @@ servers:
 tags:
   - name: System
     description: Platform status and metadata
+  - name: Tenant
+    description: Tenant provisioning and membership operations
 
 paths:
   /v1/status:
@@ -34,6 +36,91 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /v1/onboarding:
+    post:
+      operationId: createTenant
+      summary: Start tenant provisioning
+      description: |
+        Creates a new tenant and starts asynchronous provisioning. The caller
+        is the initial owner. Provisioning progress can be polled through the
+        operation resource referenced by the Location header.
+      tags:
+        - Tenant
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+          description: |
+            Deduplicates concurrent or retried requests. A repeated key with
+            the same payload returns the same operation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTenantRequest"
+      responses:
+        "202":
+          description: Provisioning accepted.
+          headers:
+            Location:
+              description: Poll target for the onboarding operation.
+              schema:
+                type: string
+                pattern: "^/v1/operations/"
+            Retry-After:
+              description: Suggested poll interval in seconds.
+              schema:
+                type: integer
+                minimum: 1
+            X-Request-ID:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateTenantResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "502":
+          description: Tenant Service returned an invalid upstream response.
+
+  /v1/operations/{operationId}:
+    get:
+      operationId: getOperation
+      summary: Get onboarding operation status
+      description: |
+        Returns the current state of an asynchronous operation. Only the
+        actor who started the operation can read it.
+      tags:
+        - Tenant
+      parameters:
+        - name: operationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Operation identifier returned by createTenant.
+      responses:
+        "200":
+          description: Operation state.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Operation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
 components:
   headers:
     RequestId:
@@ -43,6 +130,154 @@ components:
         minLength: 1
 
   schemas:
+    CreateTenantRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - slug
+        - displayName
+      properties:
+        slug:
+          type: string
+          pattern: "^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$"
+          description: Unique, URL-safe tenant identifier.
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        region:
+          type: string
+          minLength: 1
+          description: Provisioning region; defaults to the platform default.
+        retentionDays:
+          type: integer
+          minimum: 1
+          description: Audit retention window in days.
+
+    CreateTenantResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - context
+        - operation
+      properties:
+        context:
+          $ref: "#/components/schemas/TenantContext"
+        operation:
+          $ref: "#/components/schemas/Operation"
+
+    TenantContext:
+      type: object
+      additionalProperties: false
+      required:
+        - tenant
+      properties:
+        tenant:
+          type: object
+          additionalProperties: false
+          required:
+            - id
+            - slug
+            - displayName
+            - status
+            - region
+            - version
+          properties:
+            id:
+              type: string
+              format: uuid
+            slug:
+              type: string
+            displayName:
+              type: string
+            status:
+              type: string
+              enum:
+                - provisioning
+                - active
+                - provisioning_failed
+                - archived
+            region:
+              type: string
+            retentionDays:
+              type: integer
+            version:
+              type: integer
+              format: int64
+
+    Operation:
+      type: object
+      additionalProperties: false
+      required:
+        - operationId
+        - state
+      properties:
+        operationId:
+          type: string
+          format: uuid
+        state:
+          type: string
+          enum:
+            - pending
+            - running
+            - succeeded
+            - failed
+            - canceled
+        resourceName:
+          type: string
+          description: Canonical resource name managed by the operation.
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        error:
+          $ref: "#/components/schemas/OperationError"
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+        tenantId:
+          type: string
+          format: uuid
+        actorUserId:
+          type: string
+          format: uuid
+        requestId:
+          type: string
+        workflowId:
+          type: string
+        workflowRunId:
+          type: string
+        version:
+          type: integer
+          format: int64
+        startedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+
+    OperationError:
+      type: object
+      additionalProperties: false
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          minLength: 1
+        message:
+          type: string
+        retryable:
+          type: boolean
+        details:
+          type: object
+
     SystemStatus:
       type: object
       additionalProperties: false
@@ -94,6 +329,27 @@ components:
             - "null"
 
   responses:
+    BadRequest:
+      description: The request was malformed or missing required fields.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    Unauthorized:
+      description: Authentication is required.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    NotFound:
+      description: The requested resource does not exist.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
     InternalServerError:
       description: An unexpected internal error occurred.
       headers:

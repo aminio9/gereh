@@ -1,8 +1,10 @@
 package protoutil
 
 import (
+	commonv1 "github.com/aminio9/gereh/gen/go/gereh/common/v1"
 	tenantv1 "github.com/aminio9/gereh/gen/go/gereh/tenant/v1"
 	"github.com/aminio9/gereh/services/tenant/internal/domain"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -225,12 +227,87 @@ func DomainRole(value tenantv1.TenantRole) domain.Role {
 // Status maps a domain status to Protobuf.
 func Status(value domain.Status) tenantv1.TenantStatus {
 	switch value {
+	case domain.StatusProvisioning:
+		return tenantv1.TenantStatus_TENANT_STATUS_PROVISIONING
 	case domain.StatusActive:
 		return tenantv1.TenantStatus_TENANT_STATUS_ACTIVE
+	case domain.StatusProvisioningFailed:
+		return tenantv1.TenantStatus_TENANT_STATUS_PROVISIONING_FAILED
 	case domain.StatusArchived:
 		return tenantv1.TenantStatus_TENANT_STATUS_ARCHIVED
 	default:
 		return tenantv1.TenantStatus_TENANT_STATUS_UNSPECIFIED
+	}
+}
+
+// Operation maps a domain operation to Protobuf.
+func Operation(
+	value domain.Operation,
+) *commonv1.Operation {
+	operation := &commonv1.Operation{
+		OperationId:   value.ID,
+		TenantId:      value.TenantID,
+		ActorUserId:   value.ActorUserID,
+		RequestId:     value.RequestID,
+		ResourceName:  value.ResourceName,
+		WorkflowId:    value.WorkflowID,
+		WorkflowRunId: value.WorkflowRunID,
+		State:         OperationState(value.State),
+		Version:       value.Version,
+		Metadata:      value.Metadata,
+		CreatedAt:     timestamppb.New(value.CreatedAt),
+		UpdatedAt:     timestamppb.New(value.UpdatedAt),
+	}
+
+	if value.Error != nil {
+		operation.Error = &commonv1.OperationError{
+			Code:      value.Error.Code,
+			Message:   value.Error.Message,
+			Retryable: value.Error.Retryable,
+		}
+
+		if len(value.Error.Details) > 0 {
+			details, err := structpb.NewStruct(
+				value.Error.Details,
+			)
+			if err == nil {
+				operation.Error.Details = details
+			}
+		}
+	}
+
+	if value.StartedAt != nil {
+		operation.StartedAt = timestamppb.New(
+			*value.StartedAt,
+		)
+	}
+
+	if value.CompletedAt != nil {
+		operation.CompletedAt = timestamppb.New(
+			*value.CompletedAt,
+		)
+	}
+
+	return operation
+}
+
+// OperationState maps a domain operation state to Protobuf.
+func OperationState(
+	value domain.OperationState,
+) commonv1.OperationState {
+	switch value {
+	case domain.OperationStatePending:
+		return commonv1.OperationState_OPERATION_STATE_PENDING
+	case domain.OperationStateRunning:
+		return commonv1.OperationState_OPERATION_STATE_RUNNING
+	case domain.OperationStateSucceeded:
+		return commonv1.OperationState_OPERATION_STATE_SUCCEEDED
+	case domain.OperationStateFailed:
+		return commonv1.OperationState_OPERATION_STATE_FAILED
+	case domain.OperationStateCanceled:
+		return commonv1.OperationState_OPERATION_STATE_CANCELED
+	default:
+		return commonv1.OperationState_OPERATION_STATE_UNSPECIFIED
 	}
 }
 

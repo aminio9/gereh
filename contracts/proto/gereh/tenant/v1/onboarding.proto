@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package gereh.tenant.v1;
+
+import "gereh/common/v1/operation.proto";
+import "gereh/tenant/v1/tenant.proto";
+
+option go_package = "github.com/aminio9/gereh/gen/go/gereh/tenant/v1;tenantv1";
+
+// TenantOnboardingService is called only by trusted control-plane workloads.
+service TenantOnboardingService {
+  rpc MarkOnboardingRunning(MarkOnboardingRunningRequest) returns (MarkOnboardingRunningResponse);
+
+  rpc CompleteOnboarding(CompleteOnboardingRequest) returns (CompleteOnboardingResponse);
+
+  rpc FailOnboarding(FailOnboardingRequest) returns (FailOnboardingResponse);
+}
+
+message MarkOnboardingRunningRequest {
+  string tenant_id = 1;
+  string operation_id = 2;
+  string workflow_id = 3;
+  string workflow_run_id = 4;
+}
+
+message MarkOnboardingRunningResponse {
+  gereh.common.v1.Operation operation = 1;
+}
+
+message CompleteOnboardingRequest {
+  string tenant_id = 1;
+  string operation_id = 2;
+}
+
+message CompleteOnboardingResponse {
+  TenantContext context = 1;
+  gereh.common.v1.Operation operation = 2;
+}
+
+message FailOnboardingRequest {
+  string tenant_id = 1;
+  string operation_id = 2;
+  gereh.common.v1.OperationError error = 3;
+}
+
+message FailOnboardingResponse {
+  Tenant tenant = 1;
+  gereh.common.v1.Operation operation = 2;
+}

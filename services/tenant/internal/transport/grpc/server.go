@@ -47,7 +47,27 @@ func (server *Server) CreateTenant(
 	}
 
 	return &tenantv1.CreateTenantResponse{
-		Context: protoutil.Context(result),
+		Context:   protoutil.Context(result.Context),
+		Operation: protoutil.Operation(result.Operation),
+	}, nil
+}
+
+// GetOperation returns the caller's onboarding operation.
+func (server *Server) GetOperation(
+	ctx context.Context,
+	request *tenantv1.GetOperationRequest,
+) (*tenantv1.GetOperationResponse, error) {
+	result, err := server.service.GetOperation(
+		ctx,
+		request.GetActorUserId(),
+		request.GetOperationId(),
+	)
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	return &tenantv1.GetOperationResponse{
+		Operation: protoutil.Operation(result),
 	}, nil
 }
 
@@ -395,6 +415,18 @@ func mapError(err error) error {
 		return status.Error(
 			codes.FailedPrecondition,
 			"tenant is archived",
+		)
+
+	case errors.Is(err, domain.ErrInvalidOperationTransition):
+		return status.Error(
+			codes.FailedPrecondition,
+			"operation is not in a transitional state",
+		)
+
+	case errors.Is(err, domain.ErrOperationAlreadyCompleted):
+		return status.Error(
+			codes.AlreadyExists,
+			"operation is already completed",
 		)
 
 	default:

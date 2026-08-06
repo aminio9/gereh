@@ -54,6 +54,18 @@ tasks:
       - task: contracts:generate
       - git diff --exit-code -- gen/go go.mod go.sum
 
+  contracts:breaking:
+    desc: Check Protobuf contracts for breaking changes against main
+    cmds:
+      - go tool buf breaking --against .git#branch=main
+
+  workflow:check:
+    desc: Run Temporal static workflow analysis
+    cmds:
+      - >-
+        go run go.temporal.io/sdk/contrib/tools/workflowcheck
+        ./services/execution-orchestrator/...
+
   infra:up:
     desc: Start local infrastructure
     cmds:
@@ -164,6 +176,7 @@ tasks:
       - go vet ./...
       - go tool golangci-lint run
       - go tool buf lint
+      - task: workflow:check
       - pnpm -r --if-present lint
 
   test:
@@ -171,6 +184,15 @@ tasks:
     cmds:
       - go test -race -count=1 ./...
       - pnpm -r --if-present test
+
+  test:onboarding:
+    desc: Run tenant onboarding integration tests
+    preconditions:
+      - sh: test -n "${TENANT_TEST_DATABASE_URL:-}"
+        msg: TENANT_TEST_DATABASE_URL is required
+    cmds:
+      - go test -count=1 ./services/tenant/...
+      - go test -count=1 ./services/execution-orchestrator/...
 
   build:
     desc: Build all services and frontend applications
@@ -186,3 +208,4 @@ tasks:
       - task: test
       - task: build
       - task: contracts:check-generated
+      - task: contracts:breaking

@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	TenantService_CreateTenant_FullMethodName            = "/gereh.tenant.v1.TenantService/CreateTenant"
+	TenantService_GetOperation_FullMethodName            = "/gereh.tenant.v1.TenantService/GetOperation"
 	TenantService_GetTenant_FullMethodName               = "/gereh.tenant.v1.TenantService/GetTenant"
 	TenantService_ListTenants_FullMethodName             = "/gereh.tenant.v1.TenantService/ListTenants"
 	TenantService_UpdateTenant_FullMethodName            = "/gereh.tenant.v1.TenantService/UpdateTenant"
@@ -41,6 +42,7 @@ const (
 // and retention policy.
 type TenantServiceClient interface {
 	CreateTenant(ctx context.Context, in *CreateTenantRequest, opts ...grpc.CallOption) (*CreateTenantResponse, error)
+	GetOperation(ctx context.Context, in *GetOperationRequest, opts ...grpc.CallOption) (*GetOperationResponse, error)
 	GetTenant(ctx context.Context, in *GetTenantRequest, opts ...grpc.CallOption) (*GetTenantResponse, error)
 	ListTenants(ctx context.Context, in *ListTenantsRequest, opts ...grpc.CallOption) (*ListTenantsResponse, error)
 	UpdateTenant(ctx context.Context, in *UpdateTenantRequest, opts ...grpc.CallOption) (*UpdateTenantResponse, error)
@@ -66,6 +68,16 @@ func (c *tenantServiceClient) CreateTenant(ctx context.Context, in *CreateTenant
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateTenantResponse)
 	err := c.cc.Invoke(ctx, TenantService_CreateTenant_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tenantServiceClient) GetOperation(ctx context.Context, in *GetOperationRequest, opts ...grpc.CallOption) (*GetOperationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetOperationResponse)
+	err := c.cc.Invoke(ctx, TenantService_GetOperation_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -190,6 +202,7 @@ func (c *tenantServiceClient) RemoveMember(ctx context.Context, in *RemoveMember
 // and retention policy.
 type TenantServiceServer interface {
 	CreateTenant(context.Context, *CreateTenantRequest) (*CreateTenantResponse, error)
+	GetOperation(context.Context, *GetOperationRequest) (*GetOperationResponse, error)
 	GetTenant(context.Context, *GetTenantRequest) (*GetTenantResponse, error)
 	ListTenants(context.Context, *ListTenantsRequest) (*ListTenantsResponse, error)
 	UpdateTenant(context.Context, *UpdateTenantRequest) (*UpdateTenantResponse, error)
@@ -213,6 +226,9 @@ type UnimplementedTenantServiceServer struct{}
 
 func (UnimplementedTenantServiceServer) CreateTenant(context.Context, *CreateTenantRequest) (*CreateTenantResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateTenant not implemented")
+}
+func (UnimplementedTenantServiceServer) GetOperation(context.Context, *GetOperationRequest) (*GetOperationResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetOperation not implemented")
 }
 func (UnimplementedTenantServiceServer) GetTenant(context.Context, *GetTenantRequest) (*GetTenantResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetTenant not implemented")
@@ -282,6 +298,24 @@ func _TenantService_CreateTenant_Handler(srv interface{}, ctx context.Context, d
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(TenantServiceServer).CreateTenant(ctx, req.(*CreateTenantRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TenantService_GetOperation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetOperationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TenantServiceServer).GetOperation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TenantService_GetOperation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TenantServiceServer).GetOperation(ctx, req.(*GetOperationRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -494,6 +528,10 @@ var TenantService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateTenant",
 			Handler:    _TenantService_CreateTenant_Handler,
+		},
+		{
+			MethodName: "GetOperation",
+			Handler:    _TenantService_GetOperation_Handler,
 		},
 		{
 			MethodName: "GetTenant",

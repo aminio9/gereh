@@ -16,10 +16,11 @@ import (
 
 // Config defines tenant defaults and supported regions.
 type Config struct {
-	EventTopic           string
-	DefaultRegion        string
-	DefaultRetentionDays int32
-	AllowedRegions       []string
+	EventTopic                 string
+	DefaultRegion              string
+	DefaultRetentionDays       int32
+	AllowedRegions             []string
+	WorkflowServicePrincipalID string
 }
 
 // CreateTenantInput defines tenant creation input.
@@ -92,6 +93,13 @@ func New(
 		)
 	}
 
+	if err := validateUUID(
+		"workflow_service_principal_id",
+		config.WorkflowServicePrincipalID,
+	); err != nil {
+		return nil, err
+	}
+
 	if err := validateRetentionDays(
 		config.DefaultRetentionDays,
 	); err != nil {
@@ -124,21 +132,23 @@ func New(
 	}, nil
 }
 
-// CreateTenant creates a tenant and an owner membership atomically.
+// CreateTenant accepts a tenant creation request into the provisioning
+// pipeline. It returns a tenant context and a durable operation the caller
+// can poll.
 func (service *Service) CreateTenant(
 	ctx context.Context,
 	input CreateTenantInput,
-) (domain.TenantContext, error) {
+) (domain.CreateTenantResult, error) {
 	if err := validateUUID(
 		"actor_user_id",
 		input.ActorUserID,
 	); err != nil {
-		return domain.TenantContext{}, err
+		return domain.CreateTenantResult{}, err
 	}
 
 	if strings.TrimSpace(input.RequestID) == "" ||
 		len(input.RequestID) > 128 {
-		return domain.TenantContext{}, fmt.Errorf(
+		return domain.CreateTenantResult{}, fmt.Errorf(
 			"%w: request_id must contain 1-128 characters",
 			domain.ErrInvalidArgument,
 		)
@@ -146,14 +156,14 @@ func (service *Service) CreateTenant(
 
 	slug, err := normalizeSlug(input.Slug)
 	if err != nil {
-		return domain.TenantContext{}, err
+		return domain.CreateTenantResult{}, err
 	}
 
 	displayName, err := validateDisplayName(
 		input.DisplayName,
 	)
 	if err != nil {
-		return domain.TenantContext{}, err
+		return domain.CreateTenantResult{}, err
 	}
 
 	region := strings.TrimSpace(input.Region)
@@ -166,7 +176,7 @@ func (service *Service) CreateTenant(
 		service.allowedRegions,
 	)
 	if err != nil {
-		return domain.TenantContext{}, err
+		return domain.CreateTenantResult{}, err
 	}
 
 	retentionDays := input.RetentionDays
@@ -175,13 +185,21 @@ func (service *Service) CreateTenant(
 	}
 
 	if err := validateRetentionDays(retentionDays); err != nil {
-		return domain.TenantContext{}, err
+		return domain.CreateTenantResult{}, err
 	}
 
 	tenantID, err := uuid.NewV7()
 	if err != nil {
-		return domain.TenantContext{}, fmt.Errorf(
+		return domain.CreateTenantResult{}, fmt.Errorf(
 			"generate tenant ID: %w",
+			err,
+		)
+	}
+
+	operationID, err := uuid.NewV7()
+	if err != nil {
+		return domain.CreateTenantResult{}, fmt.Errorf(
+			"generate operation ID: %w",
 			err,
 		)
 	}
@@ -193,7 +211,7 @@ func (service *Service) CreateTenant(
 			ID:              tenantID.String(),
 			Slug:            slug,
 			DisplayName:     displayName,
-			Status:          domain.StatusActive,
+			Status:          domain.StatusProvisioning,
 			Region:          region,
 			RetentionDays:   retentionDays,
 			Version:         1,
@@ -226,25 +244,43 @@ func (service *Service) CreateTenant(
 		},
 	}
 
-	event, err := newOutboxEvent(
+	operation := domain.Operation{
+		ID:           operationID.String(),
+		TenantID:     tenantID.String(),
+		ActorUserID:  input.ActorUserID,
+		RequestID:    input.RequestID,
+		State:        domain.OperationStatePending,
+		ResourceName: "tenants/" + tenantID.String(),
+		Metadata: map[string]string{
+			"slug":         slug,
+			"display_name": displayName,
+		},
+		Version:   1,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+
+	event, err := newTenantOutboxEvent(
 		ctx,
 		service.config.EventTopic,
 		"tenant.created",
 		tenantID.String(),
 		1,
 		&tenantv1.TenantCreated{
-			Context: protoutil.Context(contextValue),
+			Context:     protoutil.Context(contextValue),
+			OperationId: operation.ID,
 		},
 		now,
 	)
 	if err != nil {
-		return domain.TenantContext{}, err
+		return domain.CreateTenantResult{}, err
 	}
 
 	return service.repository.CreateTenant(
 		ctx,
 		ports.CreateTenantParams{
 			Context:   contextValue,
+			Operation: operation,
 			RequestID: input.RequestID,
 			Event:     event,
 		},
@@ -429,7 +465,7 @@ func (service *Service) UpdateTenant(
 	updated.Version++
 	updated.UpdatedAt = now
 
-	event, err := newOutboxEvent(
+	event, err := newTenantOutboxEvent(
 		ctx,
 		service.config.EventTopic,
 		"tenant.updated",
@@ -496,7 +532,7 @@ func (service *Service) ArchiveTenant(
 	archived.UpdatedAt = now
 	archived.ArchivedAt = &now
 
-	event, err := newOutboxEvent(
+	event, err := newTenantOutboxEvent(
 		ctx,
 		service.config.EventTopic,
 		"tenant.archived",
@@ -653,7 +689,7 @@ func (service *Service) AddMember(
 		UpdatedAt: now,
 	}
 
-	event, err := newOutboxEvent(
+	event, err := newTenantOutboxEvent(
 		ctx,
 		service.config.EventTopic,
 		"tenant.member_added",
@@ -745,7 +781,7 @@ func (service *Service) UpdateMemberRole(
 
 	newTenantVersion := current.Tenant.Version + 1
 
-	event, err := newOutboxEvent(
+	event, err := newTenantOutboxEvent(
 		ctx,
 		service.config.EventTopic,
 		"tenant.member_role_changed",
@@ -827,7 +863,7 @@ func (service *Service) RemoveMember(
 	now := service.now().UTC()
 	newTenantVersion := current.Tenant.Version + 1
 
-	event, err := newOutboxEvent(
+	event, err := newTenantOutboxEvent(
 		ctx,
 		service.config.EventTopic,
 		"tenant.member_removed",

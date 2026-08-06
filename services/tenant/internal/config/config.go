@@ -27,6 +27,10 @@ type Config struct {
 	AllowedRegions       []string
 	DefaultRetentionDays int32
 
+	WorkflowServicePrincipalID string
+	InternalDevelopmentToken   string
+	AllowedInternalSPIFFEIDs   []string
+
 	OutboxBatchSize    int
 	OutboxPollInterval time.Duration
 	OutboxLease        time.Duration
@@ -142,6 +146,16 @@ func FromEnv(version string) (Config, error) {
 		),
 		DefaultRetentionDays: retentionDays,
 
+		WorkflowServicePrincipalID: strings.TrimSpace(
+			os.Getenv("TENANT_WORKFLOW_SERVICE_PRINCIPAL_ID"),
+		),
+		InternalDevelopmentToken: strings.TrimSpace(
+			os.Getenv("TENANT_INTERNAL_DEV_TOKEN"),
+		),
+		AllowedInternalSPIFFEIDs: splitCommaSeparatedPreserveCase(
+			os.Getenv("TENANT_INTERNAL_ALLOWED_SPIFFE_IDS"),
+		),
+
 		OutboxBatchSize:    batchSize,
 		OutboxPollInterval: pollInterval,
 		OutboxLease:        lease,
@@ -153,6 +167,21 @@ func FromEnv(version string) (Config, error) {
 	if config.DatabaseURL == "" {
 		return Config{}, fmt.Errorf(
 			"TENANT_DATABASE_URL is required",
+		)
+	}
+
+	if config.WorkflowServicePrincipalID == "" {
+		return Config{}, fmt.Errorf(
+			"TENANT_WORKFLOW_SERVICE_PRINCIPAL_ID is required",
+		)
+	}
+
+	if strings.EqualFold(
+		config.Environment,
+		"production",
+	) && len(config.AllowedInternalSPIFFEIDs) == 0 {
+		return Config{}, fmt.Errorf(
+			"TENANT_INTERNAL_ALLOWED_SPIFFE_IDS is required in production",
 		)
 	}
 
@@ -188,6 +217,24 @@ func splitCommaSeparated(
 		item = strings.ToLower(
 			strings.TrimSpace(item),
 		)
+
+		if item != "" {
+			result = append(result, item)
+		}
+	}
+
+	return result
+}
+
+// splitCommaSeparatedPreserveCase splits a comma-separated list without
+// lowercasing. SPIFFE IDs are case-sensitive.
+func splitCommaSeparatedPreserveCase(
+	value string,
+) []string {
+	var result []string
+
+	for _, item := range strings.Split(value, ",") {
+		item = strings.TrimSpace(item)
 
 		if item != "" {
 			result = append(result, item)

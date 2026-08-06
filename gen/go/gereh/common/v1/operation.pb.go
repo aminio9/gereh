@@ -160,6 +160,14 @@ type Operation struct {
 	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	Error         *OperationError        `protobuf:"bytes,6,opt,name=error,proto3" json:"error,omitempty"`
 	Metadata      map[string]string      `protobuf:"bytes,7,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	TenantId      string                 `protobuf:"bytes,8,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	ActorUserId   string                 `protobuf:"bytes,9,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	RequestId     string                 `protobuf:"bytes,10,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	WorkflowId    string                 `protobuf:"bytes,11,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty"`
+	WorkflowRunId string                 `protobuf:"bytes,12,opt,name=workflow_run_id,json=workflowRunId,proto3" json:"workflow_run_id,omitempty"`
+	Version       int64                  `protobuf:"varint,13,opt,name=version,proto3" json:"version,omitempty"`
+	StartedAt     *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
+	CompletedAt   *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -243,6 +251,62 @@ func (x *Operation) GetMetadata() map[string]string {
 	return nil
 }
 
+func (x *Operation) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+func (x *Operation) GetActorUserId() string {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return ""
+}
+
+func (x *Operation) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *Operation) GetWorkflowId() string {
+	if x != nil {
+		return x.WorkflowId
+	}
+	return ""
+}
+
+func (x *Operation) GetWorkflowRunId() string {
+	if x != nil {
+		return x.WorkflowRunId
+	}
+	return ""
+}
+
+func (x *Operation) GetVersion() int64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *Operation) GetStartedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.StartedAt
+	}
+	return nil
+}
+
+func (x *Operation) GetCompletedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CompletedAt
+	}
+	return nil
+}
+
 var File_gereh_common_v1_operation_proto protoreflect.FileDescriptor
 
 const file_gereh_common_v1_operation_proto_rawDesc = "" +
@@ -252,7 +316,7 @@ const file_gereh_common_v1_operation_proto_rawDesc = "" +
 	"\x04code\x18\x01 \x01(\tR\x04code\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12\x1c\n" +
 	"\tretryable\x18\x03 \x01(\bR\tretryable\x121\n" +
-	"\adetails\x18\x04 \x01(\v2\x17.google.protobuf.StructR\adetails\"\xba\x03\n" +
+	"\adetails\x18\x04 \x01(\v2\x17.google.protobuf.StructR\adetails\"\xf7\x05\n" +
 	"\tOperation\x12!\n" +
 	"\foperation_id\x18\x01 \x01(\tR\voperationId\x125\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x1f.gereh.common.v1.OperationStateR\x05state\x12#\n" +
@@ -262,7 +326,19 @@ const file_gereh_common_v1_operation_proto_rawDesc = "" +
 	"\n" +
 	"updated_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x125\n" +
 	"\x05error\x18\x06 \x01(\v2\x1f.gereh.common.v1.OperationErrorR\x05error\x12D\n" +
-	"\bmetadata\x18\a \x03(\v2(.gereh.common.v1.Operation.MetadataEntryR\bmetadata\x1a;\n" +
+	"\bmetadata\x18\a \x03(\v2(.gereh.common.v1.Operation.MetadataEntryR\bmetadata\x12\x1b\n" +
+	"\ttenant_id\x18\b \x01(\tR\btenantId\x12\"\n" +
+	"\ractor_user_id\x18\t \x01(\tR\vactorUserId\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\n" +
+	" \x01(\tR\trequestId\x12\x1f\n" +
+	"\vworkflow_id\x18\v \x01(\tR\n" +
+	"workflowId\x12&\n" +
+	"\x0fworkflow_run_id\x18\f \x01(\tR\rworkflowRunId\x12\x18\n" +
+	"\aversion\x18\r \x01(\x03R\aversion\x129\n" +
+	"\n" +
+	"started_at\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\x12=\n" +
+	"\fcompleted_at\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xc4\x01\n" +
@@ -304,11 +380,13 @@ var file_gereh_common_v1_operation_proto_depIdxs = []int32{
 	5, // 3: gereh.common.v1.Operation.updated_at:type_name -> google.protobuf.Timestamp
 	1, // 4: gereh.common.v1.Operation.error:type_name -> gereh.common.v1.OperationError
 	3, // 5: gereh.common.v1.Operation.metadata:type_name -> gereh.common.v1.Operation.MetadataEntry
-	6, // [6:6] is the sub-list for method output_type
-	6, // [6:6] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	5, // 6: gereh.common.v1.Operation.started_at:type_name -> google.protobuf.Timestamp
+	5, // 7: gereh.common.v1.Operation.completed_at:type_name -> google.protobuf.Timestamp
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_gereh_common_v1_operation_proto_init() }

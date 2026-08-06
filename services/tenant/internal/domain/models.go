@@ -7,8 +7,10 @@ type Status string
 
 // Status values.
 const (
-	StatusActive   Status = "active"
-	StatusArchived Status = "archived"
+	StatusProvisioning       Status = "provisioning"
+	StatusActive             Status = "active"
+	StatusProvisioningFailed Status = "provisioning_failed"
+	StatusArchived           Status = "archived"
 )
 
 // Role is a tenant-scoped membership role.
@@ -80,4 +82,10 @@ type OutboxRecord struct {
 	OutboxID int64
 	Event    OutboxEvent
 	Attempts int
+}
+
+// CreateTenantResult is the atomic result of accepting tenant onboarding.
+type CreateTenantResult struct {
+	Context   TenantContext
+	Operation Operation
 }

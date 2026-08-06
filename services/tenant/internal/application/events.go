@@ -14,11 +14,61 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func newOutboxEvent(
+// newTenantOutboxEvent builds an event on the tenant aggregate.
+func newTenantOutboxEvent(
 	ctx context.Context,
 	topic string,
 	eventType string,
 	tenantID string,
+	aggregateVersion int64,
+	payload proto.Message,
+	now time.Time,
+) (domain.OutboxEvent, error) {
+	return newAggregateOutboxEvent(
+		ctx,
+		topic,
+		eventType,
+		tenantID,
+		"tenant",
+		tenantID,
+		aggregateVersion,
+		payload,
+		now,
+	)
+}
+
+// newOperationOutboxEvent builds an event on the tenant onboarding
+// operation aggregate.
+func newOperationOutboxEvent(
+	ctx context.Context,
+	topic string,
+	eventType string,
+	tenantID string,
+	operationID string,
+	aggregateVersion int64,
+	payload proto.Message,
+	now time.Time,
+) (domain.OutboxEvent, error) {
+	return newAggregateOutboxEvent(
+		ctx,
+		topic,
+		eventType,
+		tenantID,
+		"tenant_onboarding_operation",
+		operationID,
+		aggregateVersion,
+		payload,
+		now,
+	)
+}
+
+func newAggregateOutboxEvent(
+	ctx context.Context,
+	topic string,
+	eventType string,
+	tenantID string,
+	aggregateType string,
+	aggregateID string,
 	aggregateVersion int64,
 	payload proto.Message,
 	now time.Time,
@@ -57,8 +107,8 @@ func newOutboxEvent(
 		EventType:        eventType,
 		EventVersion:     1,
 		TenantId:         tenantID,
-		AggregateType:    "tenant",
-		AggregateId:      tenantID,
+		AggregateType:    aggregateType,
+		AggregateId:      aggregateID,
 		AggregateVersion: uint64(aggregateVersion),
 		OccurredAt:       timestamppb.New(now),
 		Producer:         "tenant",

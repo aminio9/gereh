@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package gereh.runtime.v1;
+
+import "google/protobuf/duration.proto";
+
+option go_package = "github.com/aminio9/gereh/gen/go/gereh/runtime/v1;runtimev1";
+
+service RuntimeManagerService {
+  // EnsureTenantRuntime is idempotent by operation_id.
+  //
+  // Repeated requests for the same operation must converge on the same
+  // desired RuntimeCell rather than creating duplicate infrastructure.
+  rpc EnsureTenantRuntime(EnsureTenantRuntimeRequest) returns (EnsureTenantRuntimeResponse);
+}
+
+enum RuntimeProvisioningState {
+  RUNTIME_PROVISIONING_STATE_UNSPECIFIED = 0;
+  RUNTIME_PROVISIONING_STATE_PENDING = 1;
+  RUNTIME_PROVISIONING_STATE_READY = 2;
+  RUNTIME_PROVISIONING_STATE_FAILED = 3;
+}
+
+message EnsureTenantRuntimeRequest {
+  string tenant_id = 1;
+  string operation_id = 2;
+  string region = 3;
+  string isolation_tier = 4;
+}
+
+message EnsureTenantRuntimeResponse {
+  RuntimeProvisioningState state = 1;
+  string runtime_cell_id = 2;
+  google.protobuf.Duration retry_after = 3;
+
+  // Safe machine-readable failure code. Never place secrets here.
+  string error_code = 4;
+}

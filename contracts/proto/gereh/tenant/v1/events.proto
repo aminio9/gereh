@@ -2,14 +2,38 @@ syntax = "proto3";
 
 package gereh.tenant.v1;
 
+import "gereh/common/v1/operation.proto";
 import "gereh/tenant/v1/authorization.proto";
 import "gereh/tenant/v1/tenant.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/aminio9/gereh/gen/go/gereh/tenant/v1;tenantv1";
 
+// TenantCreated means durable tenant business state exists. It does not mean
+// runtime infrastructure is ready.
 message TenantCreated {
   TenantContext context = 1;
+  string operation_id = 2;
+}
+
+message TenantOnboardingStarted {
+  string tenant_id = 1;
+  string operation_id = 2;
+  string workflow_id = 3;
+  string workflow_run_id = 4;
+  google.protobuf.Timestamp started_at = 5;
+}
+
+message TenantActivated {
+  TenantContext context = 1;
+  string operation_id = 2;
+  google.protobuf.Timestamp activated_at = 3;
+}
+
+message TenantOnboardingFailed {
+  Tenant tenant = 1;
+  gereh.common.v1.Operation operation = 2;
+  google.protobuf.Timestamp failed_at = 3;
 }
 
 message TenantUpdated {

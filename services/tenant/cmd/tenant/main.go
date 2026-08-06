@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -157,6 +158,8 @@ func run() error {
 			AllowedRegions: runtimeConfig.AllowedRegions,
 			DefaultRetentionDays: runtimeConfig.
 				DefaultRetentionDays,
+			WorkflowServicePrincipalID: runtimeConfig.
+				WorkflowServicePrincipalID,
 		},
 	)
 	if err != nil {
@@ -186,6 +189,19 @@ func run() error {
 
 	serverConfig.UnaryInterceptors = append(
 		serverConfig.UnaryInterceptors,
+		tenantgrpc.InternalWorkloadUnaryInterceptor(
+			tenantgrpc.InternalAuthConfig{
+				Environment: runtimeConfig.Environment,
+				DevelopmentToken: runtimeConfig.
+					InternalDevelopmentToken,
+				AllowedSPIFFEIDs: tenantgrpc.ParseAllowedSPIFFEIDs(
+					strings.Join(
+						runtimeConfig.AllowedInternalSPIFFEIDs,
+						",",
+					),
+				),
+			},
+		),
 		tenantgrpc.ActorBindingUnaryInterceptor(),
 	)
 
@@ -201,6 +217,11 @@ func run() error {
 	tenantv1.RegisterTenantServiceServer(
 		server.GRPC(),
 		tenantgrpc.New(tenantService),
+	)
+
+	tenantv1.RegisterTenantOnboardingServiceServer(
+		server.GRPC(),
+		tenantgrpc.NewOnboarding(tenantService),
 	)
 
 	listenConfig := net.ListenConfig{}
