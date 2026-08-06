@@ -67,13 +67,38 @@ func (repository *Repository) GetMembership(
 	tenantID string,
 	userID string,
 ) (domain.Membership, error) {
-	return queryMembership(
+	transaction, err := repository.beginTenant(
 		ctx,
-		repository.pool,
+		tenantID,
+		userID,
+		pgx.TxOptions{
+			AccessMode: pgx.ReadOnly,
+		},
+	)
+	if err != nil {
+		return domain.Membership{}, err
+	}
+
+	defer func() {
+		_ = transaction.Rollback(ctx)
+	}()
+
+	result, err := queryMembership(
+		ctx,
+		transaction,
 		tenantID,
 		userID,
 		false,
 	)
+	if err != nil {
+		return domain.Membership{}, err
+	}
+
+	if err := commit(ctx, transaction); err != nil {
+		return domain.Membership{}, err
+	}
+
+	return result, nil
 }
 
 // ListMembers lists memberships after validating actor membership.
@@ -84,10 +109,28 @@ func (repository *Repository) ListMembers(
 	limit int,
 	cursor *ports.MemberCursor,
 ) ([]domain.Membership, error) {
-	if _, err := repository.GetTenantContext(
+	transaction, err := repository.beginTenant(
 		ctx,
 		tenantID,
 		actorUserID,
+		pgx.TxOptions{
+			AccessMode: pgx.ReadOnly,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		_ = transaction.Rollback(ctx)
+	}()
+
+	if _, err := queryContext(
+		ctx,
+		transaction,
+		tenantID,
+		actorUserID,
+		false,
 	); err != nil {
 		return nil, err
 	}
@@ -105,9 +148,7 @@ func (repository *Repository) ListMembers(
 		WHERE tenant_id = $1::uuid
 	`
 
-	args := []any{
-		tenantID,
-	}
+	args := []any{tenantID}
 
 	if cursor != nil {
 		query += `
@@ -127,7 +168,7 @@ func (repository *Repository) ListMembers(
 		len(args),
 	)
 
-	rows, err := repository.pool.Query(
+	rows, err := transaction.Query(
 		ctx,
 		query,
 		args...,
@@ -138,9 +179,14 @@ func (repository *Repository) ListMembers(
 			err,
 		)
 	}
+
 	defer rows.Close()
 
-	var memberships []domain.Membership
+	memberships := make(
+		[]domain.Membership,
+		0,
+		limit,
+	)
 
 	for rows.Next() {
 		var membership domain.Membership
@@ -176,6 +222,13 @@ func (repository *Repository) ListMembers(
 		)
 	}
 
+	if err := commit(
+		ctx,
+		transaction,
+	); err != nil {
+		return nil, err
+	}
+
 	return memberships, nil
 }
 
@@ -184,7 +237,12 @@ func (repository *Repository) AddMember(
 	ctx context.Context,
 	params ports.AddMemberParams,
 ) (domain.Membership, error) {
-	transaction, err := begin(ctx, repository.pool)
+	transaction, err := repository.beginTenant(
+		ctx,
+		params.Membership.TenantID,
+		params.ActorUserID,
+		pgx.TxOptions{},
+	)
 	if err != nil {
 		return domain.Membership{}, err
 	}
@@ -283,6 +341,7 @@ func (repository *Repository) AddMember(
 	if err := insertOutbox(
 		ctx,
 		transaction,
+		params.Membership.TenantID,
 		params.Event,
 	); err != nil {
 		return domain.Membership{}, err
@@ -361,7 +420,12 @@ func (repository *Repository) UpdateMemberRole(
 	ctx context.Context,
 	params ports.UpdateMemberRoleParams,
 ) (domain.Membership, error) {
-	transaction, err := begin(ctx, repository.pool)
+	transaction, err := repository.beginTenant(
+		ctx,
+		params.Membership.TenantID,
+		params.ActorUserID,
+		pgx.TxOptions{},
+	)
 	if err != nil {
 		return domain.Membership{}, err
 	}
@@ -486,6 +550,7 @@ func (repository *Repository) UpdateMemberRole(
 	if err := insertOutbox(
 		ctx,
 		transaction,
+		params.Membership.TenantID,
 		params.Event,
 	); err != nil {
 		return domain.Membership{}, err
@@ -514,7 +579,12 @@ func (repository *Repository) RemoveMember(
 	ctx context.Context,
 	params ports.RemoveMemberParams,
 ) error {
-	transaction, err := begin(ctx, repository.pool)
+	transaction, err := repository.beginTenant(
+		ctx,
+		params.TenantID,
+		params.ActorUserID,
+		pgx.TxOptions{},
+	)
 	if err != nil {
 		return err
 	}
@@ -627,6 +697,7 @@ func (repository *Repository) RemoveMember(
 	if err := insertOutbox(
 		ctx,
 		transaction,
+		params.TenantID,
 		params.Event,
 	); err != nil {
 		return err

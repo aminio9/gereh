@@ -16,7 +16,16 @@ func (repository *Repository) CreateTenant(
 	ctx context.Context,
 	params ports.CreateTenantParams,
 ) (domain.TenantContext, error) {
-	transaction, err := begin(ctx, repository.pool)
+	actorUserID :=
+		params.Context.Tenant.CreatedByUserID
+
+	// First use principal scope so a retry can locate the tenant created by
+	// this user and creation request before the new tenant ID is known.
+	transaction, err := repository.beginPrincipal(
+		ctx,
+		actorUserID,
+		pgx.TxOptions{},
+	)
 	if err != nil {
 		return domain.TenantContext{}, err
 	}
@@ -35,7 +44,7 @@ func (repository *Repository) CreateTenant(
 			WHERE created_by_user_id = $1::uuid
 			  AND creation_request_id = $2
 		`,
-		params.Context.Tenant.CreatedByUserID,
+		actorUserID,
 		params.RequestID,
 	).Scan(&existingTenantID)
 
@@ -45,7 +54,7 @@ func (repository *Repository) CreateTenant(
 			ctx,
 			transaction,
 			existingTenantID,
-			params.Context.Tenant.CreatedByUserID,
+			actorUserID,
 			false,
 		)
 		if queryErr != nil {
@@ -68,6 +77,17 @@ func (repository *Repository) CreateTenant(
 	tenant := params.Context.Tenant
 	membership := params.Context.Membership
 	entitlements := params.Context.Entitlements
+
+	// From this point onward, all writes are restricted to the newly
+	// allocated tenant.
+	if err := repository.applyTenantScope(
+		ctx,
+		transaction,
+		tenant.ID,
+		actorUserID,
+	); err != nil {
+		return domain.TenantContext{}, err
+	}
 
 	_, err = transaction.Exec(
 		ctx,
@@ -206,6 +226,7 @@ func (repository *Repository) CreateTenant(
 	if err := insertOutbox(
 		ctx,
 		transaction,
+		tenant.ID,
 		params.Event,
 	); err != nil {
 		return domain.TenantContext{}, err
@@ -235,13 +256,38 @@ func (repository *Repository) GetTenantContext(
 	tenantID string,
 	userID string,
 ) (domain.TenantContext, error) {
-	return queryContext(
+	transaction, err := repository.beginTenant(
 		ctx,
-		repository.pool,
+		tenantID,
+		userID,
+		pgx.TxOptions{
+			AccessMode: pgx.ReadOnly,
+		},
+	)
+	if err != nil {
+		return domain.TenantContext{}, err
+	}
+
+	defer func() {
+		_ = transaction.Rollback(ctx)
+	}()
+
+	result, err := queryContext(
+		ctx,
+		transaction,
 		tenantID,
 		userID,
 		false,
 	)
+	if err != nil {
+		return domain.TenantContext{}, err
+	}
+
+	if err := commit(ctx, transaction); err != nil {
+		return domain.TenantContext{}, err
+	}
+
+	return result, nil
 }
 
 // ListTenantContexts lists memberships using UUID keyset pagination.
@@ -251,17 +297,56 @@ func (repository *Repository) ListTenantContexts(
 	limit int,
 	cursor *ports.TenantCursor,
 ) ([]domain.TenantContext, error) {
+	transaction, err := repository.beginPrincipal(
+		ctx,
+		userID,
+		pgx.TxOptions{
+			AccessMode: pgx.ReadOnly,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		_ = transaction.Rollback(ctx)
+	}()
+
 	query := `
-		SELECT t.tenant_id::text
+		SELECT
+			t.tenant_id::text,
+			t.slug,
+			t.display_name,
+			t.status,
+			t.region,
+			t.retention_days,
+			t.version,
+			t.created_by_user_id::text,
+			t.created_at,
+			t.updated_at,
+			t.archived_at,
+
+			m.user_id::text,
+			m.role,
+			m.version,
+			m.created_by_user_id::text,
+			m.created_at,
+			m.updated_at,
+
+			e.plan_key,
+			e.features,
+			e.limits,
+			e.version,
+			e.updated_at
 		FROM tenant_tenants AS t
 		JOIN tenant_memberships AS m
 			ON m.tenant_id = t.tenant_id
+		JOIN tenant_entitlements AS e
+			ON e.tenant_id = t.tenant_id
 		WHERE m.user_id = $1::uuid
 	`
 
-	args := []any{
-		userID,
-	}
+	args := []any{userID}
 
 	if cursor != nil {
 		query += `
@@ -281,58 +366,52 @@ func (repository *Repository) ListTenantContexts(
 		len(args),
 	)
 
-	rows, err := repository.pool.Query(
+	rows, err := transaction.Query(
 		ctx,
 		query,
 		args...,
 	)
 	if err != nil {
 		return nil, fmt.Errorf(
-			"list tenant IDs: %w",
+			"list tenant contexts: %w",
 			err,
 		)
 	}
+
 	defer rows.Close()
-
-	var tenantIDs []string
-
-	for rows.Next() {
-		var tenantID string
-
-		if err := rows.Scan(&tenantID); err != nil {
-			return nil, fmt.Errorf(
-				"scan tenant ID: %w",
-				err,
-			)
-		}
-
-		tenantIDs = append(tenantIDs, tenantID)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf(
-			"iterate tenant IDs: %w",
-			err,
-		)
-	}
 
 	contexts := make(
 		[]domain.TenantContext,
 		0,
-		len(tenantIDs),
+		limit,
 	)
 
-	for _, tenantID := range tenantIDs {
-		contextValue, err := repository.GetTenantContext(
-			ctx,
-			tenantID,
-			userID,
-		)
-		if err != nil {
-			return nil, err
+	for rows.Next() {
+		contextValue, scanErr :=
+			scanTenantContext(rows)
+
+		if scanErr != nil {
+			return nil, scanErr
 		}
 
-		contexts = append(contexts, contextValue)
+		contexts = append(
+			contexts,
+			contextValue,
+		)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf(
+			"iterate tenant contexts: %w",
+			err,
+		)
+	}
+
+	if err := commit(
+		ctx,
+		transaction,
+	); err != nil {
+		return nil, err
 	}
 
 	return contexts, nil
@@ -343,7 +422,12 @@ func (repository *Repository) UpdateTenant(
 	ctx context.Context,
 	params ports.UpdateTenantParams,
 ) (domain.TenantContext, error) {
-	transaction, err := begin(ctx, repository.pool)
+	transaction, err := repository.beginTenant(
+		ctx,
+		params.Tenant.ID,
+		params.ActorUserID,
+		pgx.TxOptions{},
+	)
 	if err != nil {
 		return domain.TenantContext{}, err
 	}
@@ -414,6 +498,7 @@ func (repository *Repository) UpdateTenant(
 	if err := insertOutbox(
 		ctx,
 		transaction,
+		params.Tenant.ID,
 		params.Event,
 	); err != nil {
 		return domain.TenantContext{}, err
@@ -442,7 +527,12 @@ func (repository *Repository) ArchiveTenant(
 	ctx context.Context,
 	params ports.ArchiveTenantParams,
 ) (domain.TenantContext, error) {
-	transaction, err := begin(ctx, repository.pool)
+	transaction, err := repository.beginTenant(
+		ctx,
+		params.Tenant.ID,
+		params.ActorUserID,
+		pgx.TxOptions{},
+	)
 	if err != nil {
 		return domain.TenantContext{}, err
 	}
@@ -501,6 +591,7 @@ func (repository *Repository) ArchiveTenant(
 	if err := insertOutbox(
 		ctx,
 		transaction,
+		params.Tenant.ID,
 		params.Event,
 	); err != nil {
 		return domain.TenantContext{}, err
