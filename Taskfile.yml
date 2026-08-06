@@ -87,6 +87,37 @@ tasks:
     cmds:
       - "{{.COMPOSE}} down -v --remove-orphans"
 
+  db:tenant:hash:
+    desc: Recompute the tenant migration integrity checksum
+    cmds:
+      - atlas migrate hash --env tenant
+
+  db:tenant:status:
+    desc: Show tenant database migration status
+    cmds:
+      - atlas migrate status --env tenant
+
+  db:tenant:validate:
+    desc: Validate tenant migration integrity
+    cmds:
+      - atlas migrate validate --env tenant
+
+  db:tenant:apply:
+    desc: Apply pending tenant database migrations
+    preconditions:
+      - sh: test -n "${TENANT_MIGRATION_DATABASE_URL:-}"
+        msg: TENANT_MIGRATION_DATABASE_URL is required
+    cmds:
+      - atlas migrate apply --env tenant
+
+  db:tenant:dry-run:
+    desc: Print pending tenant migrations without applying them
+    preconditions:
+      - sh: test -n "${TENANT_MIGRATION_DATABASE_URL:-}"
+        msg: TENANT_MIGRATION_DATABASE_URL is required
+    cmds:
+      - atlas migrate apply --env tenant --dry-run
+
   dev:web:
     desc: Run the React development server
     cmds:

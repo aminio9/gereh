@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/aminio9/gereh/platform/go/grpcx"
+	platformpostgres "github.com/aminio9/gereh/platform/go/postgres"
 	"github.com/aminio9/gereh/services/tenant/internal/domain"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -13,6 +15,10 @@ import (
 )
 
 const uniqueViolationCode = "23505"
+
+type rowScanner interface {
+	Scan(dest ...any) error
+}
 
 type rowQuerier interface {
 	QueryRow(
@@ -24,32 +30,108 @@ type rowQuerier interface {
 
 // Repository is a pgx-backed tenant repository.
 type Repository struct {
+	database *platformpostgres.Database
+
+	// Direct pool access is retained only for the service-internal outbox.
 	pool *pgxpool.Pool
 }
 
 // New creates a PostgreSQL tenant repository.
 func New(pool *pgxpool.Pool) *Repository {
 	return &Repository{
-		pool: pool,
+		database: platformpostgres.Wrap(pool),
+		pool:     pool,
 	}
 }
 
-func begin(
+func requestIdentifiers(
 	ctx context.Context,
-	pool *pgxpool.Pool,
+) (string, string) {
+	metadata, ok :=
+		grpcx.RequestMetadataFromContext(ctx)
+
+	if !ok {
+		return "", ""
+	}
+
+	return metadata.RequestID, metadata.CorrelationID
+}
+
+func (repository *Repository) beginTenant(
+	ctx context.Context,
+	tenantID string,
+	principalID string,
+	options pgx.TxOptions,
 ) (pgx.Tx, error) {
-	transaction, err := pool.BeginTx(
+	requestID, correlationID :=
+		requestIdentifiers(ctx)
+
+	transaction, err := repository.database.Begin(
 		ctx,
-		pgx.TxOptions{},
+		platformpostgres.TenantScope(
+			tenantID,
+			principalID,
+			requestID,
+			correlationID,
+		),
+		options,
 	)
 	if err != nil {
 		return nil, fmt.Errorf(
-			"begin tenant transaction: %w",
+			"begin tenant-scoped transaction: %w",
 			err,
 		)
 	}
 
 	return transaction, nil
+}
+
+func (repository *Repository) beginPrincipal(
+	ctx context.Context,
+	principalID string,
+	options pgx.TxOptions,
+) (pgx.Tx, error) {
+	requestID, correlationID :=
+		requestIdentifiers(ctx)
+
+	transaction, err := repository.database.Begin(
+		ctx,
+		platformpostgres.PrincipalScope(
+			principalID,
+			requestID,
+			correlationID,
+		),
+		options,
+	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"begin principal-scoped transaction: %w",
+			err,
+		)
+	}
+
+	return transaction, nil
+}
+
+func (repository *Repository) applyTenantScope(
+	ctx context.Context,
+	transaction pgx.Tx,
+	tenantID string,
+	principalID string,
+) error {
+	requestID, correlationID :=
+		requestIdentifiers(ctx)
+
+	return platformpostgres.ApplyScope(
+		ctx,
+		transaction,
+		platformpostgres.TenantScope(
+			tenantID,
+			principalID,
+			requestID,
+			correlationID,
+		),
+	)
 }
 
 func commit(
@@ -133,18 +215,41 @@ func queryContext(
 		`
 	}
 
+	return scanTenantContextFromQuery(
+		ctx,
+		querier,
+		query,
+		tenantID,
+		userID,
+	)
+}
+
+func scanTenantContextFromQuery(
+	ctx context.Context,
+	querier rowQuerier,
+	query string,
+	args ...any,
+) (domain.TenantContext, error) {
+	row := querier.QueryRow(ctx, query, args...)
+
+	contextValue, err := scanTenantContext(row)
+	if err != nil {
+		return domain.TenantContext{}, err
+	}
+
+	return contextValue, nil
+}
+
+func scanTenantContext(
+	scanner rowScanner,
+) (domain.TenantContext, error) {
 	var result domain.TenantContext
 	var status string
 	var role string
 	var featuresJSON []byte
 	var limitsJSON []byte
 
-	err := querier.QueryRow(
-		ctx,
-		query,
-		tenantID,
-		userID,
-	).Scan(
+	err := scanner.Scan(
 		&result.Tenant.ID,
 		&result.Tenant.Slug,
 		&result.Tenant.DisplayName,
@@ -208,12 +313,14 @@ func queryContext(
 func insertOutbox(
 	ctx context.Context,
 	transaction pgx.Tx,
+	tenantID string,
 	event domain.OutboxEvent,
 ) error {
 	_, err := transaction.Exec(
 		ctx,
 		`
 			INSERT INTO tenant_outbox (
+				tenant_id,
 				event_id,
 				topic,
 				partition_key,
@@ -222,12 +329,14 @@ func insertOutbox(
 			)
 			VALUES (
 				$1::uuid,
-				$2,
+				$2::uuid,
 				$3,
 				$4,
-				$5
+				$5,
+				$6
 			)
 		`,
+		tenantID,
 		event.ID,
 		event.Topic,
 		event.Key,

@@ -15,12 +15,12 @@ import (
 	platformkafka "github.com/aminio9/gereh/platform/go/events/kafka"
 	"github.com/aminio9/gereh/platform/go/grpcx"
 	"github.com/aminio9/gereh/platform/go/observability"
+	platformpostgres "github.com/aminio9/gereh/platform/go/postgres"
 	"github.com/aminio9/gereh/services/tenant/internal/adapters/outbox"
 	tenantpostgres "github.com/aminio9/gereh/services/tenant/internal/adapters/postgres"
 	"github.com/aminio9/gereh/services/tenant/internal/application"
 	"github.com/aminio9/gereh/services/tenant/internal/config"
 	tenantgrpc "github.com/aminio9/gereh/services/tenant/internal/transport/grpc"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var version = "dev"
@@ -99,35 +99,37 @@ func run() error {
 
 	slog.SetDefault(logger)
 
-	poolConfig, err := pgxpool.ParseConfig(
-		runtimeConfig.DatabaseURL,
-	)
-	if err != nil {
-		return err
-	}
-
-	poolConfig.MaxConns =
-		runtimeConfig.PostgresMaxConnections
-
-	poolConfig.MinConns =
-		runtimeConfig.PostgresMinConnections
-
-	poolConfig.MaxConnLifetime = 30 * time.Minute
-	poolConfig.MaxConnIdleTime = 5 * time.Minute
-	poolConfig.HealthCheckPeriod = 30 * time.Second
-
-	database, err := pgxpool.NewWithConfig(
+	database, err := platformpostgres.Open(
 		ctx,
-		poolConfig,
+		platformpostgres.Config{
+			URL: runtimeConfig.DatabaseURL,
+
+			ApplicationName: runtimeConfig.ServiceName,
+
+			MaxConnections: runtimeConfig.PostgresMaxConnections,
+
+			MinConnections: runtimeConfig.PostgresMinConnections,
+
+			MaxConnectionLifetime: 30 * time.Minute,
+
+			MaxConnectionIdleTime: 5 * time.Minute,
+
+			HealthCheckPeriod: 30 * time.Second,
+
+			StatementTimeout: 15 * time.Second,
+
+			LockTimeout: 3 * time.Second,
+
+			IdleInTransactionTimeout: 15 * time.Second,
+
+			OwnedTableSchemas: []string{"public"},
+		},
 	)
 	if err != nil {
 		return err
 	}
-	defer database.Close()
 
-	if err := database.Ping(ctx); err != nil {
-		return err
-	}
+	defer database.Close()
 
 	producer, err := platformkafka.NewProducer(
 		runtimeConfig.Kafka,
@@ -143,7 +145,9 @@ func run() error {
 		return err
 	}
 
-	repository := tenantpostgres.New(database)
+	repository := tenantpostgres.New(
+		database.Pool(),
+	)
 
 	tenantService, err := application.New(
 		repository,

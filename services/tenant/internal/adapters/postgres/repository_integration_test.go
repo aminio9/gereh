@@ -12,6 +12,7 @@ import (
 	"github.com/aminio9/gereh/services/tenant/internal/domain"
 	"github.com/aminio9/gereh/services/tenant/internal/ports"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -51,34 +52,75 @@ func cleanupTenants(
 	t *testing.T,
 	repository *Repository,
 	tenantIDs []string,
+	actorUserID string,
 ) {
 	t.Helper()
 
 	for _, tenantID := range tenantIDs {
-		_, err := repository.pool.Exec(
-			context.Background(),
-			`
-				DELETE FROM tenant_outbox
-				WHERE partition_key = $1
-
-			`,
+		cleanupTenant(
+			t,
+			repository,
 			tenantID,
+			actorUserID,
 		)
-		if err != nil {
-			t.Errorf("cleanup outbox rows: %v", err)
-		}
+	}
+}
 
-		_, err = repository.pool.Exec(
-			context.Background(),
-			`
-				DELETE FROM tenant_tenants
-				WHERE tenant_id = $1::uuid
-			`,
-			tenantID,
+func cleanupTenant(
+	t *testing.T,
+	repository *Repository,
+	tenantID string,
+	actorUserID string,
+) {
+	t.Helper()
+
+	ctx := context.Background()
+
+	// Outbox is operational and has no tenant RLS.
+	if _, err := repository.pool.Exec(
+		ctx,
+		`
+			DELETE FROM tenant_outbox
+			WHERE tenant_id = $1::uuid
+		`,
+		tenantID,
+	); err != nil {
+		t.Errorf("cleanup tenant outbox: %v", err)
+		return
+	}
+
+	transaction, err := repository.beginTenant(
+		ctx,
+		tenantID,
+		actorUserID,
+		pgx.TxOptions{},
+	)
+	if err != nil {
+		t.Errorf(
+			"begin tenant cleanup: %v",
+			err,
 		)
-		if err != nil {
-			t.Errorf("cleanup tenant: %v", err)
-		}
+		return
+	}
+
+	defer func() {
+		_ = transaction.Rollback(ctx)
+	}()
+
+	if _, err := transaction.Exec(
+		ctx,
+		`
+			DELETE FROM tenant_tenants
+			WHERE tenant_id = $1::uuid
+		`,
+		tenantID,
+	); err != nil {
+		t.Errorf("cleanup tenant: %v", err)
+		return
+	}
+
+	if err := transaction.Commit(ctx); err != nil {
+		t.Errorf("commit tenant cleanup: %v", err)
 	}
 }
 
@@ -231,7 +273,7 @@ func TestCreateTenantCreatesExactlyOneOwner(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{result.Tenant.ID})
+		cleanupTenants(t, repository, []string{result.Tenant.ID}, actor)
 	})
 
 	if result.Membership.Role != domain.RoleOwner {
@@ -270,7 +312,7 @@ func TestRepeatedCreationWithSameRequestIDReturnsSameTenant(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{first.Tenant.ID})
+		cleanupTenants(t, repository, []string{first.Tenant.ID}, actor)
 	})
 
 	second, err := createTestTenant(
@@ -314,7 +356,7 @@ func TestDuplicateSlugReturnsConflict(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{first.Tenant.ID})
+		cleanupTenants(t, repository, []string{first.Tenant.ID}, actor)
 	})
 
 	_, err = createTestTenant(
@@ -349,7 +391,7 @@ func TestStaleTenantVersionReturnsVersionConflict(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{result.Tenant.ID})
+		cleanupTenants(t, repository, []string{result.Tenant.ID}, actor)
 	})
 
 	now := time.Now().UTC()
@@ -399,7 +441,7 @@ func TestAdminCannotPromoteToOwner(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{result.Tenant.ID})
+		cleanupTenants(t, repository, []string{result.Tenant.ID}, owner)
 	})
 
 	tenantVersion := result.Tenant.Version
@@ -490,7 +532,7 @@ func TestAdminCannotDemoteOrRemoveOwner(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{result.Tenant.ID})
+		cleanupTenants(t, repository, []string{result.Tenant.ID}, owner)
 	})
 
 	tenantVersion := result.Tenant.Version
@@ -589,7 +631,7 @@ func TestFinalOwnerCannotBeRemoved(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{result.Tenant.ID})
+		cleanupTenants(t, repository, []string{result.Tenant.ID}, owner)
 	})
 
 	ownerMembership, err := repository.GetMembership(
@@ -647,7 +689,7 @@ func TestConcurrentOwnerDemotionsOnlyOneSucceeds(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{result.Tenant.ID})
+		cleanupTenants(t, repository, []string{result.Tenant.ID}, ownerA)
 	})
 
 	tenantVersion := result.Tenant.Version
@@ -761,7 +803,7 @@ func TestSuccessfulMutationInsertsOneOutboxRow(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{result.Tenant.ID})
+		cleanupTenants(t, repository, []string{result.Tenant.ID}, actor)
 	})
 
 	count, err := outboxCount(ctx, repository, result.Tenant.ID)
@@ -827,7 +869,7 @@ func TestFailedMutationInsertsNoOutboxRow(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{result.Tenant.ID})
+		cleanupTenants(t, repository, []string{result.Tenant.ID}, actor)
 	})
 
 	count, err := outboxCount(ctx, repository, result.Tenant.ID)

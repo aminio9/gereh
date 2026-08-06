@@ -86,8 +86,9 @@ services:
 
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-lgtm:4317
 
-      # Tenant service
-      TENANT_DATABASE_URL: postgres://gereh:gereh@postgres:5432/tenant_db?sslmode=disable
+      # Tenant service (runtime role must not own tables or bypass RLS)
+      TENANT_DATABASE_URL: postgres://gereh_tenant_app:gereh-tenant-app-local-only@postgres:5432/tenant_db?sslmode=disable
+      TENANT_MIGRATION_DATABASE_URL: postgres://gereh_tenant_migrator:gereh-tenant-migrator-local-only@postgres:5432/tenant_db?sslmode=disable
       TENANT_GRPC_ADDRESS: ":18082"
       TENANT_GRPC_TARGET: passthrough:///127.0.0.1:18082
       TENANT_GRPC_INSECURE: "true"
