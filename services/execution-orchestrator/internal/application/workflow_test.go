@@ -57,17 +57,31 @@ func (provisioner *mockRuntimeProvisioner) EnsureTenantRuntime(
 	return args.Error(0)
 }
 
+// mockOrganizationClient satisfies ports.OrganizationBootstrapClient.
+type mockOrganizationClient struct {
+	mock.Mock
+}
+
+func (client *mockOrganizationClient) EnsureDefaultCompany(
+	_ context.Context,
+	request ports.EnsureDefaultCompanyRequest,
+) error {
+	args := client.Called(request)
+	return args.Error(0)
+}
+
 func newTestWorkflowEnvironment(
 	t *testing.T,
 	tenant *mockTenantClient,
 	runtime *mockRuntimeProvisioner,
+	organization *mockOrganizationClient,
 ) *testsuite.TestWorkflowEnvironment {
 	t.Helper()
 
 	var suite testsuite.WorkflowTestSuite
 	environment := suite.NewTestWorkflowEnvironment()
 
-	activities := NewActivities(tenant, runtime)
+	activities := NewActivities(tenant, runtime, organization)
 	environment.RegisterActivity(activities)
 
 	return environment
@@ -84,20 +98,25 @@ func TestProvisionTenantWorkflowCompletes(
 	runtime := new(mockRuntimeProvisioner)
 	defer runtime.AssertExpectations(t)
 
+	organization := new(mockOrganizationClient)
+	defer organization.AssertExpectations(t)
+
 	environment := newTestWorkflowEnvironment(
 		t,
 		tenant,
 		runtime,
+		organization,
 	)
 
-	input := domain.ProvisionTenantInput{
-		TenantID:    "018f7767-28d2-7f5c-a693-0bb4c8ee4ae1",
-		OperationID: "018f7767-28d2-7f5c-a693-0bb4c8ee4ae2",
-		Region:      "local",
-	}
+	input := testProvisionInput()
 
 	tenant.
 		On("MarkRunning", mock.Anything).
+		Return(nil).
+		Once()
+
+	organization.
+		On("EnsureDefaultCompany", mock.Anything).
 		Return(nil).
 		Once()
 
@@ -129,21 +148,25 @@ func TestProvisionTenantWorkflowPersistsFailure(
 	defer tenant.AssertExpectations(t)
 	runtime := new(mockRuntimeProvisioner)
 	defer runtime.AssertExpectations(t)
+	organization := new(mockOrganizationClient)
+	defer organization.AssertExpectations(t)
 
 	environment := newTestWorkflowEnvironment(
 		t,
 		tenant,
 		runtime,
+		organization,
 	)
 
-	input := domain.ProvisionTenantInput{
-		TenantID:    "018f7767-28d2-7f5c-a693-0bb4c8ee4ae1",
-		OperationID: "018f7767-28d2-7f5c-a693-0bb4c8ee4ae2",
-		Region:      "local",
-	}
+	input := testProvisionInput()
 
 	tenant.
 		On("MarkRunning", mock.Anything).
+		Return(nil).
+		Once()
+
+	organization.
+		On("EnsureDefaultCompany", mock.Anything).
 		Return(nil).
 		Once()
 
@@ -175,21 +198,25 @@ func TestProvisionTenantWorkflowPersistsCompleteFailure(
 	defer tenant.AssertExpectations(t)
 	runtime := new(mockRuntimeProvisioner)
 	defer runtime.AssertExpectations(t)
+	organization := new(mockOrganizationClient)
+	defer organization.AssertExpectations(t)
 
 	environment := newTestWorkflowEnvironment(
 		t,
 		tenant,
 		runtime,
+		organization,
 	)
 
-	input := domain.ProvisionTenantInput{
-		TenantID:    "018f7767-28d2-7f5c-a693-0bb4c8ee4ae1",
-		OperationID: "018f7767-28d2-7f5c-a693-0bb4c8ee4ae2",
-		Region:      "local",
-	}
+	input := testProvisionInput()
 
 	tenant.
 		On("MarkRunning", mock.Anything).
+		Return(nil).
+		Once()
+
+	organization.
+		On("EnsureDefaultCompany", mock.Anything).
 		Return(nil).
 		Once()
 
@@ -215,4 +242,14 @@ func TestProvisionTenantWorkflowPersistsCompleteFailure(
 
 	require.True(t, environment.IsWorkflowCompleted())
 	require.Error(t, environment.GetWorkflowError())
+}
+
+func testProvisionInput() domain.ProvisionTenantInput {
+	return domain.ProvisionTenantInput{
+		TenantID:          "018f7767-28d2-7f5c-a693-0bb4c8ee4ae1",
+		OperationID:       "018f7767-28d2-7f5c-a693-0bb4c8ee4ae2",
+		Region:            "local",
+		ActorUserID:       "018f7767-28d2-7f5c-a693-0bb4c8ee4ae3",
+		TenantDisplayName: "Example Org",
+	}
 }

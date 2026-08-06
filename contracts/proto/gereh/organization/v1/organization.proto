@@ -1,0 +1,317 @@
+syntax = "proto3";
+
+package gereh.organization.v1;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aminio9/gereh/gen/go/gereh/organization/v1;organizationv1";
+
+// OrganizationService manages companies and their agent organizational
+// identities.
+service OrganizationService {
+  rpc CreateCompany(CreateCompanyRequest) returns (CreateCompanyResponse);
+
+  rpc GetCompany(GetCompanyRequest) returns (GetCompanyResponse);
+
+  rpc ListCompanies(ListCompaniesRequest) returns (ListCompaniesResponse);
+
+  rpc UpdateCompany(UpdateCompanyRequest) returns (UpdateCompanyResponse);
+
+  rpc ArchiveCompany(ArchiveCompanyRequest) returns (ArchiveCompanyResponse);
+
+  rpc CreateAgent(CreateAgentRequest) returns (CreateAgentResponse);
+
+  rpc GetAgent(GetAgentRequest) returns (GetAgentResponse);
+
+  rpc ListAgents(ListAgentsRequest) returns (ListAgentsResponse);
+
+  rpc UpdateAgent(UpdateAgentRequest) returns (UpdateAgentResponse);
+
+  rpc SetAgentManager(SetAgentManagerRequest) returns (SetAgentManagerResponse);
+
+  rpc PauseAgent(PauseAgentRequest) returns (PauseAgentResponse);
+
+  rpc ResumeAgent(ResumeAgentRequest) returns (ResumeAgentResponse);
+
+  rpc DeleteAgent(DeleteAgentRequest) returns (DeleteAgentResponse);
+
+  rpc GetAgentHierarchy(GetAgentHierarchyRequest) returns (GetAgentHierarchyResponse);
+}
+
+// OrganizationBootstrapService is a workload-only API used by tenant
+// onboarding. It is never called by end users.
+service OrganizationBootstrapService {
+  rpc EnsureDefaultCompany(EnsureDefaultCompanyRequest) returns (EnsureDefaultCompanyResponse);
+}
+
+enum CompanyStatus {
+  COMPANY_STATUS_UNSPECIFIED = 0;
+  COMPANY_STATUS_ACTIVE = 1;
+  COMPANY_STATUS_ARCHIVED = 2;
+}
+
+enum AgentStatus {
+  AGENT_STATUS_UNSPECIFIED = 0;
+  AGENT_STATUS_DRAFT = 1;
+  AGENT_STATUS_PROVISIONING = 2;
+  AGENT_STATUS_CONFIGURING_RUNTIME = 3;
+  AGENT_STATUS_HEALTH_CHECKING = 4;
+  AGENT_STATUS_READY = 5;
+  AGENT_STATUS_DEGRADED = 6;
+  AGENT_STATUS_PAUSED = 7;
+  AGENT_STATUS_FAILED = 8;
+  AGENT_STATUS_DELETING = 9;
+  AGENT_STATUS_DELETED = 10;
+}
+
+enum AgentExecutionProfile {
+  AGENT_EXECUTION_PROFILE_UNSPECIFIED = 0;
+  AGENT_EXECUTION_PROFILE_BALANCED = 1;
+  AGENT_EXECUTION_PROFILE_PERSISTENT = 2;
+  AGENT_EXECUTION_PROFILE_TECHNICAL_WORKER = 3;
+}
+
+enum AgentAutonomyLevel {
+  AGENT_AUTONOMY_LEVEL_UNSPECIFIED = 0;
+  AGENT_AUTONOMY_LEVEL_OBSERVE_ONLY = 1;
+  AGENT_AUTONOMY_LEVEL_SUGGEST = 2;
+  AGENT_AUTONOMY_LEVEL_APPROVAL_REQUIRED = 3;
+  AGENT_AUTONOMY_LEVEL_POLICY_BOUNDED = 4;
+}
+
+message Company {
+  string tenant_id = 1;
+  string company_id = 2;
+  string slug = 3;
+  string display_name = 4;
+  string description = 5;
+  CompanyStatus status = 6;
+  bool is_default = 7;
+  int64 version = 8;
+  string created_by_user_id = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+  google.protobuf.Timestamp archived_at = 12;
+}
+
+message Agent {
+  string tenant_id = 1;
+  string company_id = 2;
+  string agent_id = 3;
+  string slug = 4;
+  string display_name = 5;
+  string role_title = 6;
+  string objective = 7;
+  optional string manager_agent_id = 8;
+  AgentStatus status = 9;
+  AgentExecutionProfile execution_profile = 10;
+  AgentAutonomyLevel autonomy_level = 11;
+  repeated string capabilities = 12;
+  google.protobuf.Struct configuration = 13;
+  int64 version = 14;
+  string created_by_user_id = 15;
+  google.protobuf.Timestamp created_at = 16;
+  google.protobuf.Timestamp updated_at = 17;
+  google.protobuf.Timestamp deleted_at = 18;
+}
+
+message CreateCompanyRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string slug = 3;
+  string display_name = 4;
+  string description = 5;
+}
+
+message CreateCompanyResponse {
+  Company company = 1;
+}
+
+message GetCompanyRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string company_id = 3;
+}
+
+message GetCompanyResponse {
+  Company company = 1;
+}
+
+message ListCompaniesRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  int32 page_size = 3;
+  string page_token = 4;
+  bool include_archived = 5;
+}
+
+message ListCompaniesResponse {
+  repeated Company companies = 1;
+  string next_page_token = 2;
+}
+
+message UpdateCompanyRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string company_id = 3;
+  int64 expected_version = 4;
+  optional string display_name = 5;
+  optional string description = 6;
+}
+
+message UpdateCompanyResponse {
+  Company company = 1;
+}
+
+message ArchiveCompanyRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string company_id = 3;
+  int64 expected_version = 4;
+}
+
+message ArchiveCompanyResponse {
+  Company company = 1;
+}
+
+message CapabilitySet {
+  repeated string values = 1;
+}
+
+message CreateAgentRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string company_id = 3;
+  string slug = 4;
+  string display_name = 5;
+  string role_title = 6;
+  string objective = 7;
+  optional string manager_agent_id = 8;
+  AgentExecutionProfile execution_profile = 9;
+  AgentAutonomyLevel autonomy_level = 10;
+  repeated string capabilities = 11;
+  google.protobuf.Struct configuration = 12;
+}
+
+message CreateAgentResponse {
+  Agent agent = 1;
+}
+
+message GetAgentRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string agent_id = 3;
+}
+
+message GetAgentResponse {
+  Agent agent = 1;
+}
+
+message ListAgentsRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string company_id = 3;
+  int32 page_size = 4;
+  string page_token = 5;
+  bool include_deleted = 6;
+}
+
+message ListAgentsResponse {
+  repeated Agent agents = 1;
+  string next_page_token = 2;
+}
+
+message UpdateAgentRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string agent_id = 3;
+  int64 expected_version = 4;
+
+  optional string display_name = 5;
+  optional string role_title = 6;
+  optional string objective = 7;
+
+  optional AgentExecutionProfile execution_profile = 8;
+  optional AgentAutonomyLevel autonomy_level = 9;
+
+  CapabilitySet capabilities = 10;
+  google.protobuf.Struct configuration = 11;
+}
+
+message UpdateAgentResponse {
+  Agent agent = 1;
+}
+
+message SetAgentManagerRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string agent_id = 3;
+  int64 expected_version = 4;
+
+  // Empty means the agent becomes a root agent.
+  optional string manager_agent_id = 5;
+}
+
+message SetAgentManagerResponse {
+  Agent agent = 1;
+}
+
+message PauseAgentRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string agent_id = 3;
+  int64 expected_version = 4;
+}
+
+message PauseAgentResponse {
+  Agent agent = 1;
+}
+
+message ResumeAgentRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string agent_id = 3;
+  int64 expected_version = 4;
+}
+
+message ResumeAgentResponse {
+  Agent agent = 1;
+}
+
+message DeleteAgentRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string agent_id = 3;
+  int64 expected_version = 4;
+}
+
+message DeleteAgentResponse {
+  Agent agent = 1;
+}
+
+message AgentHierarchyNode {
+  Agent agent = 1;
+  int32 depth = 2;
+}
+
+message GetAgentHierarchyRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string company_id = 3;
+}
+
+message GetAgentHierarchyResponse {
+  repeated AgentHierarchyNode nodes = 1;
+}
+
+message EnsureDefaultCompanyRequest {
+  string tenant_id = 1;
+  string onboarding_operation_id = 2;
+  string actor_user_id = 3;
+  string tenant_display_name = 4;
+}
+
+message EnsureDefaultCompanyResponse {
+  Company company = 1;
+}

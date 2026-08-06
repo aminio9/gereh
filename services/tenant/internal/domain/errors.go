@@ -23,4 +23,7 @@ var (
 
 	// ErrArchived indicates that the tenant no longer accepts mutations.
 	ErrArchived = errors.New("tenant is archived")
+
+	// ErrTenantNotActive indicates the tenant is not yet active.
+	ErrTenantNotActive = errors.New("tenant is not active")
 )

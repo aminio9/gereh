@@ -210,5 +210,10 @@ func requirePermission(
 		return domain.ErrArchived
 	}
 
+	if decision.DenialReason ==
+		domain.DenialReasonTenantNotActive {
+		return domain.ErrTenantNotActive
+	}
+
 	return domain.ErrForbidden
 }

@@ -200,8 +200,8 @@ services:
       - |
         topics=(
           gereh.tenant.events.v1
-          gereh.company.events.v1
-          gereh.agent.events.v1
+          gereh.organization.company.events.v1
+          gereh.organization.agent.events.v1
           gereh.work.events.v1
           gereh.execution.commands.v1
           gereh.execution.events.v1

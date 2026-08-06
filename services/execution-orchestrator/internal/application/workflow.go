@@ -16,6 +16,10 @@ const (
 	OnboardingTaskQueue = "gereh-tenant-onboarding"
 )
 
+// ensureDefaultCompanyChangeID marks the workflow change that added default
+// company creation. Older histories keep their original path.
+const ensureDefaultCompanyChangeID = "tenant-onboarding-default-company-v1"
+
 // ProvisionTenantWorkflow provisions tenant infrastructure and activates the
 // tenant. It contains no network or database calls; every external effect is
 // an activity, preserving Temporal determinism.
@@ -66,6 +70,23 @@ func ProvisionTenantWorkflow(
 		},
 	).Get(ctx, nil); err != nil {
 		return err
+	}
+
+	version := workflow.GetVersion(
+		ctx,
+		ensureDefaultCompanyChangeID,
+		workflow.DefaultVersion,
+		1,
+	)
+
+	if version >= 1 {
+		if err := workflow.ExecuteActivity(
+			ctx,
+			"EnsureDefaultCompany",
+			input,
+		).Get(ctx, nil); err != nil {
+			return failWorkflow(ctx, input, err)
+		}
 	}
 
 	runtimeContext := workflow.WithActivityOptions(

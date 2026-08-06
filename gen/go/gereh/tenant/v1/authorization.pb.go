@@ -28,15 +28,25 @@ const (
 type Permission int32
 
 const (
-	Permission_PERMISSION_UNSPECIFIED        Permission = 0
-	Permission_PERMISSION_TENANT_READ        Permission = 1
-	Permission_PERMISSION_TENANT_UPDATE      Permission = 2
-	Permission_PERMISSION_TENANT_ARCHIVE     Permission = 3
-	Permission_PERMISSION_MEMBER_LIST        Permission = 10
-	Permission_PERMISSION_MEMBER_ADD         Permission = 11
-	Permission_PERMISSION_MEMBER_UPDATE_ROLE Permission = 12
-	Permission_PERMISSION_MEMBER_REMOVE      Permission = 13
-	Permission_PERMISSION_ENTITLEMENT_READ   Permission = 20
+	Permission_PERMISSION_UNSPECIFIED            Permission = 0
+	Permission_PERMISSION_TENANT_READ            Permission = 1
+	Permission_PERMISSION_TENANT_UPDATE          Permission = 2
+	Permission_PERMISSION_TENANT_ARCHIVE         Permission = 3
+	Permission_PERMISSION_MEMBER_LIST            Permission = 10
+	Permission_PERMISSION_MEMBER_ADD             Permission = 11
+	Permission_PERMISSION_MEMBER_UPDATE_ROLE     Permission = 12
+	Permission_PERMISSION_MEMBER_REMOVE          Permission = 13
+	Permission_PERMISSION_ENTITLEMENT_READ       Permission = 20
+	Permission_PERMISSION_COMPANY_READ           Permission = 30
+	Permission_PERMISSION_COMPANY_CREATE         Permission = 31
+	Permission_PERMISSION_COMPANY_UPDATE         Permission = 32
+	Permission_PERMISSION_COMPANY_ARCHIVE        Permission = 33
+	Permission_PERMISSION_AGENT_READ             Permission = 40
+	Permission_PERMISSION_AGENT_CREATE           Permission = 41
+	Permission_PERMISSION_AGENT_UPDATE           Permission = 42
+	Permission_PERMISSION_AGENT_DELETE           Permission = 43
+	Permission_PERMISSION_AGENT_HIERARCHY_MANAGE Permission = 44
+	Permission_PERMISSION_AGENT_LIFECYCLE_MANAGE Permission = 45
 )
 
 // Enum value maps for Permission.
@@ -51,17 +61,37 @@ var (
 		12: "PERMISSION_MEMBER_UPDATE_ROLE",
 		13: "PERMISSION_MEMBER_REMOVE",
 		20: "PERMISSION_ENTITLEMENT_READ",
+		30: "PERMISSION_COMPANY_READ",
+		31: "PERMISSION_COMPANY_CREATE",
+		32: "PERMISSION_COMPANY_UPDATE",
+		33: "PERMISSION_COMPANY_ARCHIVE",
+		40: "PERMISSION_AGENT_READ",
+		41: "PERMISSION_AGENT_CREATE",
+		42: "PERMISSION_AGENT_UPDATE",
+		43: "PERMISSION_AGENT_DELETE",
+		44: "PERMISSION_AGENT_HIERARCHY_MANAGE",
+		45: "PERMISSION_AGENT_LIFECYCLE_MANAGE",
 	}
 	Permission_value = map[string]int32{
-		"PERMISSION_UNSPECIFIED":        0,
-		"PERMISSION_TENANT_READ":        1,
-		"PERMISSION_TENANT_UPDATE":      2,
-		"PERMISSION_TENANT_ARCHIVE":     3,
-		"PERMISSION_MEMBER_LIST":        10,
-		"PERMISSION_MEMBER_ADD":         11,
-		"PERMISSION_MEMBER_UPDATE_ROLE": 12,
-		"PERMISSION_MEMBER_REMOVE":      13,
-		"PERMISSION_ENTITLEMENT_READ":   20,
+		"PERMISSION_UNSPECIFIED":            0,
+		"PERMISSION_TENANT_READ":            1,
+		"PERMISSION_TENANT_UPDATE":          2,
+		"PERMISSION_TENANT_ARCHIVE":         3,
+		"PERMISSION_MEMBER_LIST":            10,
+		"PERMISSION_MEMBER_ADD":             11,
+		"PERMISSION_MEMBER_UPDATE_ROLE":     12,
+		"PERMISSION_MEMBER_REMOVE":          13,
+		"PERMISSION_ENTITLEMENT_READ":       20,
+		"PERMISSION_COMPANY_READ":           30,
+		"PERMISSION_COMPANY_CREATE":         31,
+		"PERMISSION_COMPANY_UPDATE":         32,
+		"PERMISSION_COMPANY_ARCHIVE":        33,
+		"PERMISSION_AGENT_READ":             40,
+		"PERMISSION_AGENT_CREATE":           41,
+		"PERMISSION_AGENT_UPDATE":           42,
+		"PERMISSION_AGENT_DELETE":           43,
+		"PERMISSION_AGENT_HIERARCHY_MANAGE": 44,
+		"PERMISSION_AGENT_LIFECYCLE_MANAGE": 45,
 	}
 )
 
@@ -158,6 +188,7 @@ const (
 	AuthorizationDenialReason_AUTHORIZATION_DENIAL_REASON_NOT_A_MEMBER           AuthorizationDenialReason = 2
 	AuthorizationDenialReason_AUTHORIZATION_DENIAL_REASON_TENANT_ARCHIVED        AuthorizationDenialReason = 3
 	AuthorizationDenialReason_AUTHORIZATION_DENIAL_REASON_PERMISSION_NOT_GRANTED AuthorizationDenialReason = 4
+	AuthorizationDenialReason_AUTHORIZATION_DENIAL_REASON_TENANT_NOT_ACTIVE      AuthorizationDenialReason = 5
 )
 
 // Enum value maps for AuthorizationDenialReason.
@@ -168,6 +199,7 @@ var (
 		2: "AUTHORIZATION_DENIAL_REASON_NOT_A_MEMBER",
 		3: "AUTHORIZATION_DENIAL_REASON_TENANT_ARCHIVED",
 		4: "AUTHORIZATION_DENIAL_REASON_PERMISSION_NOT_GRANTED",
+		5: "AUTHORIZATION_DENIAL_REASON_TENANT_NOT_ACTIVE",
 	}
 	AuthorizationDenialReason_value = map[string]int32{
 		"AUTHORIZATION_DENIAL_REASON_UNSPECIFIED":            0,
@@ -175,6 +207,7 @@ var (
 		"AUTHORIZATION_DENIAL_REASON_NOT_A_MEMBER":           2,
 		"AUTHORIZATION_DENIAL_REASON_TENANT_ARCHIVED":        3,
 		"AUTHORIZATION_DENIAL_REASON_PERMISSION_NOT_GRANTED": 4,
+		"AUTHORIZATION_DENIAL_REASON_TENANT_NOT_ACTIVE":      5,
 	}
 )
 
@@ -544,7 +577,7 @@ const file_gereh_tenant_v1_authorization_proto_rawDesc = "" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12=\n" +
 	"\vpermissions\x18\x03 \x03(\x0e2\x1b.gereh.tenant.v1.PermissionR\vpermissions\"g\n" +
 	"\x1fBatchCheckAuthorizationResponse\x12D\n" +
-	"\tdecisions\x18\x01 \x03(\v2&.gereh.tenant.v1.AuthorizationDecisionR\tdecisions*\x9a\x02\n" +
+	"\tdecisions\x18\x01 \x03(\v2&.gereh.tenant.v1.AuthorizationDecisionR\tdecisions*\xd5\x04\n" +
 	"\n" +
 	"Permission\x12\x1a\n" +
 	"\x16PERMISSION_UNSPECIFIED\x10\x00\x12\x1a\n" +
@@ -556,20 +589,31 @@ const file_gereh_tenant_v1_authorization_proto_rawDesc = "" +
 	"\x15PERMISSION_MEMBER_ADD\x10\v\x12!\n" +
 	"\x1dPERMISSION_MEMBER_UPDATE_ROLE\x10\f\x12\x1c\n" +
 	"\x18PERMISSION_MEMBER_REMOVE\x10\r\x12\x1f\n" +
-	"\x1bPERMISSION_ENTITLEMENT_READ\x10\x14*\x87\x01\n" +
+	"\x1bPERMISSION_ENTITLEMENT_READ\x10\x14\x12\x1b\n" +
+	"\x17PERMISSION_COMPANY_READ\x10\x1e\x12\x1d\n" +
+	"\x19PERMISSION_COMPANY_CREATE\x10\x1f\x12\x1d\n" +
+	"\x19PERMISSION_COMPANY_UPDATE\x10 \x12\x1e\n" +
+	"\x1aPERMISSION_COMPANY_ARCHIVE\x10!\x12\x19\n" +
+	"\x15PERMISSION_AGENT_READ\x10(\x12\x1b\n" +
+	"\x17PERMISSION_AGENT_CREATE\x10)\x12\x1b\n" +
+	"\x17PERMISSION_AGENT_UPDATE\x10*\x12\x1b\n" +
+	"\x17PERMISSION_AGENT_DELETE\x10+\x12%\n" +
+	"!PERMISSION_AGENT_HIERARCHY_MANAGE\x10,\x12%\n" +
+	"!PERMISSION_AGENT_LIFECYCLE_MANAGE\x10-*\x87\x01\n" +
 	"\n" +
 	"TenantRole\x12\x1b\n" +
 	"\x17TENANT_ROLE_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11TENANT_ROLE_OWNER\x10\x01\x12\x15\n" +
 	"\x11TENANT_ROLE_ADMIN\x10\x02\x12\x16\n" +
 	"\x12TENANT_ROLE_MEMBER\x10\x03\x12\x16\n" +
-	"\x12TENANT_ROLE_VIEWER\x10\x04*\x85\x02\n" +
+	"\x12TENANT_ROLE_VIEWER\x10\x04*\xb8\x02\n" +
 	"\x19AuthorizationDenialReason\x12+\n" +
 	"'AUTHORIZATION_DENIAL_REASON_UNSPECIFIED\x10\x00\x12$\n" +
 	" AUTHORIZATION_DENIAL_REASON_NONE\x10\x01\x12,\n" +
 	"(AUTHORIZATION_DENIAL_REASON_NOT_A_MEMBER\x10\x02\x12/\n" +
 	"+AUTHORIZATION_DENIAL_REASON_TENANT_ARCHIVED\x10\x03\x126\n" +
-	"2AUTHORIZATION_DENIAL_REASON_PERMISSION_NOT_GRANTED\x10\x04B\xc1\x01\n" +
+	"2AUTHORIZATION_DENIAL_REASON_PERMISSION_NOT_GRANTED\x10\x04\x121\n" +
+	"-AUTHORIZATION_DENIAL_REASON_TENANT_NOT_ACTIVE\x10\x05B\xc1\x01\n" +
 	"\x13com.gereh.tenant.v1B\x12AuthorizationProtoP\x01Z8github.com/aminio9/gereh/gen/go/gereh/tenant/v1;tenantv1\xa2\x02\x03GTX\xaa\x02\x0fGereh.Tenant.V1\xca\x02\x0fGereh\\Tenant\\V1\xe2\x02\x1bGereh\\Tenant\\V1\\GPBMetadata\xea\x02\x11Gereh::Tenant::V1b\x06proto3"
 
 var (
