@@ -52,6 +52,7 @@ create_topic "gereh.execution.events.v1" "${seven_days}"
 create_topic "gereh.model.usage.v1" "${thirty_days}"
 create_topic "gereh.audit.events.v1" "${thirty_days}"
 create_topic "gereh.events.dlq.v1" "${fourteen_days}"
+create_topic "gereh.execution-orchestrator.dlq.v1" "${fourteen_days}"
 
 echo
 echo "Kafka topics:"

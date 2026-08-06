@@ -35,4 +35,16 @@ message Operation {
   OperationError error = 6;
 
   map<string, string> metadata = 7;
+
+  string tenant_id = 8;
+  string actor_user_id = 9;
+  string request_id = 10;
+
+  string workflow_id = 11;
+  string workflow_run_id = 12;
+
+  int64 version = 13;
+
+  google.protobuf.Timestamp started_at = 14;
+  google.protobuf.Timestamp completed_at = 15;
 }

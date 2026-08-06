@@ -134,6 +134,35 @@ func (repository *Repository) applyTenantScope(
 	)
 }
 
+func (repository *Repository) beginServiceTenant(
+	ctx context.Context,
+	tenantID string,
+	servicePrincipalID string,
+	options pgx.TxOptions,
+) (pgx.Tx, error) {
+	requestID, correlationID :=
+		requestIdentifiers(ctx)
+
+	transaction, err := repository.database.Begin(
+		ctx,
+		platformpostgres.ServiceTenantScope(
+			tenantID,
+			servicePrincipalID,
+			requestID,
+			correlationID,
+		),
+		options,
+	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"begin service tenant transaction: %w",
+			err,
+		)
+	}
+
+	return transaction, nil
+}
+
 func commit(
 	ctx context.Context,
 	transaction pgx.Tx,

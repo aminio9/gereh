@@ -89,3 +89,21 @@ func validateRetentionDays(value int32) error {
 
 	return nil
 }
+
+func validateOperationError(value domain.OperationError) error {
+	if len(value.Code) < 1 || len(value.Code) > 64 {
+		return fmt.Errorf(
+			"%w: operation error code must contain 1-64 bytes",
+			domain.ErrInvalidArgument,
+		)
+	}
+
+	if len(value.Message) > 512 {
+		return fmt.Errorf(
+			"%w: operation error message must not exceed 512 bytes",
+			domain.ErrInvalidArgument,
+		)
+	}
+
+	return nil
+}

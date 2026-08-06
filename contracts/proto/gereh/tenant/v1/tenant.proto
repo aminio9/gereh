@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package gereh.tenant.v1;
 
+import "gereh/common/v1/operation.proto";
 import "gereh/tenant/v1/authorization.proto";
 import "google/protobuf/timestamp.proto";
 
@@ -11,6 +12,7 @@ option go_package = "github.com/aminio9/gereh/gen/go/gereh/tenant/v1;tenantv1";
 // and retention policy.
 service TenantService {
   rpc CreateTenant(CreateTenantRequest) returns (CreateTenantResponse);
+  rpc GetOperation(GetOperationRequest) returns (GetOperationResponse);
   rpc GetTenant(GetTenantRequest) returns (GetTenantResponse);
   rpc ListTenants(ListTenantsRequest) returns (ListTenantsResponse);
   rpc UpdateTenant(UpdateTenantRequest) returns (UpdateTenantResponse);
@@ -32,6 +34,13 @@ enum TenantStatus {
   TENANT_STATUS_UNSPECIFIED = 0;
   TENANT_STATUS_ACTIVE = 1;
   TENANT_STATUS_ARCHIVED = 2;
+
+  // Durable tenant state exists, but infrastructure is not ready.
+  TENANT_STATUS_PROVISIONING = 3;
+
+  // Provisioning reached a terminal error. The tenant remains visible so its
+  // owner can see the error and retry or contact support.
+  TENANT_STATUS_PROVISIONING_FAILED = 4;
 }
 
 message Tenant {
@@ -87,6 +96,16 @@ message CreateTenantRequest {
 
 message CreateTenantResponse {
   TenantContext context = 1;
+  gereh.common.v1.Operation operation = 2;
+}
+
+message GetOperationRequest {
+  string actor_user_id = 1;
+  string operation_id = 2;
+}
+
+message GetOperationResponse {
+  gereh.common.v1.Operation operation = 1;
 }
 
 message GetTenantRequest {

@@ -52,13 +52,18 @@ func NewConsumer(
 	ready := make(chan struct{})
 	var readyOnce sync.Once
 
+	resetOffset := kgo.NewOffset().AtEnd()
+
+	if config.ConsumerStartOffset ==
+		ConsumerStartOffsetEarliest {
+		resetOffset = kgo.NewOffset().AtStart()
+	}
+
 	options = append(
 		options,
 		kgo.ConsumerGroup(config.GroupID),
 		kgo.ConsumeTopics(config.Topics...),
-		kgo.ConsumeResetOffset(
-			kgo.NewOffset().AtEnd(),
-		),
+		kgo.ConsumeResetOffset(resetOffset),
 		kgo.DisableAutoCommit(),
 		kgo.Balancers(
 			kgo.CooperativeStickyBalancer(),

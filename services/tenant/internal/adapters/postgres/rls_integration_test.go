@@ -76,12 +76,12 @@ func seedRLSTenant(
 		cleanupTenant(
 			t,
 			repository,
-			result.Tenant.ID,
+			result.Context.Tenant.ID,
 			actorUserID,
 		)
 	})
 
-	return result.Tenant.ID
+	return result.Context.Tenant.ID
 }
 
 func TestTenantRLSIsolationAndScopeCleanup(t *testing.T) {

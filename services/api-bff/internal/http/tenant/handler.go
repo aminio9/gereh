@@ -88,6 +88,12 @@ type Client interface {
 		*tenantv1.RemoveMemberRequest,
 		...grpc.CallOption,
 	) (*tenantv1.RemoveMemberResponse, error)
+
+	GetOperation(
+		context.Context,
+		*tenantv1.GetOperationRequest,
+		...grpc.CallOption,
+	) (*tenantv1.GetOperationResponse, error)
 }
 
 // Handler exposes Tenant Service operations through the BFF.
@@ -117,6 +123,36 @@ func (handler *Handler) Register(
 	authHandler *authhttp.Handler,
 ) {
 	router.Route(
+		"/v1/onboarding",
+		func(onboardingRouter chi.Router) {
+			onboardingRouter.Use(
+				authHandler.RequireSession,
+			)
+
+			onboardingRouter.With(
+				authHandler.RequireCSRF,
+			).Post(
+				"/",
+				handler.createTenant,
+			)
+		},
+	)
+
+	router.Route(
+		"/v1/operations",
+		func(operationRouter chi.Router) {
+			operationRouter.Use(
+				authHandler.RequireSession,
+			)
+
+			operationRouter.Get(
+				"/{operationID}",
+				handler.getOperation,
+			)
+		},
+	)
+
+	router.Route(
 		"/v1/tenants",
 		func(tenantRouter chi.Router) {
 			tenantRouter.Use(
@@ -130,6 +166,7 @@ func (handler *Handler) Register(
 				handler.listTenants,
 			)
 
+			// Compatibility alias for the async onboarding route.
 			tenantRouter.With(
 				authHandler.RequireCSRF,
 			).Post(
@@ -301,11 +338,69 @@ func (handler *Handler) createTenant(
 		return
 	}
 
+	operation := response.GetOperation()
+	if operation == nil ||
+		operation.GetOperationId() == "" {
+		handler.logger.ErrorContext(
+			request.Context(),
+			"Tenant Service returned no onboarding operation",
+		)
+
+		writeProblem(
+			writer,
+			http.StatusBadGateway,
+			"invalid_upstream_response",
+			"Tenant Service returned an invalid response",
+		)
+
+		return
+	}
+
+	writer.Header().Set(
+		"Location",
+		"/v1/operations/"+operation.GetOperationId(),
+	)
+
+	writer.Header().Set("Retry-After", "2")
+
 	writeProto(
 		writer,
-		http.StatusCreated,
+		http.StatusAccepted,
 		response,
 	)
+}
+
+func (handler *Handler) getOperation(
+	writer http.ResponseWriter,
+	request *http.Request,
+) {
+	principal, ok := principal(request)
+	if !ok {
+		writeProblem(
+			writer,
+			http.StatusUnauthorized,
+			"unauthenticated",
+			"Authentication is required",
+		)
+		return
+	}
+
+	response, err := handler.client.GetOperation(
+		request.Context(),
+		&tenantv1.GetOperationRequest{
+			ActorUserId: principal.UserID,
+			OperationId: chi.URLParam(
+				request,
+				"operationID",
+			),
+		},
+	)
+	if err != nil {
+		handler.writeGRPCError(writer, err)
+		return
+	}
+
+	writeProto(writer, http.StatusOK, response)
 }
 
 func (handler *Handler) listTenants(

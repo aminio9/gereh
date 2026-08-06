@@ -20,8 +20,43 @@ type MemberCursor struct {
 // CreateTenantParams defines an atomic tenant creation.
 type CreateTenantParams struct {
 	Context   domain.TenantContext
+	Operation domain.Operation
 	RequestID string
 	Event     domain.OutboxEvent
+}
+
+// MarkOnboardingRunningParams defines the workflow-start transition.
+type MarkOnboardingRunningParams struct {
+	ServicePrincipalID string
+	TenantID           string
+	OperationID        string
+	WorkflowID         string
+	WorkflowRunID      string
+	StartedAt          time.Time
+	Event              domain.OutboxEvent
+}
+
+// CompleteOnboardingParams defines the activation transition. Event is
+// built inside the transaction with the activated context so the outbox
+// write stays atomic with the state change.
+type CompleteOnboardingParams struct {
+	ServicePrincipalID string
+	TenantID           string
+	OperationID        string
+	CompletedAt        time.Time
+	Event              func(domain.TenantContext) (domain.OutboxEvent, error)
+}
+
+// FailOnboardingParams defines the terminal failure transition. Event is
+// built inside the transaction with the failed tenant and terminal
+// operation.
+type FailOnboardingParams struct {
+	ServicePrincipalID string
+	TenantID           string
+	OperationID        string
+	FailedAt           time.Time
+	Error              domain.OperationError
+	Event              func(domain.Tenant, domain.Operation) (domain.OutboxEvent, error)
 }
 
 // UpdateTenantParams defines an atomic tenant update.
@@ -77,7 +112,28 @@ type Repository interface {
 	CreateTenant(
 		ctx context.Context,
 		params CreateTenantParams,
-	) (domain.TenantContext, error)
+	) (domain.CreateTenantResult, error)
+
+	GetOperation(
+		ctx context.Context,
+		actorUserID string,
+		operationID string,
+	) (domain.Operation, error)
+
+	MarkOnboardingRunning(
+		ctx context.Context,
+		params MarkOnboardingRunningParams,
+	) (domain.Operation, error)
+
+	CompleteOnboarding(
+		ctx context.Context,
+		params CompleteOnboardingParams,
+	) (domain.CreateTenantResult, error)
+
+	FailOnboarding(
+		ctx context.Context,
+		params FailOnboardingParams,
+	) (domain.Operation, domain.Tenant, error)
 
 	GetTenantContext(
 		ctx context.Context,

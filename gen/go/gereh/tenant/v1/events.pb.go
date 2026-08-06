@@ -7,6 +7,7 @@
 package tenantv1
 
 import (
+	v1 "github.com/aminio9/gereh/gen/go/gereh/common/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -22,9 +23,12 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// TenantCreated means durable tenant business state exists. It does not mean
+// runtime infrastructure is ready.
 type TenantCreated struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Context       *TenantContext         `protobuf:"bytes,1,opt,name=context,proto3" json:"context,omitempty"`
+	OperationId   string                 `protobuf:"bytes,2,opt,name=operation_id,json=operationId,proto3" json:"operation_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -66,6 +70,209 @@ func (x *TenantCreated) GetContext() *TenantContext {
 	return nil
 }
 
+func (x *TenantCreated) GetOperationId() string {
+	if x != nil {
+		return x.OperationId
+	}
+	return ""
+}
+
+type TenantOnboardingStarted struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	OperationId   string                 `protobuf:"bytes,2,opt,name=operation_id,json=operationId,proto3" json:"operation_id,omitempty"`
+	WorkflowId    string                 `protobuf:"bytes,3,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty"`
+	WorkflowRunId string                 `protobuf:"bytes,4,opt,name=workflow_run_id,json=workflowRunId,proto3" json:"workflow_run_id,omitempty"`
+	StartedAt     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TenantOnboardingStarted) Reset() {
+	*x = TenantOnboardingStarted{}
+	mi := &file_gereh_tenant_v1_events_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TenantOnboardingStarted) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TenantOnboardingStarted) ProtoMessage() {}
+
+func (x *TenantOnboardingStarted) ProtoReflect() protoreflect.Message {
+	mi := &file_gereh_tenant_v1_events_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TenantOnboardingStarted.ProtoReflect.Descriptor instead.
+func (*TenantOnboardingStarted) Descriptor() ([]byte, []int) {
+	return file_gereh_tenant_v1_events_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *TenantOnboardingStarted) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+func (x *TenantOnboardingStarted) GetOperationId() string {
+	if x != nil {
+		return x.OperationId
+	}
+	return ""
+}
+
+func (x *TenantOnboardingStarted) GetWorkflowId() string {
+	if x != nil {
+		return x.WorkflowId
+	}
+	return ""
+}
+
+func (x *TenantOnboardingStarted) GetWorkflowRunId() string {
+	if x != nil {
+		return x.WorkflowRunId
+	}
+	return ""
+}
+
+func (x *TenantOnboardingStarted) GetStartedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.StartedAt
+	}
+	return nil
+}
+
+type TenantActivated struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Context       *TenantContext         `protobuf:"bytes,1,opt,name=context,proto3" json:"context,omitempty"`
+	OperationId   string                 `protobuf:"bytes,2,opt,name=operation_id,json=operationId,proto3" json:"operation_id,omitempty"`
+	ActivatedAt   *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=activated_at,json=activatedAt,proto3" json:"activated_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TenantActivated) Reset() {
+	*x = TenantActivated{}
+	mi := &file_gereh_tenant_v1_events_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TenantActivated) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TenantActivated) ProtoMessage() {}
+
+func (x *TenantActivated) ProtoReflect() protoreflect.Message {
+	mi := &file_gereh_tenant_v1_events_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TenantActivated.ProtoReflect.Descriptor instead.
+func (*TenantActivated) Descriptor() ([]byte, []int) {
+	return file_gereh_tenant_v1_events_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *TenantActivated) GetContext() *TenantContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+func (x *TenantActivated) GetOperationId() string {
+	if x != nil {
+		return x.OperationId
+	}
+	return ""
+}
+
+func (x *TenantActivated) GetActivatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ActivatedAt
+	}
+	return nil
+}
+
+type TenantOnboardingFailed struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Tenant        *Tenant                `protobuf:"bytes,1,opt,name=tenant,proto3" json:"tenant,omitempty"`
+	Operation     *v1.Operation          `protobuf:"bytes,2,opt,name=operation,proto3" json:"operation,omitempty"`
+	FailedAt      *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=failed_at,json=failedAt,proto3" json:"failed_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TenantOnboardingFailed) Reset() {
+	*x = TenantOnboardingFailed{}
+	mi := &file_gereh_tenant_v1_events_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TenantOnboardingFailed) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TenantOnboardingFailed) ProtoMessage() {}
+
+func (x *TenantOnboardingFailed) ProtoReflect() protoreflect.Message {
+	mi := &file_gereh_tenant_v1_events_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TenantOnboardingFailed.ProtoReflect.Descriptor instead.
+func (*TenantOnboardingFailed) Descriptor() ([]byte, []int) {
+	return file_gereh_tenant_v1_events_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *TenantOnboardingFailed) GetTenant() *Tenant {
+	if x != nil {
+		return x.Tenant
+	}
+	return nil
+}
+
+func (x *TenantOnboardingFailed) GetOperation() *v1.Operation {
+	if x != nil {
+		return x.Operation
+	}
+	return nil
+}
+
+func (x *TenantOnboardingFailed) GetFailedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.FailedAt
+	}
+	return nil
+}
+
 type TenantUpdated struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Tenant          *Tenant                `protobuf:"bytes,1,opt,name=tenant,proto3" json:"tenant,omitempty"`
@@ -76,7 +283,7 @@ type TenantUpdated struct {
 
 func (x *TenantUpdated) Reset() {
 	*x = TenantUpdated{}
-	mi := &file_gereh_tenant_v1_events_proto_msgTypes[1]
+	mi := &file_gereh_tenant_v1_events_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -88,7 +295,7 @@ func (x *TenantUpdated) String() string {
 func (*TenantUpdated) ProtoMessage() {}
 
 func (x *TenantUpdated) ProtoReflect() protoreflect.Message {
-	mi := &file_gereh_tenant_v1_events_proto_msgTypes[1]
+	mi := &file_gereh_tenant_v1_events_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -101,7 +308,7 @@ func (x *TenantUpdated) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TenantUpdated.ProtoReflect.Descriptor instead.
 func (*TenantUpdated) Descriptor() ([]byte, []int) {
-	return file_gereh_tenant_v1_events_proto_rawDescGZIP(), []int{1}
+	return file_gereh_tenant_v1_events_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *TenantUpdated) GetTenant() *Tenant {
@@ -128,7 +335,7 @@ type TenantArchived struct {
 
 func (x *TenantArchived) Reset() {
 	*x = TenantArchived{}
-	mi := &file_gereh_tenant_v1_events_proto_msgTypes[2]
+	mi := &file_gereh_tenant_v1_events_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -140,7 +347,7 @@ func (x *TenantArchived) String() string {
 func (*TenantArchived) ProtoMessage() {}
 
 func (x *TenantArchived) ProtoReflect() protoreflect.Message {
-	mi := &file_gereh_tenant_v1_events_proto_msgTypes[2]
+	mi := &file_gereh_tenant_v1_events_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -153,7 +360,7 @@ func (x *TenantArchived) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TenantArchived.ProtoReflect.Descriptor instead.
 func (*TenantArchived) Descriptor() ([]byte, []int) {
-	return file_gereh_tenant_v1_events_proto_rawDescGZIP(), []int{2}
+	return file_gereh_tenant_v1_events_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *TenantArchived) GetTenant() *Tenant {
@@ -181,7 +388,7 @@ type TenantMemberAdded struct {
 
 func (x *TenantMemberAdded) Reset() {
 	*x = TenantMemberAdded{}
-	mi := &file_gereh_tenant_v1_events_proto_msgTypes[3]
+	mi := &file_gereh_tenant_v1_events_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -193,7 +400,7 @@ func (x *TenantMemberAdded) String() string {
 func (*TenantMemberAdded) ProtoMessage() {}
 
 func (x *TenantMemberAdded) ProtoReflect() protoreflect.Message {
-	mi := &file_gereh_tenant_v1_events_proto_msgTypes[3]
+	mi := &file_gereh_tenant_v1_events_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -206,7 +413,7 @@ func (x *TenantMemberAdded) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TenantMemberAdded.ProtoReflect.Descriptor instead.
 func (*TenantMemberAdded) Descriptor() ([]byte, []int) {
-	return file_gereh_tenant_v1_events_proto_rawDescGZIP(), []int{3}
+	return file_gereh_tenant_v1_events_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *TenantMemberAdded) GetMembership() *TenantMembership {
@@ -242,7 +449,7 @@ type TenantMemberRoleChanged struct {
 
 func (x *TenantMemberRoleChanged) Reset() {
 	*x = TenantMemberRoleChanged{}
-	mi := &file_gereh_tenant_v1_events_proto_msgTypes[4]
+	mi := &file_gereh_tenant_v1_events_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -254,7 +461,7 @@ func (x *TenantMemberRoleChanged) String() string {
 func (*TenantMemberRoleChanged) ProtoMessage() {}
 
 func (x *TenantMemberRoleChanged) ProtoReflect() protoreflect.Message {
-	mi := &file_gereh_tenant_v1_events_proto_msgTypes[4]
+	mi := &file_gereh_tenant_v1_events_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -267,7 +474,7 @@ func (x *TenantMemberRoleChanged) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TenantMemberRoleChanged.ProtoReflect.Descriptor instead.
 func (*TenantMemberRoleChanged) Descriptor() ([]byte, []int) {
-	return file_gereh_tenant_v1_events_proto_rawDescGZIP(), []int{4}
+	return file_gereh_tenant_v1_events_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *TenantMemberRoleChanged) GetMembership() *TenantMembership {
@@ -312,7 +519,7 @@ type TenantMemberRemoved struct {
 
 func (x *TenantMemberRemoved) Reset() {
 	*x = TenantMemberRemoved{}
-	mi := &file_gereh_tenant_v1_events_proto_msgTypes[5]
+	mi := &file_gereh_tenant_v1_events_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -324,7 +531,7 @@ func (x *TenantMemberRemoved) String() string {
 func (*TenantMemberRemoved) ProtoMessage() {}
 
 func (x *TenantMemberRemoved) ProtoReflect() protoreflect.Message {
-	mi := &file_gereh_tenant_v1_events_proto_msgTypes[5]
+	mi := &file_gereh_tenant_v1_events_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -337,7 +544,7 @@ func (x *TenantMemberRemoved) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TenantMemberRemoved.ProtoReflect.Descriptor instead.
 func (*TenantMemberRemoved) Descriptor() ([]byte, []int) {
-	return file_gereh_tenant_v1_events_proto_rawDescGZIP(), []int{5}
+	return file_gereh_tenant_v1_events_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *TenantMemberRemoved) GetTenantId() string {
@@ -386,9 +593,26 @@ var File_gereh_tenant_v1_events_proto protoreflect.FileDescriptor
 
 const file_gereh_tenant_v1_events_proto_rawDesc = "" +
 	"\n" +
-	"\x1cgereh/tenant/v1/events.proto\x12\x0fgereh.tenant.v1\x1a#gereh/tenant/v1/authorization.proto\x1a\x1cgereh/tenant/v1/tenant.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"I\n" +
+	"\x1cgereh/tenant/v1/events.proto\x12\x0fgereh.tenant.v1\x1a\x1fgereh/common/v1/operation.proto\x1a#gereh/tenant/v1/authorization.proto\x1a\x1cgereh/tenant/v1/tenant.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"l\n" +
 	"\rTenantCreated\x128\n" +
-	"\acontext\x18\x01 \x01(\v2\x1e.gereh.tenant.v1.TenantContextR\acontext\"m\n" +
+	"\acontext\x18\x01 \x01(\v2\x1e.gereh.tenant.v1.TenantContextR\acontext\x12!\n" +
+	"\foperation_id\x18\x02 \x01(\tR\voperationId\"\xdd\x01\n" +
+	"\x17TenantOnboardingStarted\x12\x1b\n" +
+	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12!\n" +
+	"\foperation_id\x18\x02 \x01(\tR\voperationId\x12\x1f\n" +
+	"\vworkflow_id\x18\x03 \x01(\tR\n" +
+	"workflowId\x12&\n" +
+	"\x0fworkflow_run_id\x18\x04 \x01(\tR\rworkflowRunId\x129\n" +
+	"\n" +
+	"started_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\"\xad\x01\n" +
+	"\x0fTenantActivated\x128\n" +
+	"\acontext\x18\x01 \x01(\v2\x1e.gereh.tenant.v1.TenantContextR\acontext\x12!\n" +
+	"\foperation_id\x18\x02 \x01(\tR\voperationId\x12=\n" +
+	"\factivated_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\vactivatedAt\"\xbc\x01\n" +
+	"\x16TenantOnboardingFailed\x12/\n" +
+	"\x06tenant\x18\x01 \x01(\v2\x17.gereh.tenant.v1.TenantR\x06tenant\x128\n" +
+	"\toperation\x18\x02 \x01(\v2\x1a.gereh.common.v1.OperationR\toperation\x127\n" +
+	"\tfailed_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\bfailedAt\"m\n" +
 	"\rTenantUpdated\x12/\n" +
 	"\x06tenant\x18\x01 \x01(\v2\x17.gereh.tenant.v1.TenantR\x06tenant\x12+\n" +
 	"\x12updated_by_user_id\x18\x02 \x01(\tR\x0fupdatedByUserId\"p\n" +
@@ -430,34 +654,44 @@ func file_gereh_tenant_v1_events_proto_rawDescGZIP() []byte {
 	return file_gereh_tenant_v1_events_proto_rawDescData
 }
 
-var file_gereh_tenant_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_gereh_tenant_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_gereh_tenant_v1_events_proto_goTypes = []any{
 	(*TenantCreated)(nil),           // 0: gereh.tenant.v1.TenantCreated
-	(*TenantUpdated)(nil),           // 1: gereh.tenant.v1.TenantUpdated
-	(*TenantArchived)(nil),          // 2: gereh.tenant.v1.TenantArchived
-	(*TenantMemberAdded)(nil),       // 3: gereh.tenant.v1.TenantMemberAdded
-	(*TenantMemberRoleChanged)(nil), // 4: gereh.tenant.v1.TenantMemberRoleChanged
-	(*TenantMemberRemoved)(nil),     // 5: gereh.tenant.v1.TenantMemberRemoved
-	(*TenantContext)(nil),           // 6: gereh.tenant.v1.TenantContext
-	(*Tenant)(nil),                  // 7: gereh.tenant.v1.Tenant
-	(*TenantMembership)(nil),        // 8: gereh.tenant.v1.TenantMembership
-	(TenantRole)(0),                 // 9: gereh.tenant.v1.TenantRole
+	(*TenantOnboardingStarted)(nil), // 1: gereh.tenant.v1.TenantOnboardingStarted
+	(*TenantActivated)(nil),         // 2: gereh.tenant.v1.TenantActivated
+	(*TenantOnboardingFailed)(nil),  // 3: gereh.tenant.v1.TenantOnboardingFailed
+	(*TenantUpdated)(nil),           // 4: gereh.tenant.v1.TenantUpdated
+	(*TenantArchived)(nil),          // 5: gereh.tenant.v1.TenantArchived
+	(*TenantMemberAdded)(nil),       // 6: gereh.tenant.v1.TenantMemberAdded
+	(*TenantMemberRoleChanged)(nil), // 7: gereh.tenant.v1.TenantMemberRoleChanged
+	(*TenantMemberRemoved)(nil),     // 8: gereh.tenant.v1.TenantMemberRemoved
+	(*TenantContext)(nil),           // 9: gereh.tenant.v1.TenantContext
 	(*timestamppb.Timestamp)(nil),   // 10: google.protobuf.Timestamp
+	(*Tenant)(nil),                  // 11: gereh.tenant.v1.Tenant
+	(*v1.Operation)(nil),            // 12: gereh.common.v1.Operation
+	(*TenantMembership)(nil),        // 13: gereh.tenant.v1.TenantMembership
+	(TenantRole)(0),                 // 14: gereh.tenant.v1.TenantRole
 }
 var file_gereh_tenant_v1_events_proto_depIdxs = []int32{
-	6,  // 0: gereh.tenant.v1.TenantCreated.context:type_name -> gereh.tenant.v1.TenantContext
-	7,  // 1: gereh.tenant.v1.TenantUpdated.tenant:type_name -> gereh.tenant.v1.Tenant
-	7,  // 2: gereh.tenant.v1.TenantArchived.tenant:type_name -> gereh.tenant.v1.Tenant
-	8,  // 3: gereh.tenant.v1.TenantMemberAdded.membership:type_name -> gereh.tenant.v1.TenantMembership
-	8,  // 4: gereh.tenant.v1.TenantMemberRoleChanged.membership:type_name -> gereh.tenant.v1.TenantMembership
-	9,  // 5: gereh.tenant.v1.TenantMemberRoleChanged.previous_role:type_name -> gereh.tenant.v1.TenantRole
-	9,  // 6: gereh.tenant.v1.TenantMemberRemoved.previous_role:type_name -> gereh.tenant.v1.TenantRole
-	10, // 7: gereh.tenant.v1.TenantMemberRemoved.removed_at:type_name -> google.protobuf.Timestamp
-	8,  // [8:8] is the sub-list for method output_type
-	8,  // [8:8] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	9,  // 0: gereh.tenant.v1.TenantCreated.context:type_name -> gereh.tenant.v1.TenantContext
+	10, // 1: gereh.tenant.v1.TenantOnboardingStarted.started_at:type_name -> google.protobuf.Timestamp
+	9,  // 2: gereh.tenant.v1.TenantActivated.context:type_name -> gereh.tenant.v1.TenantContext
+	10, // 3: gereh.tenant.v1.TenantActivated.activated_at:type_name -> google.protobuf.Timestamp
+	11, // 4: gereh.tenant.v1.TenantOnboardingFailed.tenant:type_name -> gereh.tenant.v1.Tenant
+	12, // 5: gereh.tenant.v1.TenantOnboardingFailed.operation:type_name -> gereh.common.v1.Operation
+	10, // 6: gereh.tenant.v1.TenantOnboardingFailed.failed_at:type_name -> google.protobuf.Timestamp
+	11, // 7: gereh.tenant.v1.TenantUpdated.tenant:type_name -> gereh.tenant.v1.Tenant
+	11, // 8: gereh.tenant.v1.TenantArchived.tenant:type_name -> gereh.tenant.v1.Tenant
+	13, // 9: gereh.tenant.v1.TenantMemberAdded.membership:type_name -> gereh.tenant.v1.TenantMembership
+	13, // 10: gereh.tenant.v1.TenantMemberRoleChanged.membership:type_name -> gereh.tenant.v1.TenantMembership
+	14, // 11: gereh.tenant.v1.TenantMemberRoleChanged.previous_role:type_name -> gereh.tenant.v1.TenantRole
+	14, // 12: gereh.tenant.v1.TenantMemberRemoved.previous_role:type_name -> gereh.tenant.v1.TenantRole
+	10, // 13: gereh.tenant.v1.TenantMemberRemoved.removed_at:type_name -> google.protobuf.Timestamp
+	14, // [14:14] is the sub-list for method output_type
+	14, // [14:14] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_gereh_tenant_v1_events_proto_init() }
@@ -473,7 +707,7 @@ func file_gereh_tenant_v1_events_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_gereh_tenant_v1_events_proto_rawDesc), len(file_gereh_tenant_v1_events_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

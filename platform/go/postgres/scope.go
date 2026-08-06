@@ -77,6 +77,26 @@ func PrincipalScope(
 	}
 }
 
+// ServiceTenantScope creates a tenant-bound service workload scope.
+//
+// Never accept principalID for this function from an incoming request. It
+// comes from trusted service configuration.
+func ServiceTenantScope(
+	tenantID string,
+	principalID string,
+	requestID string,
+	correlationID string,
+) Scope {
+	return Scope{
+		Kind:          ScopeKindTenant,
+		TenantID:      strings.TrimSpace(tenantID),
+		PrincipalID:   strings.TrimSpace(principalID),
+		PrincipalType: PrincipalTypeService,
+		RequestID:     strings.TrimSpace(requestID),
+		CorrelationID: strings.TrimSpace(correlationID),
+	}
+}
+
 // Validate rejects malformed or internally inconsistent security context.
 func (scope Scope) Validate() error {
 	if _, err := uuid.Parse(scope.PrincipalID); err != nil {

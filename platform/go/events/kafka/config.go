@@ -14,12 +14,23 @@ const (
 	defaultMaxPollRecords     = 100
 )
 
+// ConsumerStartOffset selects where a new consumer group begins reading when
+// no committed group offset exists.
+type ConsumerStartOffset string
+
+// Supported consumer start offsets.
+const (
+	ConsumerStartOffsetEarliest ConsumerStartOffset = "earliest"
+	ConsumerStartOffsetLatest   ConsumerStartOffset = "latest"
+)
+
 // Config defines Kafka client configuration.
 type Config struct {
 	Brokers                []string
 	ClientID               string
 	GroupID                string
 	Topics                 []string
+	ConsumerStartOffset    ConsumerStartOffset
 	DialTimeout            time.Duration
 	RequestTimeoutOverhead time.Duration
 	ProducerLinger         time.Duration
@@ -52,6 +63,7 @@ type SASLConfig struct {
 func DefaultConfig(clientID string) Config {
 	return Config{
 		ClientID:               clientID,
+		ConsumerStartOffset:    ConsumerStartOffsetLatest,
 		DialTimeout:            10 * time.Second,
 		RequestTimeoutOverhead: 10 * time.Second,
 		ProducerLinger:         5 * time.Millisecond,
@@ -82,6 +94,15 @@ func ConfigFromEnv(clientID string) (Config, error) {
 	config.Topics = splitCommaSeparated(
 		os.Getenv("KAFKA_TOPICS"),
 	)
+
+	if value := strings.TrimSpace(
+		os.Getenv("KAFKA_START_OFFSET"),
+	); value != "" {
+		config.ConsumerStartOffset =
+			ConsumerStartOffset(
+				strings.ToLower(value),
+			)
+	}
 
 	var err error
 
@@ -189,6 +210,15 @@ func ConfigFromEnv(clientID string) (Config, error) {
 func (config Config) ValidateCommon() error {
 	if len(config.Brokers) == 0 {
 		return fmt.Errorf("at least one Kafka broker is required")
+	}
+
+	switch config.ConsumerStartOffset {
+	case ConsumerStartOffsetEarliest,
+		ConsumerStartOffsetLatest:
+	default:
+		return fmt.Errorf(
+			"KAFKA_START_OFFSET must be earliest or latest",
+		)
 	}
 
 	if strings.TrimSpace(config.ClientID) == "" {

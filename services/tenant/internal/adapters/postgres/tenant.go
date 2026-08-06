@@ -11,11 +11,13 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// CreateTenant creates a tenant, owner, entitlements, and outbox event.
+// CreateTenant creates a tenant in the provisioning state, its owner
+// membership, entitlements, an onboarding operation, and an outbox event
+// atomically.
 func (repository *Repository) CreateTenant(
 	ctx context.Context,
 	params ports.CreateTenantParams,
-) (domain.TenantContext, error) {
+) (domain.CreateTenantResult, error) {
 	actorUserID :=
 		params.Context.Tenant.CreatedByUserID
 
@@ -27,7 +29,7 @@ func (repository *Repository) CreateTenant(
 		pgx.TxOptions{},
 	)
 	if err != nil {
-		return domain.TenantContext{}, err
+		return domain.CreateTenantResult{}, err
 	}
 
 	defer func() {
@@ -50,7 +52,7 @@ func (repository *Repository) CreateTenant(
 
 	switch {
 	case err == nil:
-		result, queryErr := queryContext(
+		contextValue, queryErr := queryContext(
 			ctx,
 			transaction,
 			existingTenantID,
@@ -58,17 +60,29 @@ func (repository *Repository) CreateTenant(
 			false,
 		)
 		if queryErr != nil {
-			return domain.TenantContext{}, queryErr
+			return domain.CreateTenantResult{}, queryErr
+		}
+
+		operation, queryErr := queryOperationByTenant(
+			ctx,
+			transaction,
+			existingTenantID,
+		)
+		if queryErr != nil {
+			return domain.CreateTenantResult{}, queryErr
 		}
 
 		if err := commit(ctx, transaction); err != nil {
-			return domain.TenantContext{}, err
+			return domain.CreateTenantResult{}, err
 		}
 
-		return result, nil
+		return domain.CreateTenantResult{
+			Context:   contextValue,
+			Operation: operation,
+		}, nil
 
 	case !errors.Is(err, pgx.ErrNoRows):
-		return domain.TenantContext{}, fmt.Errorf(
+		return domain.CreateTenantResult{}, fmt.Errorf(
 			"check tenant idempotency key: %w",
 			err,
 		)
@@ -77,6 +91,7 @@ func (repository *Repository) CreateTenant(
 	tenant := params.Context.Tenant
 	membership := params.Context.Membership
 	entitlements := params.Context.Entitlements
+	operation := params.Operation
 
 	// From this point onward, all writes are restricted to the newly
 	// allocated tenant.
@@ -86,7 +101,7 @@ func (repository *Repository) CreateTenant(
 		tenant.ID,
 		actorUserID,
 	); err != nil {
-		return domain.TenantContext{}, err
+		return domain.CreateTenantResult{}, err
 	}
 
 	_, err = transaction.Exec(
@@ -109,20 +124,19 @@ func (repository *Repository) CreateTenant(
 				$1::uuid,
 				$2,
 				$3,
+				'provisioning',
 				$4,
 				$5,
 				$6,
-				$7,
-				$8::uuid,
+				$7::uuid,
+				$8,
 				$9,
-				$10,
-				$11
+				$10
 			)
 		`,
 		tenant.ID,
 		tenant.Slug,
 		tenant.DisplayName,
-		string(tenant.Status),
 		tenant.Region,
 		tenant.RetentionDays,
 		tenant.Version,
@@ -132,7 +146,7 @@ func (repository *Repository) CreateTenant(
 		tenant.UpdatedAt,
 	)
 	if err != nil {
-		return domain.TenantContext{},
+		return domain.CreateTenantResult{},
 			mapDatabaseError(err)
 	}
 
@@ -167,7 +181,7 @@ func (repository *Repository) CreateTenant(
 		membership.UpdatedAt,
 	)
 	if err != nil {
-		return domain.TenantContext{},
+		return domain.CreateTenantResult{},
 			mapDatabaseError(err)
 	}
 
@@ -175,7 +189,7 @@ func (repository *Repository) CreateTenant(
 		entitlements.Features,
 	)
 	if err != nil {
-		return domain.TenantContext{}, fmt.Errorf(
+		return domain.CreateTenantResult{}, fmt.Errorf(
 			"marshal tenant features: %w",
 			err,
 		)
@@ -185,7 +199,7 @@ func (repository *Repository) CreateTenant(
 		entitlements.Limits,
 	)
 	if err != nil {
-		return domain.TenantContext{}, fmt.Errorf(
+		return domain.CreateTenantResult{}, fmt.Errorf(
 			"marshal tenant limits: %w",
 			err,
 		)
@@ -219,8 +233,16 @@ func (repository *Repository) CreateTenant(
 		entitlements.UpdatedAt,
 	)
 	if err != nil {
-		return domain.TenantContext{},
+		return domain.CreateTenantResult{},
 			mapDatabaseError(err)
+	}
+
+	if err := insertOperation(
+		ctx,
+		transaction,
+		operation,
+	); err != nil {
+		return domain.CreateTenantResult{}, err
 	}
 
 	if err := insertOutbox(
@@ -229,10 +251,10 @@ func (repository *Repository) CreateTenant(
 		tenant.ID,
 		params.Event,
 	); err != nil {
-		return domain.TenantContext{}, err
+		return domain.CreateTenantResult{}, err
 	}
 
-	result, err := queryContext(
+	contextValue, err := queryContext(
 		ctx,
 		transaction,
 		tenant.ID,
@@ -240,14 +262,26 @@ func (repository *Repository) CreateTenant(
 		false,
 	)
 	if err != nil {
-		return domain.TenantContext{}, err
+		return domain.CreateTenantResult{}, err
+	}
+
+	operation, err = queryOperationByTenant(
+		ctx,
+		transaction,
+		tenant.ID,
+	)
+	if err != nil {
+		return domain.CreateTenantResult{}, err
 	}
 
 	if err := commit(ctx, transaction); err != nil {
-		return domain.TenantContext{}, err
+		return domain.CreateTenantResult{}, err
 	}
 
-	return result, nil
+	return domain.CreateTenantResult{
+		Context:   contextValue,
+		Operation: operation,
+	}, nil
 }
 
 // GetTenantContext returns trusted context for one active membership.

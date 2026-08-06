@@ -11,6 +11,7 @@ tool (
 	github.com/go-task/task/v3/cmd/task
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 	github.com/sqlc-dev/sqlc/cmd/sqlc
+	go.temporal.io/sdk/contrib/tools/workflowcheck
 	golang.org/x/vuln/cmd/govulncheck
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc
 	google.golang.org/protobuf/cmd/protoc-gen-go
@@ -375,6 +376,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.44.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
+	go.temporal.io/sdk/contrib/tools/workflowcheck v0.5.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.28.0 // indirect

@@ -37,10 +37,11 @@ func applicationIntegrationService(
 	service, err := New(
 		tenantpostgres.New(pool),
 		Config{
-			EventTopic:           "gereh.tenant.events.v1",
-			DefaultRegion:        "local",
-			AllowedRegions:       []string{"local"},
-			DefaultRetentionDays: 90,
+			EventTopic:                 "gereh.tenant.events.v1",
+			DefaultRegion:              "local",
+			AllowedRegions:             []string{"local"},
+			DefaultRetentionDays:       90,
+			WorkflowServicePrincipalID: "018f7767-28d2-7f5c-a693-0bb4c8ee4ae0",
 		},
 	)
 	if err != nil {
@@ -59,6 +60,41 @@ func applicationTestActor(t *testing.T) string {
 	}
 
 	return id.String()
+}
+
+func applicationActivateTenant(
+	t *testing.T,
+	service *Service,
+	created domain.CreateTenantResult,
+) domain.CreateTenantResult {
+	t.Helper()
+
+	ctx := context.Background()
+
+	if _, err := service.MarkOnboardingRunning(
+		ctx,
+		MarkOnboardingRunningInput{
+			TenantID:      created.Context.Tenant.ID,
+			OperationID:   created.Operation.ID,
+			WorkflowID:    "tenant-onboarding/" + created.Operation.ID,
+			WorkflowRunID: uuid.NewString(),
+		},
+	); err != nil {
+		t.Fatalf("mark onboarding running: %v", err)
+	}
+
+	activated, err := service.CompleteOnboarding(
+		ctx,
+		CompleteOnboardingInput{
+			TenantID:    created.Context.Tenant.ID,
+			OperationID: created.Operation.ID,
+		},
+	)
+	if err != nil {
+		t.Fatalf("complete onboarding: %v", err)
+	}
+
+	return activated
 }
 
 func applicationOutboxCount(
@@ -137,8 +173,10 @@ func TestOwnerReceivesEveryPermission(t *testing.T) {
 		t.Fatalf("create tenant: %v", err)
 	}
 
+	applicationActivateTenant(t, service, created)
+
 	t.Cleanup(func() {
-		applicationCleanupTenant(t, pool, created.Tenant.ID)
+		applicationCleanupTenant(t, pool, created.Context.Tenant.ID)
 	})
 
 	permissions := []domain.Permission{
@@ -156,7 +194,7 @@ func TestOwnerReceivesEveryPermission(t *testing.T) {
 		decision, err := service.CheckAuthorization(
 			ctx,
 			owner,
-			created.Tenant.ID,
+			created.Context.Tenant.ID,
 			permission,
 		)
 		if err != nil {
@@ -196,15 +234,17 @@ func TestAdminCannotArchiveTenant(t *testing.T) {
 		t.Fatalf("create tenant: %v", err)
 	}
 
+	applicationActivateTenant(t, service, created)
+
 	t.Cleanup(func() {
-		applicationCleanupTenant(t, pool, created.Tenant.ID)
+		applicationCleanupTenant(t, pool, created.Context.Tenant.ID)
 	})
 
 	_, _, err = service.AddMember(
 		ctx,
 		MemberInput{
 			ActorUserID: owner,
-			TenantID:    created.Tenant.ID,
+			TenantID:    created.Context.Tenant.ID,
 			UserID:      admin,
 			Role:        domain.RoleAdmin,
 		},
@@ -216,7 +256,7 @@ func TestAdminCannotArchiveTenant(t *testing.T) {
 	decision, err := service.CheckAuthorization(
 		ctx,
 		admin,
-		created.Tenant.ID,
+		created.Context.Tenant.ID,
 		domain.PermissionTenantArchive,
 	)
 	if err != nil {
@@ -249,15 +289,17 @@ func TestAdminCannotAssignOwner(t *testing.T) {
 		t.Fatalf("create tenant: %v", err)
 	}
 
+	applicationActivateTenant(t, service, created)
+
 	t.Cleanup(func() {
-		applicationCleanupTenant(t, pool, created.Tenant.ID)
+		applicationCleanupTenant(t, pool, created.Context.Tenant.ID)
 	})
 
 	_, _, err = service.AddMember(
 		ctx,
 		MemberInput{
 			ActorUserID: owner,
-			TenantID:    created.Tenant.ID,
+			TenantID:    created.Context.Tenant.ID,
 			UserID:      admin,
 			Role:        domain.RoleAdmin,
 		},
@@ -270,7 +312,7 @@ func TestAdminCannotAssignOwner(t *testing.T) {
 		ctx,
 		MemberInput{
 			ActorUserID: admin,
-			TenantID:    created.Tenant.ID,
+			TenantID:    created.Context.Tenant.ID,
 			UserID:      member,
 			Role:        domain.RoleOwner,
 		},
@@ -300,15 +342,17 @@ func TestAdminCannotModifyOrRemoveOwner(t *testing.T) {
 		t.Fatalf("create tenant: %v", err)
 	}
 
+	applicationActivateTenant(t, service, created)
+
 	t.Cleanup(func() {
-		applicationCleanupTenant(t, pool, created.Tenant.ID)
+		applicationCleanupTenant(t, pool, created.Context.Tenant.ID)
 	})
 
 	_, _, err = service.AddMember(
 		ctx,
 		MemberInput{
 			ActorUserID: owner,
-			TenantID:    created.Tenant.ID,
+			TenantID:    created.Context.Tenant.ID,
 			UserID:      admin,
 			Role:        domain.RoleAdmin,
 		},
@@ -320,7 +364,7 @@ func TestAdminCannotModifyOrRemoveOwner(t *testing.T) {
 	ownerMembership, err := service.GetTenantContext(
 		ctx,
 		owner,
-		created.Tenant.ID,
+		created.Context.Tenant.ID,
 	)
 	if err != nil {
 		t.Fatalf("get owner context: %v", err)
@@ -330,7 +374,7 @@ func TestAdminCannotModifyOrRemoveOwner(t *testing.T) {
 		ctx,
 		UpdateMemberRoleInput{
 			ActorUserID:               admin,
-			TenantID:                  created.Tenant.ID,
+			TenantID:                  created.Context.Tenant.ID,
 			UserID:                    owner,
 			Role:                      domain.RoleMember,
 			ExpectedMembershipVersion: ownerMembership.Membership.Version,
@@ -344,7 +388,7 @@ func TestAdminCannotModifyOrRemoveOwner(t *testing.T) {
 		ctx,
 		RemoveMemberInput{
 			ActorUserID:               admin,
-			TenantID:                  created.Tenant.ID,
+			TenantID:                  created.Context.Tenant.ID,
 			UserID:                    owner,
 			ExpectedMembershipVersion: ownerMembership.Membership.Version,
 		},
@@ -374,15 +418,17 @@ func TestMemberCanListButCannotMutateMembership(t *testing.T) {
 		t.Fatalf("create tenant: %v", err)
 	}
 
+	applicationActivateTenant(t, service, created)
+
 	t.Cleanup(func() {
-		applicationCleanupTenant(t, pool, created.Tenant.ID)
+		applicationCleanupTenant(t, pool, created.Context.Tenant.ID)
 	})
 
 	_, _, err = service.AddMember(
 		ctx,
 		MemberInput{
 			ActorUserID: owner,
-			TenantID:    created.Tenant.ID,
+			TenantID:    created.Context.Tenant.ID,
 			UserID:      member,
 			Role:        domain.RoleMember,
 		},
@@ -394,7 +440,7 @@ func TestMemberCanListButCannotMutateMembership(t *testing.T) {
 	decision, err := service.CheckAuthorization(
 		ctx,
 		member,
-		created.Tenant.ID,
+		created.Context.Tenant.ID,
 		domain.PermissionMemberList,
 	)
 	if err != nil {
@@ -408,7 +454,7 @@ func TestMemberCanListButCannotMutateMembership(t *testing.T) {
 	_, _, err = service.ListMembers(
 		ctx,
 		member,
-		created.Tenant.ID,
+		created.Context.Tenant.ID,
 		10,
 		"",
 	)
@@ -420,7 +466,7 @@ func TestMemberCanListButCannotMutateMembership(t *testing.T) {
 		ctx,
 		MemberInput{
 			ActorUserID: member,
-			TenantID:    created.Tenant.ID,
+			TenantID:    created.Context.Tenant.ID,
 			UserID:      applicationTestActor(t),
 			Role:        domain.RoleMember,
 		},
@@ -450,15 +496,17 @@ func TestViewerCannotListMembers(t *testing.T) {
 		t.Fatalf("create tenant: %v", err)
 	}
 
+	applicationActivateTenant(t, service, created)
+
 	t.Cleanup(func() {
-		applicationCleanupTenant(t, pool, created.Tenant.ID)
+		applicationCleanupTenant(t, pool, created.Context.Tenant.ID)
 	})
 
 	_, _, err = service.AddMember(
 		ctx,
 		MemberInput{
 			ActorUserID: owner,
-			TenantID:    created.Tenant.ID,
+			TenantID:    created.Context.Tenant.ID,
 			UserID:      viewer,
 			Role:        domain.RoleViewer,
 		},
@@ -470,7 +518,7 @@ func TestViewerCannotListMembers(t *testing.T) {
 	_, _, err = service.ListMembers(
 		ctx,
 		viewer,
-		created.Tenant.ID,
+		created.Context.Tenant.ID,
 		10,
 		"",
 	)
@@ -481,7 +529,7 @@ func TestViewerCannotListMembers(t *testing.T) {
 	decision, err := service.CheckAuthorization(
 		ctx,
 		viewer,
-		created.Tenant.ID,
+		created.Context.Tenant.ID,
 		domain.PermissionMemberList,
 	)
 	if err != nil {
@@ -513,15 +561,17 @@ func TestViewerCanReadTenantAndEntitlements(t *testing.T) {
 		t.Fatalf("create tenant: %v", err)
 	}
 
+	applicationActivateTenant(t, service, created)
+
 	t.Cleanup(func() {
-		applicationCleanupTenant(t, pool, created.Tenant.ID)
+		applicationCleanupTenant(t, pool, created.Context.Tenant.ID)
 	})
 
 	_, _, err = service.AddMember(
 		ctx,
 		MemberInput{
 			ActorUserID: owner,
-			TenantID:    created.Tenant.ID,
+			TenantID:    created.Context.Tenant.ID,
 			UserID:      viewer,
 			Role:        domain.RoleViewer,
 		},
@@ -537,7 +587,7 @@ func TestViewerCanReadTenantAndEntitlements(t *testing.T) {
 		decision, err := service.CheckAuthorization(
 			ctx,
 			viewer,
-			created.Tenant.ID,
+			created.Context.Tenant.ID,
 			permission,
 		)
 		if err != nil {
@@ -577,14 +627,16 @@ func TestNonMemberReceivesDeniedDecisionWithoutInternalDetails(t *testing.T) {
 		t.Fatalf("create tenant: %v", err)
 	}
 
+	applicationActivateTenant(t, service, created)
+
 	t.Cleanup(func() {
-		applicationCleanupTenant(t, pool, created.Tenant.ID)
+		applicationCleanupTenant(t, pool, created.Context.Tenant.ID)
 	})
 
 	decision, err := service.CheckAuthorization(
 		ctx,
 		stranger,
-		created.Tenant.ID,
+		created.Context.Tenant.ID,
 		domain.PermissionTenantRead,
 	)
 	if err != nil {
@@ -624,20 +676,21 @@ func TestArchivedTenantRetainsReadAndDeniesMutation(t *testing.T) {
 		t.Fatalf("create tenant: %v", err)
 	}
 
+	activated := applicationActivateTenant(t, service, created)
+
 	t.Cleanup(func() {
-		applicationCleanupTenant(t, pool, created.Tenant.ID)
+		applicationCleanupTenant(t, pool, created.Context.Tenant.ID)
 	})
 
 	archived, err := service.ArchiveTenant(
 		ctx,
 		owner,
-		created.Tenant.ID,
-		created.Tenant.Version,
+		created.Context.Tenant.ID,
+		activated.Context.Tenant.Version,
 	)
 	if err != nil {
 		t.Fatalf("archive tenant: %v", err)
 	}
-
 	readDecision, err := service.CheckAuthorization(
 		ctx,
 		owner,
@@ -696,8 +749,10 @@ func TestStaleTenantAndMembershipVersionsFail(t *testing.T) {
 		t.Fatalf("create tenant: %v", err)
 	}
 
+	applicationActivateTenant(t, service, created)
+
 	t.Cleanup(func() {
-		applicationCleanupTenant(t, pool, created.Tenant.ID)
+		applicationCleanupTenant(t, pool, created.Context.Tenant.ID)
 	})
 
 	displayName := "Renamed"
@@ -705,8 +760,8 @@ func TestStaleTenantAndMembershipVersionsFail(t *testing.T) {
 		ctx,
 		UpdateTenantInput{
 			ActorUserID:     owner,
-			TenantID:        created.Tenant.ID,
-			ExpectedVersion: created.Tenant.Version + 99,
+			TenantID:        created.Context.Tenant.ID,
+			ExpectedVersion: created.Context.Tenant.Version + 99,
 			DisplayName:     &displayName,
 		},
 	)
@@ -718,7 +773,7 @@ func TestStaleTenantAndMembershipVersionsFail(t *testing.T) {
 		ctx,
 		MemberInput{
 			ActorUserID: owner,
-			TenantID:    created.Tenant.ID,
+			TenantID:    created.Context.Tenant.ID,
 			UserID:      admin,
 			Role:        domain.RoleAdmin,
 		},
@@ -730,7 +785,7 @@ func TestStaleTenantAndMembershipVersionsFail(t *testing.T) {
 	target, err := service.GetTenantContext(
 		ctx,
 		admin,
-		created.Tenant.ID,
+		created.Context.Tenant.ID,
 	)
 	if err != nil {
 		t.Fatalf("get admin context: %v", err)
@@ -740,7 +795,7 @@ func TestStaleTenantAndMembershipVersionsFail(t *testing.T) {
 		ctx,
 		UpdateMemberRoleInput{
 			ActorUserID:               owner,
-			TenantID:                  created.Tenant.ID,
+			TenantID:                  created.Context.Tenant.ID,
 			UserID:                    admin,
 			Role:                      domain.RoleMember,
 			ExpectedMembershipVersion: target.Membership.Version + 99,
@@ -773,14 +828,16 @@ func TestFinalOwnerCannotRemoveThemself(t *testing.T) {
 		t.Fatalf("create tenant: %v", err)
 	}
 
+	applicationActivateTenant(t, service, created)
+
 	t.Cleanup(func() {
-		applicationCleanupTenant(t, pool, created.Tenant.ID)
+		applicationCleanupTenant(t, pool, created.Context.Tenant.ID)
 	})
 
 	contextValue, err := service.GetTenantContext(
 		ctx,
 		owner,
-		created.Tenant.ID,
+		created.Context.Tenant.ID,
 	)
 	if err != nil {
 		t.Fatalf("get owner context: %v", err)
@@ -790,7 +847,7 @@ func TestFinalOwnerCannotRemoveThemself(t *testing.T) {
 		ctx,
 		RemoveMemberInput{
 			ActorUserID:               owner,
-			TenantID:                  created.Tenant.ID,
+			TenantID:                  created.Context.Tenant.ID,
 			UserID:                    owner,
 			ExpectedMembershipVersion: contextValue.Membership.Version,
 		},
@@ -820,19 +877,21 @@ func TestMembershipMutationsWriteExactlyOneOutboxEvent(t *testing.T) {
 		t.Fatalf("create tenant: %v", err)
 	}
 
+	applicationActivateTenant(t, service, created)
+
 	t.Cleanup(func() {
-		applicationCleanupTenant(t, pool, created.Tenant.ID)
+		applicationCleanupTenant(t, pool, created.Context.Tenant.ID)
 	})
 
-	if count := applicationOutboxCount(t, pool, created.Tenant.ID); count != 1 {
-		t.Fatalf("creation outbox rows = %d, want 1", count)
+	if count := applicationOutboxCount(t, pool, created.Context.Tenant.ID); count != 3 {
+		t.Fatalf("creation outbox rows = %d, want 3", count)
 	}
 
 	_, _, err = service.AddMember(
 		ctx,
 		MemberInput{
 			ActorUserID: owner,
-			TenantID:    created.Tenant.ID,
+			TenantID:    created.Context.Tenant.ID,
 			UserID:      member,
 			Role:        domain.RoleMember,
 		},
@@ -841,14 +900,14 @@ func TestMembershipMutationsWriteExactlyOneOutboxEvent(t *testing.T) {
 		t.Fatalf("add member: %v", err)
 	}
 
-	if count := applicationOutboxCount(t, pool, created.Tenant.ID); count != 2 {
-		t.Fatalf("add member outbox rows = %d, want 2", count)
+	if count := applicationOutboxCount(t, pool, created.Context.Tenant.ID); count != 4 {
+		t.Fatalf("add member outbox rows = %d, want 4", count)
 	}
 
 	memberContext, err := service.GetTenantContext(
 		ctx,
 		member,
-		created.Tenant.ID,
+		created.Context.Tenant.ID,
 	)
 	if err != nil {
 		t.Fatalf("get member context: %v", err)
@@ -858,7 +917,7 @@ func TestMembershipMutationsWriteExactlyOneOutboxEvent(t *testing.T) {
 		ctx,
 		UpdateMemberRoleInput{
 			ActorUserID:               owner,
-			TenantID:                  created.Tenant.ID,
+			TenantID:                  created.Context.Tenant.ID,
 			UserID:                    member,
 			Role:                      domain.RoleViewer,
 			ExpectedMembershipVersion: memberContext.Membership.Version,
@@ -868,14 +927,14 @@ func TestMembershipMutationsWriteExactlyOneOutboxEvent(t *testing.T) {
 		t.Fatalf("update member role: %v", err)
 	}
 
-	if count := applicationOutboxCount(t, pool, created.Tenant.ID); count != 3 {
-		t.Fatalf("role change outbox rows = %d, want 3", count)
+	if count := applicationOutboxCount(t, pool, created.Context.Tenant.ID); count != 5 {
+		t.Fatalf("role change outbox rows = %d, want 5", count)
 	}
 
 	memberContext, err = service.GetTenantContext(
 		ctx,
 		member,
-		created.Tenant.ID,
+		created.Context.Tenant.ID,
 	)
 	if err != nil {
 		t.Fatalf("get member context after role change: %v", err)
@@ -885,7 +944,7 @@ func TestMembershipMutationsWriteExactlyOneOutboxEvent(t *testing.T) {
 		ctx,
 		RemoveMemberInput{
 			ActorUserID:               owner,
-			TenantID:                  created.Tenant.ID,
+			TenantID:                  created.Context.Tenant.ID,
 			UserID:                    member,
 			ExpectedMembershipVersion: memberContext.Membership.Version,
 		},
@@ -894,8 +953,8 @@ func TestMembershipMutationsWriteExactlyOneOutboxEvent(t *testing.T) {
 		t.Fatalf("remove member: %v", err)
 	}
 
-	if count := applicationOutboxCount(t, pool, created.Tenant.ID); count != 4 {
-		t.Fatalf("remove member outbox rows = %d, want 4", count)
+	if count := applicationOutboxCount(t, pool, created.Context.Tenant.ID); count != 6 {
+		t.Fatalf("remove member outbox rows = %d, want 6", count)
 	}
 }
 
@@ -920,15 +979,17 @@ func TestFailedAuthorizationWritesNoOutboxEvent(t *testing.T) {
 		t.Fatalf("create tenant: %v", err)
 	}
 
+	applicationActivateTenant(t, service, created)
+
 	t.Cleanup(func() {
-		applicationCleanupTenant(t, pool, created.Tenant.ID)
+		applicationCleanupTenant(t, pool, created.Context.Tenant.ID)
 	})
 
 	_, _, err = service.AddMember(
 		ctx,
 		MemberInput{
 			ActorUserID: owner,
-			TenantID:    created.Tenant.ID,
+			TenantID:    created.Context.Tenant.ID,
 			UserID:      member,
 			Role:        domain.RoleMember,
 		},
@@ -937,13 +998,13 @@ func TestFailedAuthorizationWritesNoOutboxEvent(t *testing.T) {
 		t.Fatalf("add member: %v", err)
 	}
 
-	countBefore := applicationOutboxCount(t, pool, created.Tenant.ID)
+	countBefore := applicationOutboxCount(t, pool, created.Context.Tenant.ID)
 
 	_, _, err = service.AddMember(
 		ctx,
 		MemberInput{
 			ActorUserID: member,
-			TenantID:    created.Tenant.ID,
+			TenantID:    created.Context.Tenant.ID,
 			UserID:      stranger,
 			Role:        domain.RoleMember,
 		},
@@ -957,8 +1018,8 @@ func TestFailedAuthorizationWritesNoOutboxEvent(t *testing.T) {
 		ctx,
 		UpdateTenantInput{
 			ActorUserID:     member,
-			TenantID:        created.Tenant.ID,
-			ExpectedVersion: created.Tenant.Version,
+			TenantID:        created.Context.Tenant.ID,
+			ExpectedVersion: created.Context.Tenant.Version,
 			DisplayName:     &displayName,
 		},
 	)
@@ -966,7 +1027,7 @@ func TestFailedAuthorizationWritesNoOutboxEvent(t *testing.T) {
 		t.Fatalf("expected ErrForbidden on update, got %v", err)
 	}
 
-	if count := applicationOutboxCount(t, pool, created.Tenant.ID); count != countBefore {
+	if count := applicationOutboxCount(t, pool, created.Context.Tenant.ID); count != countBefore {
 		t.Fatalf(
 			"failed authorization changed outbox rows: before %d, after %d",
 			countBefore,

@@ -131,20 +131,87 @@ func createTestTenant(
 	actorUserID string,
 	requestID string,
 	slug string,
-) (domain.TenantContext, error) {
-	now := time.Now().UTC()
+) (domain.CreateTenantResult, error) {
+	t.Helper()
+
+	created, err := createTestTenantRaw(
+		ctx,
+		t,
+		repository,
+		actorUserID,
+		requestID,
+		slug,
+	)
+	if err != nil {
+		return domain.CreateTenantResult{}, err
+	}
+
+	if _, err := repository.MarkOnboardingRunning(
+		ctx,
+		ports.MarkOnboardingRunningParams{
+			ServicePrincipalID: workflowServicePrincipalID,
+			TenantID:           created.Context.Tenant.ID,
+			OperationID:        created.Operation.ID,
+			WorkflowID:         "tenant-onboarding/" + created.Operation.ID,
+			WorkflowRunID:      mustV7(t),
+			StartedAt:          time.Now().UTC(),
+			Event: domain.OutboxEvent{
+				ID:         mustV7(t),
+				Topic:      "gereh.tenant.events.v1",
+				Key:        created.Context.Tenant.ID,
+				Envelope:   []byte{0x0a, 0x00},
+				OccurredAt: time.Now().UTC(),
+			},
+		},
+	); err != nil {
+		return domain.CreateTenantResult{}, err
+	}
+
+	return repository.CompleteOnboarding(
+		ctx,
+		ports.CompleteOnboardingParams{
+			ServicePrincipalID: workflowServicePrincipalID,
+			TenantID:           created.Context.Tenant.ID,
+			OperationID:        created.Operation.ID,
+			CompletedAt:        time.Now().UTC(),
+			Event: func(
+				_ domain.TenantContext,
+			) (domain.OutboxEvent, error) {
+				return domain.OutboxEvent{
+					ID:         mustV7(t),
+					Topic:      "gereh.tenant.events.v1",
+					Key:        created.Context.Tenant.ID,
+					Envelope:   []byte{0x0a, 0x00},
+					OccurredAt: time.Now().UTC(),
+				}, nil
+			},
+		},
+	)
+}
+
+func createTestTenantRaw(
+	ctx context.Context,
+	t *testing.T,
+	repository *Repository,
+	actorUserID string,
+	requestID string,
+	slug string,
+) (domain.CreateTenantResult, error) {
+	t.Helper()
 
 	tenantID, err := uuid.NewV7()
 	if err != nil {
-		return domain.TenantContext{}, err
+		return domain.CreateTenantResult{}, err
 	}
+
+	now := time.Now().UTC()
 
 	contextValue := domain.TenantContext{
 		Tenant: domain.Tenant{
 			ID:              tenantID.String(),
 			Slug:            slug,
 			DisplayName:     "Integration Tenant",
-			Status:          domain.StatusActive,
+			Status:          domain.StatusProvisioning,
 			Region:          "local",
 			RetentionDays:   90,
 			Version:         1,
@@ -171,10 +238,32 @@ func createTestTenant(
 		},
 	}
 
+	operationID, err := uuid.NewV7()
+	if err != nil {
+		return domain.CreateTenantResult{}, err
+	}
+
+	operation := domain.Operation{
+		ID:           operationID.String(),
+		TenantID:     tenantID.String(),
+		ActorUserID:  actorUserID,
+		RequestID:    requestID,
+		State:        domain.OperationStatePending,
+		ResourceName: "tenants/" + tenantID.String(),
+		Metadata: map[string]string{
+			"kind":   "tenant_onboarding",
+			"region": "local",
+		},
+		Version:   1,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+
 	return repository.CreateTenant(
 		ctx,
 		ports.CreateTenantParams{
 			Context:   contextValue,
+			Operation: operation,
 			RequestID: requestID,
 			Event: domain.OutboxEvent{
 				ID:         mustV7(t),
@@ -273,20 +362,20 @@ func TestCreateTenantCreatesExactlyOneOwner(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{result.Tenant.ID}, actor)
+		cleanupTenants(t, repository, []string{result.Context.Tenant.ID}, actor)
 	})
 
-	if result.Membership.Role != domain.RoleOwner {
+	if result.Context.Membership.Role != domain.RoleOwner {
 		t.Fatalf(
 			"creator role = %q, want owner",
-			result.Membership.Role,
+			result.Context.Membership.Role,
 		)
 	}
 
-	if result.Membership.UserID != actor {
+	if result.Context.Membership.UserID != actor {
 		t.Fatalf(
 			"owner user = %q, want %q",
-			result.Membership.UserID,
+			result.Context.Membership.UserID,
 			actor,
 		)
 	}
@@ -312,7 +401,7 @@ func TestRepeatedCreationWithSameRequestIDReturnsSameTenant(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{first.Tenant.ID}, actor)
+		cleanupTenants(t, repository, []string{first.Context.Tenant.ID}, actor)
 	})
 
 	second, err := createTestTenant(
@@ -327,11 +416,11 @@ func TestRepeatedCreationWithSameRequestIDReturnsSameTenant(t *testing.T) {
 		t.Fatalf("second create: %v", err)
 	}
 
-	if second.Tenant.ID != first.Tenant.ID {
+	if second.Context.Tenant.ID != first.Context.Tenant.ID {
 		t.Fatalf(
 			"idempotent tenant ID changed: %q != %q",
-			second.Tenant.ID,
-			first.Tenant.ID,
+			second.Context.Tenant.ID,
+			first.Context.Tenant.ID,
 		)
 	}
 }
@@ -356,7 +445,7 @@ func TestDuplicateSlugReturnsConflict(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{first.Tenant.ID}, actor)
+		cleanupTenants(t, repository, []string{first.Context.Tenant.ID}, actor)
 	})
 
 	_, err = createTestTenant(
@@ -391,13 +480,13 @@ func TestStaleTenantVersionReturnsVersionConflict(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{result.Tenant.ID}, actor)
+		cleanupTenants(t, repository, []string{result.Context.Tenant.ID}, actor)
 	})
 
 	now := time.Now().UTC()
-	updated := result.Tenant
+	updated := result.Context.Tenant
 	updated.DisplayName = "Updated"
-	updated.Version = result.Tenant.Version + 1
+	updated.Version = result.Context.Tenant.Version + 1
 	updated.UpdatedAt = now
 
 	_, err = repository.UpdateTenant(
@@ -409,7 +498,7 @@ func TestStaleTenantVersionReturnsVersionConflict(t *testing.T) {
 			Event: domain.OutboxEvent{
 				ID:         mustV7(t),
 				Topic:      "gereh.tenant.events.v1",
-				Key:        result.Tenant.ID,
+				Key:        result.Context.Tenant.ID,
 				Envelope:   []byte{0x0a, 0x00},
 				OccurredAt: now,
 			},
@@ -441,17 +530,17 @@ func TestAdminCannotPromoteToOwner(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{result.Tenant.ID}, owner)
+		cleanupTenants(t, repository, []string{result.Context.Tenant.ID}, owner)
 	})
 
-	tenantVersion := result.Tenant.Version
+	tenantVersion := result.Context.Tenant.Version
 
 	_, tenantVersion, err = addTestMember(
 		ctx,
 		t,
 		repository,
 		owner,
-		result.Tenant.ID,
+		result.Context.Tenant.ID,
 		admin,
 		domain.RoleAdmin,
 		tenantVersion,
@@ -465,7 +554,7 @@ func TestAdminCannotPromoteToOwner(t *testing.T) {
 		t,
 		repository,
 		owner,
-		result.Tenant.ID,
+		result.Context.Tenant.ID,
 		member,
 		domain.RoleMember,
 		tenantVersion,
@@ -476,7 +565,7 @@ func TestAdminCannotPromoteToOwner(t *testing.T) {
 
 	target, err := repository.GetMembership(
 		ctx,
-		result.Tenant.ID,
+		result.Context.Tenant.ID,
 		member,
 	)
 	if err != nil {
@@ -501,7 +590,7 @@ func TestAdminCannotPromoteToOwner(t *testing.T) {
 			Event: domain.OutboxEvent{
 				ID:         mustV7(t),
 				Topic:      "gereh.tenant.events.v1",
-				Key:        result.Tenant.ID,
+				Key:        result.Context.Tenant.ID,
 				Envelope:   []byte{0x0a, 0x00},
 				OccurredAt: now,
 			},
@@ -532,17 +621,17 @@ func TestAdminCannotDemoteOrRemoveOwner(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{result.Tenant.ID}, owner)
+		cleanupTenants(t, repository, []string{result.Context.Tenant.ID}, owner)
 	})
 
-	tenantVersion := result.Tenant.Version
+	tenantVersion := result.Context.Tenant.Version
 
 	_, tenantVersion, err = addTestMember(
 		ctx,
 		t,
 		repository,
 		owner,
-		result.Tenant.ID,
+		result.Context.Tenant.ID,
 		admin,
 		domain.RoleAdmin,
 		tenantVersion,
@@ -553,7 +642,7 @@ func TestAdminCannotDemoteOrRemoveOwner(t *testing.T) {
 
 	ownerMembership, err := repository.GetMembership(
 		ctx,
-		result.Tenant.ID,
+		result.Context.Tenant.ID,
 		owner,
 	)
 	if err != nil {
@@ -578,7 +667,7 @@ func TestAdminCannotDemoteOrRemoveOwner(t *testing.T) {
 			Event: domain.OutboxEvent{
 				ID:         mustV7(t),
 				Topic:      "gereh.tenant.events.v1",
-				Key:        result.Tenant.ID,
+				Key:        result.Context.Tenant.ID,
 				Envelope:   []byte{0x0a, 0x00},
 				OccurredAt: now,
 			},
@@ -592,7 +681,7 @@ func TestAdminCannotDemoteOrRemoveOwner(t *testing.T) {
 		ctx,
 		ports.RemoveMemberParams{
 			ActorUserID:               admin,
-			TenantID:                  result.Tenant.ID,
+			TenantID:                  result.Context.Tenant.ID,
 			UserID:                    owner,
 			PreviousRole:              ownerMembership.Role,
 			ExpectedMembershipVersion: ownerMembership.Version,
@@ -601,7 +690,7 @@ func TestAdminCannotDemoteOrRemoveOwner(t *testing.T) {
 			Event: domain.OutboxEvent{
 				ID:         mustV7(t),
 				Topic:      "gereh.tenant.events.v1",
-				Key:        result.Tenant.ID,
+				Key:        result.Context.Tenant.ID,
 				Envelope:   []byte{0x0a, 0x00},
 				OccurredAt: now,
 			},
@@ -631,12 +720,12 @@ func TestFinalOwnerCannotBeRemoved(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{result.Tenant.ID}, owner)
+		cleanupTenants(t, repository, []string{result.Context.Tenant.ID}, owner)
 	})
 
 	ownerMembership, err := repository.GetMembership(
 		ctx,
-		result.Tenant.ID,
+		result.Context.Tenant.ID,
 		owner,
 	)
 	if err != nil {
@@ -649,16 +738,16 @@ func TestFinalOwnerCannotBeRemoved(t *testing.T) {
 		ctx,
 		ports.RemoveMemberParams{
 			ActorUserID:               owner,
-			TenantID:                  result.Tenant.ID,
+			TenantID:                  result.Context.Tenant.ID,
 			UserID:                    owner,
 			PreviousRole:              ownerMembership.Role,
 			ExpectedMembershipVersion: ownerMembership.Version,
-			ExpectedTenantVersion:     result.Tenant.Version,
-			NewTenantVersion:          result.Tenant.Version + 1,
+			ExpectedTenantVersion:     result.Context.Tenant.Version,
+			NewTenantVersion:          result.Context.Tenant.Version + 1,
 			Event: domain.OutboxEvent{
 				ID:         mustV7(t),
 				Topic:      "gereh.tenant.events.v1",
-				Key:        result.Tenant.ID,
+				Key:        result.Context.Tenant.ID,
 				Envelope:   []byte{0x0a, 0x00},
 				OccurredAt: now,
 			},
@@ -689,17 +778,17 @@ func TestConcurrentOwnerDemotionsOnlyOneSucceeds(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{result.Tenant.ID}, ownerA)
+		cleanupTenants(t, repository, []string{result.Context.Tenant.ID}, ownerA)
 	})
 
-	tenantVersion := result.Tenant.Version
+	tenantVersion := result.Context.Tenant.Version
 
 	_, tenantVersion, err = addTestMember(
 		ctx,
 		t,
 		repository,
 		ownerA,
-		result.Tenant.ID,
+		result.Context.Tenant.ID,
 		ownerB,
 		domain.RoleOwner,
 		tenantVersion,
@@ -716,7 +805,7 @@ func TestConcurrentOwnerDemotionsOnlyOneSucceeds(t *testing.T) {
 
 		membership, err := repository.GetMembership(
 			ctx,
-			result.Tenant.ID,
+			result.Context.Tenant.ID,
 			target,
 		)
 		if err != nil {
@@ -742,7 +831,7 @@ func TestConcurrentOwnerDemotionsOnlyOneSucceeds(t *testing.T) {
 				Event: domain.OutboxEvent{
 					ID:         mustV7(t),
 					Topic:      "gereh.tenant.events.v1",
-					Key:        result.Tenant.ID,
+					Key:        result.Context.Tenant.ID,
 					Envelope:   []byte{0x0a, 0x00},
 					OccurredAt: now,
 				},
@@ -803,22 +892,22 @@ func TestSuccessfulMutationInsertsOneOutboxRow(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{result.Tenant.ID}, actor)
+		cleanupTenants(t, repository, []string{result.Context.Tenant.ID}, actor)
 	})
 
-	count, err := outboxCount(ctx, repository, result.Tenant.ID)
+	count, err := outboxCount(ctx, repository, result.Context.Tenant.ID)
 	if err != nil {
 		t.Fatalf("count outbox: %v", err)
 	}
 
-	if count != 1 {
-		t.Fatalf("creation outbox rows = %d, want 1", count)
+	if count != 3 {
+		t.Fatalf("creation outbox rows = %d, want 3", count)
 	}
 
 	now := time.Now().UTC()
-	updated := result.Tenant
+	updated := result.Context.Tenant
 	updated.DisplayName = "Renamed"
-	updated.Version = result.Tenant.Version + 1
+	updated.Version = result.Context.Tenant.Version + 1
 	updated.UpdatedAt = now
 
 	_, err = repository.UpdateTenant(
@@ -826,11 +915,11 @@ func TestSuccessfulMutationInsertsOneOutboxRow(t *testing.T) {
 		ports.UpdateTenantParams{
 			ActorUserID:     actor,
 			Tenant:          updated,
-			ExpectedVersion: result.Tenant.Version,
+			ExpectedVersion: result.Context.Tenant.Version,
 			Event: domain.OutboxEvent{
 				ID:         mustV7(t),
 				Topic:      "gereh.tenant.events.v1",
-				Key:        result.Tenant.ID,
+				Key:        result.Context.Tenant.ID,
 				Envelope:   []byte{0x0a, 0x00},
 				OccurredAt: now,
 			},
@@ -840,13 +929,13 @@ func TestSuccessfulMutationInsertsOneOutboxRow(t *testing.T) {
 		t.Fatalf("update tenant: %v", err)
 	}
 
-	count, err = outboxCount(ctx, repository, result.Tenant.ID)
+	count, err = outboxCount(ctx, repository, result.Context.Tenant.ID)
 	if err != nil {
 		t.Fatalf("count outbox after update: %v", err)
 	}
 
-	if count != 2 {
-		t.Fatalf("update outbox rows = %d, want 2", count)
+	if count != 4 {
+		t.Fatalf("update outbox rows = %d, want 4", count)
 	}
 }
 
@@ -869,22 +958,22 @@ func TestFailedMutationInsertsNoOutboxRow(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{result.Tenant.ID}, actor)
+		cleanupTenants(t, repository, []string{result.Context.Tenant.ID}, actor)
 	})
 
-	count, err := outboxCount(ctx, repository, result.Tenant.ID)
+	count, err := outboxCount(ctx, repository, result.Context.Tenant.ID)
 	if err != nil {
 		t.Fatalf("count outbox: %v", err)
 	}
 
-	if count != 1 {
-		t.Fatalf("creation outbox rows = %d, want 1", count)
+	if count != 3 {
+		t.Fatalf("creation outbox rows = %d, want 3", count)
 	}
 
 	now := time.Now().UTC()
-	stale := result.Tenant
+	stale := result.Context.Tenant
 	stale.DisplayName = "Stale"
-	stale.Version = result.Tenant.Version + 1
+	stale.Version = result.Context.Tenant.Version + 1
 	stale.UpdatedAt = now
 
 	_, err = repository.UpdateTenant(
@@ -896,7 +985,7 @@ func TestFailedMutationInsertsNoOutboxRow(t *testing.T) {
 			Event: domain.OutboxEvent{
 				ID:         mustV7(t),
 				Topic:      "gereh.tenant.events.v1",
-				Key:        result.Tenant.ID,
+				Key:        result.Context.Tenant.ID,
 				Envelope:   []byte{0x0a, 0x00},
 				OccurredAt: now,
 			},
@@ -906,14 +995,14 @@ func TestFailedMutationInsertsNoOutboxRow(t *testing.T) {
 		t.Fatalf("expected ErrVersionConflict, got %v", err)
 	}
 
-	count, err = outboxCount(ctx, repository, result.Tenant.ID)
+	count, err = outboxCount(ctx, repository, result.Context.Tenant.ID)
 	if err != nil {
 		t.Fatalf("count outbox after failed update: %v", err)
 	}
 
-	if count != 1 {
+	if count != 3 {
 		t.Fatalf(
-			"failed mutation outbox rows = %d, want unchanged 1",
+			"failed mutation outbox rows = %d, want unchanged 3",
 			count,
 		)
 	}

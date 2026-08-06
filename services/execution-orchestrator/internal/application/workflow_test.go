@@ -1,0 +1,218 @@
+package application
+
+import (
+	"context"
+	"errors"
+	"testing"
+
+	"github.com/aminio9/gereh/services/execution-orchestrator/internal/domain"
+	"github.com/aminio9/gereh/services/execution-orchestrator/internal/ports"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+	"go.temporal.io/sdk/testsuite"
+)
+
+// mockTenantClient satisfies ports.TenantOnboardingClient.
+type mockTenantClient struct {
+	mock.Mock
+}
+
+func (client *mockTenantClient) MarkRunning(
+	_ context.Context,
+	request ports.MarkRunningRequest,
+) error {
+	args := client.Called(request)
+	return args.Error(0)
+}
+
+func (client *mockTenantClient) Complete(
+	_ context.Context,
+	tenantID string,
+	operationID string,
+) error {
+	args := client.Called(tenantID, operationID)
+	return args.Error(0)
+}
+
+func (client *mockTenantClient) Fail(
+	_ context.Context,
+	tenantID string,
+	operationID string,
+	failure domain.OperationFailure,
+) error {
+	args := client.Called(tenantID, operationID, failure)
+	return args.Error(0)
+}
+
+// mockRuntimeProvisioner satisfies ports.RuntimeProvisioner.
+type mockRuntimeProvisioner struct {
+	mock.Mock
+}
+
+func (provisioner *mockRuntimeProvisioner) EnsureTenantRuntime(
+	_ context.Context,
+	request ports.EnsureTenantRuntimeRequest,
+) error {
+	args := provisioner.Called(request)
+	return args.Error(0)
+}
+
+func newTestWorkflowEnvironment(
+	t *testing.T,
+	tenant *mockTenantClient,
+	runtime *mockRuntimeProvisioner,
+) *testsuite.TestWorkflowEnvironment {
+	t.Helper()
+
+	var suite testsuite.WorkflowTestSuite
+	environment := suite.NewTestWorkflowEnvironment()
+
+	activities := NewActivities(tenant, runtime)
+	environment.RegisterActivity(activities)
+
+	return environment
+}
+
+func TestProvisionTenantWorkflowCompletes(
+	t *testing.T,
+) {
+	t.Parallel()
+
+	tenant := new(mockTenantClient)
+	defer tenant.AssertExpectations(t)
+
+	runtime := new(mockRuntimeProvisioner)
+	defer runtime.AssertExpectations(t)
+
+	environment := newTestWorkflowEnvironment(
+		t,
+		tenant,
+		runtime,
+	)
+
+	input := domain.ProvisionTenantInput{
+		TenantID:    "018f7767-28d2-7f5c-a693-0bb4c8ee4ae1",
+		OperationID: "018f7767-28d2-7f5c-a693-0bb4c8ee4ae2",
+		Region:      "local",
+	}
+
+	tenant.
+		On("MarkRunning", mock.Anything).
+		Return(nil).
+		Once()
+
+	runtime.
+		On("EnsureTenantRuntime", mock.Anything).
+		Return(nil).
+		Once()
+
+	tenant.
+		On("Complete", input.TenantID, input.OperationID).
+		Return(nil).
+		Once()
+
+	environment.ExecuteWorkflow(
+		ProvisionTenantWorkflow,
+		input,
+	)
+
+	require.True(t, environment.IsWorkflowCompleted())
+	require.NoError(t, environment.GetWorkflowError())
+}
+
+func TestProvisionTenantWorkflowPersistsFailure(
+	t *testing.T,
+) {
+	t.Parallel()
+
+	tenant := new(mockTenantClient)
+	defer tenant.AssertExpectations(t)
+	runtime := new(mockRuntimeProvisioner)
+	defer runtime.AssertExpectations(t)
+
+	environment := newTestWorkflowEnvironment(
+		t,
+		tenant,
+		runtime,
+	)
+
+	input := domain.ProvisionTenantInput{
+		TenantID:    "018f7767-28d2-7f5c-a693-0bb4c8ee4ae1",
+		OperationID: "018f7767-28d2-7f5c-a693-0bb4c8ee4ae2",
+		Region:      "local",
+	}
+
+	tenant.
+		On("MarkRunning", mock.Anything).
+		Return(nil).
+		Once()
+
+	runtime.
+		On("EnsureTenantRuntime", mock.Anything).
+		Return(errors.New("runtime unavailable")).
+		Once()
+
+	tenant.
+		On("Fail", input.TenantID, input.OperationID, mock.Anything).
+		Return(nil).
+		Once()
+
+	environment.ExecuteWorkflow(
+		ProvisionTenantWorkflow,
+		input,
+	)
+
+	require.True(t, environment.IsWorkflowCompleted())
+	require.Error(t, environment.GetWorkflowError())
+}
+
+func TestProvisionTenantWorkflowPersistsCompleteFailure(
+	t *testing.T,
+) {
+	t.Parallel()
+
+	tenant := new(mockTenantClient)
+	defer tenant.AssertExpectations(t)
+	runtime := new(mockRuntimeProvisioner)
+	defer runtime.AssertExpectations(t)
+
+	environment := newTestWorkflowEnvironment(
+		t,
+		tenant,
+		runtime,
+	)
+
+	input := domain.ProvisionTenantInput{
+		TenantID:    "018f7767-28d2-7f5c-a693-0bb4c8ee4ae1",
+		OperationID: "018f7767-28d2-7f5c-a693-0bb4c8ee4ae2",
+		Region:      "local",
+	}
+
+	tenant.
+		On("MarkRunning", mock.Anything).
+		Return(nil).
+		Once()
+
+	runtime.
+		On("EnsureTenantRuntime", mock.Anything).
+		Return(nil).
+		Once()
+
+	tenant.
+		On("Complete", input.TenantID, input.OperationID).
+		Return(errors.New("activation rejected")).
+		Once()
+
+	tenant.
+		On("Fail", input.TenantID, input.OperationID, mock.Anything).
+		Return(nil).
+		Once()
+
+	environment.ExecuteWorkflow(
+		ProvisionTenantWorkflow,
+		input,
+	)
+
+	require.True(t, environment.IsWorkflowCompleted())
+	require.Error(t, environment.GetWorkflowError())
+}

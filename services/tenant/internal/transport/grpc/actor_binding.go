@@ -25,9 +25,16 @@ func ActorBindingUnaryInterceptor() grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
 		request any,
-		_ *grpc.UnaryServerInfo,
+		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (any, error) {
+		if strings.HasPrefix(
+			info.FullMethod,
+			onboardingServicePrefix,
+		) {
+			return handler(ctx, request)
+		}
+
 		actorRequest, ok :=
 			request.(actorBoundRequest)
 		if !ok {
