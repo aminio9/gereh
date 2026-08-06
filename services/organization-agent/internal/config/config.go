@@ -74,6 +74,14 @@ func FromEnv(version string) (Config, error) {
 		return Config{}, err
 	}
 
+	tenantInsecure, err := boolEnvironment(
+		"TENANT_GRPC_INSECURE",
+		true,
+	)
+	if err != nil {
+		return Config{}, err
+	}
+
 	shutdownTimeout, err := durationEnvironment(
 		"SHUTDOWN_TIMEOUT",
 		15*time.Second,
@@ -145,11 +153,8 @@ func FromEnv(version string) (Config, error) {
 			"TENANT_GRPC_TARGET",
 			"passthrough:///127.0.0.1:18082",
 		),
-		TenantGRPCInsecure: boolEnvironment(
-			"TENANT_GRPC_INSECURE",
-			true,
-		),
-		AuthorizerTimeout: authorizerTimeout,
+		TenantGRPCInsecure: tenantInsecure,
+		AuthorizerTimeout:  authorizerTimeout,
 
 		BootstrapServicePrincipalID: strings.TrimSpace(
 			os.Getenv("ORGANIZATION_BOOTSTRAP_SERVICE_PRINCIPAL_ID"),
@@ -190,6 +195,15 @@ func FromEnv(version string) (Config, error) {
 		)
 	}
 
+	if strings.EqualFold(
+		config.Environment,
+		"production",
+	) && config.TenantGRPCInsecure {
+		return Config{}, fmt.Errorf(
+			"TENANT_GRPC_INSECURE must be false in production",
+		)
+	}
+
 	if config.PostgresMinConnections >
 		config.PostgresMaxConnections {
 		return Config{}, fmt.Errorf(
@@ -216,18 +230,22 @@ func envOrDefault(
 func boolEnvironment(
 	name string,
 	fallback bool,
-) bool {
+) (bool, error) {
 	value := strings.TrimSpace(os.Getenv(name))
 	if value == "" {
-		return fallback
+		return fallback, nil
 	}
 
 	result, err := strconv.ParseBool(value)
 	if err != nil {
-		return fallback
+		return false, fmt.Errorf(
+			"parse %s: %w",
+			name,
+			err,
+		)
 	}
 
-	return result
+	return result, nil
 }
 
 func splitCommaSeparatedPreserveCase(

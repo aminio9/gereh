@@ -1,0 +1,585 @@
+syntax = "proto3";
+
+package gereh.work.v1;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aminio9/gereh/gen/go/gereh/work/v1;workv1";
+
+// WorkManagementService owns goals, projects, tasks, dependencies,
+// assignments, comments, artifact metadata, checklists, and schedules.
+service WorkManagementService {
+  rpc CreateGoal(CreateGoalRequest) returns (CreateGoalResponse);
+  rpc GetGoal(GetGoalRequest) returns (GetGoalResponse);
+  rpc ListGoals(ListGoalsRequest) returns (ListGoalsResponse);
+  rpc UpdateGoal(UpdateGoalRequest) returns (UpdateGoalResponse);
+  rpc ChangeGoalStatus(ChangeGoalStatusRequest) returns (ChangeGoalStatusResponse);
+
+  rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse);
+  rpc GetProject(GetProjectRequest) returns (GetProjectResponse);
+  rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse);
+  rpc UpdateProject(UpdateProjectRequest) returns (UpdateProjectResponse);
+  rpc ChangeProjectStatus(ChangeProjectStatusRequest) returns (ChangeProjectStatusResponse);
+
+  rpc CreateTask(CreateTaskRequest) returns (CreateTaskResponse);
+  rpc GetTask(GetTaskRequest) returns (GetTaskResponse);
+  rpc ListTasks(ListTasksRequest) returns (ListTasksResponse);
+  rpc UpdateTask(UpdateTaskRequest) returns (UpdateTaskResponse);
+  rpc ChangeTaskStatus(ChangeTaskStatusRequest) returns (ChangeTaskStatusResponse);
+
+  rpc AddTaskDependency(AddTaskDependencyRequest) returns (AddTaskDependencyResponse);
+  rpc RemoveTaskDependency(RemoveTaskDependencyRequest) returns (RemoveTaskDependencyResponse);
+
+  rpc AssignTask(AssignTaskRequest) returns (AssignTaskResponse);
+  rpc UnassignTask(UnassignTaskRequest) returns (UnassignTaskResponse);
+
+  rpc AddComment(AddCommentRequest) returns (AddCommentResponse);
+  rpc UpdateComment(UpdateCommentRequest) returns (UpdateCommentResponse);
+  rpc DeleteComment(DeleteCommentRequest) returns (DeleteCommentResponse);
+
+  rpc AddArtifact(AddArtifactRequest) returns (AddArtifactResponse);
+  rpc DeleteArtifact(DeleteArtifactRequest) returns (DeleteArtifactResponse);
+
+  rpc AddChecklistItem(AddChecklistItemRequest) returns (AddChecklistItemResponse);
+  rpc UpdateChecklistItem(UpdateChecklistItemRequest) returns (UpdateChecklistItemResponse);
+  rpc DeleteChecklistItem(DeleteChecklistItemRequest) returns (DeleteChecklistItemResponse);
+
+  rpc UpsertTaskSchedule(UpsertTaskScheduleRequest) returns (UpsertTaskScheduleResponse);
+  rpc DeleteTaskSchedule(DeleteTaskScheduleRequest) returns (DeleteTaskScheduleResponse);
+}
+
+enum GoalStatus {
+  GOAL_STATUS_UNSPECIFIED = 0;
+  GOAL_STATUS_ACTIVE = 1;
+  GOAL_STATUS_COMPLETED = 2;
+  GOAL_STATUS_CANCELED = 3;
+  GOAL_STATUS_ARCHIVED = 4;
+}
+
+enum ProjectStatus {
+  PROJECT_STATUS_UNSPECIFIED = 0;
+  PROJECT_STATUS_PLANNED = 1;
+  PROJECT_STATUS_ACTIVE = 2;
+  PROJECT_STATUS_ON_HOLD = 3;
+  PROJECT_STATUS_COMPLETED = 4;
+  PROJECT_STATUS_CANCELED = 5;
+  PROJECT_STATUS_ARCHIVED = 6;
+}
+
+enum TaskStatus {
+  TASK_STATUS_UNSPECIFIED = 0;
+  TASK_STATUS_BACKLOG = 1;
+  TASK_STATUS_READY = 2;
+  TASK_STATUS_IN_PROGRESS = 3;
+  TASK_STATUS_WAITING_APPROVAL = 4;
+  TASK_STATUS_COMPLETED = 5;
+  TASK_STATUS_CANCELED = 6;
+}
+
+enum TaskPriority {
+  TASK_PRIORITY_UNSPECIFIED = 0;
+  TASK_PRIORITY_LOW = 1;
+  TASK_PRIORITY_NORMAL = 2;
+  TASK_PRIORITY_HIGH = 3;
+  TASK_PRIORITY_URGENT = 4;
+}
+
+enum AssigneeType {
+  ASSIGNEE_TYPE_UNSPECIFIED = 0;
+  ASSIGNEE_TYPE_USER = 1;
+  ASSIGNEE_TYPE_AGENT = 2;
+}
+
+enum AssignmentRole {
+  ASSIGNMENT_ROLE_UNSPECIFIED = 0;
+  ASSIGNMENT_ROLE_PRIMARY = 1;
+  ASSIGNMENT_ROLE_COLLABORATOR = 2;
+  ASSIGNMENT_ROLE_REVIEWER = 3;
+}
+
+enum CommentAuthorType {
+  COMMENT_AUTHOR_TYPE_UNSPECIFIED = 0;
+  COMMENT_AUTHOR_TYPE_USER = 1;
+  COMMENT_AUTHOR_TYPE_AGENT = 2;
+}
+
+message Goal {
+  string tenant_id = 1;
+  string company_id = 2;
+  string goal_id = 3;
+  string title = 4;
+  string description = 5;
+  GoalStatus status = 6;
+  int64 version = 7;
+  string created_by_user_id = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+  google.protobuf.Timestamp completed_at = 11;
+  google.protobuf.Timestamp archived_at = 12;
+}
+
+message Project {
+  string tenant_id = 1;
+  string company_id = 2;
+  string goal_id = 3;
+  string project_id = 4;
+  string title = 5;
+  string description = 6;
+  ProjectStatus status = 7;
+  int64 version = 8;
+  string created_by_user_id = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+  google.protobuf.Timestamp completed_at = 12;
+  google.protobuf.Timestamp archived_at = 13;
+}
+
+message Task {
+  string tenant_id = 1;
+  string company_id = 2;
+  string project_id = 3;
+  string task_id = 4;
+  optional string parent_task_id = 5;
+
+  string title = 6;
+  string description = 7;
+  TaskStatus status = 8;
+  TaskPriority priority = 9;
+
+  bool blocked = 10;
+  int32 dependency_count = 11;
+  int32 incomplete_dependency_count = 12;
+
+  int64 version = 13;
+  string created_by_user_id = 14;
+  google.protobuf.Timestamp created_at = 15;
+  google.protobuf.Timestamp updated_at = 16;
+  google.protobuf.Timestamp completed_at = 17;
+  google.protobuf.Timestamp canceled_at = 18;
+}
+
+message TaskDependency {
+  string tenant_id = 1;
+  string project_id = 2;
+  string task_id = 3;
+  string depends_on_task_id = 4;
+  string created_by_user_id = 5;
+  google.protobuf.Timestamp created_at = 6;
+}
+
+message TaskAssignment {
+  string tenant_id = 1;
+  string task_id = 2;
+  string assignment_id = 3;
+  AssigneeType assignee_type = 4;
+  optional string user_id = 5;
+  optional string agent_id = 6;
+  AssignmentRole role = 7;
+  string assigned_by_user_id = 8;
+  google.protobuf.Timestamp assigned_at = 9;
+}
+
+message Comment {
+  string tenant_id = 1;
+  string task_id = 2;
+  string comment_id = 3;
+  CommentAuthorType author_type = 4;
+  optional string author_user_id = 5;
+  optional string author_agent_id = 6;
+  string body = 7;
+  int64 version = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+  google.protobuf.Timestamp deleted_at = 11;
+}
+
+message Artifact {
+  string tenant_id = 1;
+  string company_id = 2;
+  string task_id = 3;
+  string artifact_id = 4;
+  string object_key = 5;
+  string file_name = 6;
+  string content_type = 7;
+  int64 size_bytes = 8;
+  string sha256 = 9;
+  google.protobuf.Struct metadata = 10;
+  string created_by_user_id = 11;
+  google.protobuf.Timestamp created_at = 12;
+  google.protobuf.Timestamp deleted_at = 13;
+}
+
+message ChecklistItem {
+  string tenant_id = 1;
+  string task_id = 2;
+  string item_id = 3;
+  string title = 4;
+  bool completed = 5;
+  int32 position = 6;
+  int64 version = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+}
+
+message TaskSchedule {
+  string tenant_id = 1;
+  string task_id = 2;
+  google.protobuf.Timestamp not_before = 3;
+  google.protobuf.Timestamp due_at = 4;
+  string timezone = 5;
+  int64 version = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+message CreateGoalRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string company_id = 3;
+  string title = 4;
+  string description = 5;
+}
+
+message CreateGoalResponse {
+  Goal goal = 1;
+}
+
+message GetGoalRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string goal_id = 3;
+}
+
+message GetGoalResponse {
+  Goal goal = 1;
+}
+
+message ListGoalsRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string company_id = 3;
+  int32 page_size = 4;
+  string page_token = 5;
+  bool include_archived = 6;
+}
+
+message ListGoalsResponse {
+  repeated Goal goals = 1;
+  string next_page_token = 2;
+}
+
+message UpdateGoalRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string goal_id = 3;
+  int64 expected_version = 4;
+  optional string title = 5;
+  optional string description = 6;
+}
+
+message UpdateGoalResponse {
+  Goal goal = 1;
+}
+
+message ChangeGoalStatusRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string goal_id = 3;
+  int64 expected_version = 4;
+  GoalStatus status = 5;
+}
+
+message ChangeGoalStatusResponse {
+  Goal goal = 1;
+}
+
+message CreateProjectRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string company_id = 3;
+  string goal_id = 4;
+  string title = 5;
+  string description = 6;
+}
+
+message CreateProjectResponse {
+  Project project = 1;
+}
+
+message GetProjectRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string project_id = 3;
+}
+
+message GetProjectResponse {
+  Project project = 1;
+}
+
+message ListProjectsRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string company_id = 3;
+  string goal_id = 4;
+  int32 page_size = 5;
+  string page_token = 6;
+  bool include_archived = 7;
+}
+
+message ListProjectsResponse {
+  repeated Project projects = 1;
+  string next_page_token = 2;
+}
+
+message UpdateProjectRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string project_id = 3;
+  int64 expected_version = 4;
+  optional string title = 5;
+  optional string description = 6;
+}
+
+message UpdateProjectResponse {
+  Project project = 1;
+}
+
+message ChangeProjectStatusRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string project_id = 3;
+  int64 expected_version = 4;
+  ProjectStatus status = 5;
+}
+
+message ChangeProjectStatusResponse {
+  Project project = 1;
+}
+
+message CreateTaskRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string company_id = 3;
+  string project_id = 4;
+  optional string parent_task_id = 5;
+  string title = 6;
+  string description = 7;
+  TaskPriority priority = 8;
+}
+
+message CreateTaskResponse {
+  Task task = 1;
+}
+
+message GetTaskRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string task_id = 3;
+}
+
+message GetTaskResponse {
+  Task task = 1;
+}
+
+message ListTasksRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string company_id = 3;
+  string project_id = 4;
+  int32 page_size = 5;
+  string page_token = 6;
+  bool include_canceled = 7;
+}
+
+message ListTasksResponse {
+  repeated Task tasks = 1;
+  string next_page_token = 2;
+}
+
+message UpdateTaskRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string task_id = 3;
+  int64 expected_version = 4;
+  optional string title = 5;
+  optional string description = 6;
+  optional TaskPriority priority = 7;
+}
+
+message UpdateTaskResponse {
+  Task task = 1;
+}
+
+message ChangeTaskStatusRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string task_id = 3;
+  int64 expected_version = 4;
+  TaskStatus status = 5;
+}
+
+message ChangeTaskStatusResponse {
+  Task task = 1;
+}
+
+message AddTaskDependencyRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string task_id = 3;
+  string depends_on_task_id = 4;
+}
+
+message AddTaskDependencyResponse {
+  TaskDependency dependency = 1;
+}
+
+message RemoveTaskDependencyRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string task_id = 3;
+  string depends_on_task_id = 4;
+}
+
+message RemoveTaskDependencyResponse {}
+
+message AssignTaskRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string task_id = 3;
+  AssigneeType assignee_type = 4;
+  optional string user_id = 5;
+  optional string agent_id = 6;
+  AssignmentRole role = 7;
+}
+
+message AssignTaskResponse {
+  TaskAssignment assignment = 1;
+}
+
+message UnassignTaskRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string task_id = 3;
+  string assignment_id = 4;
+}
+
+message UnassignTaskResponse {}
+
+message AddCommentRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string task_id = 3;
+  CommentAuthorType author_type = 4;
+  optional string author_user_id = 5;
+  optional string author_agent_id = 6;
+  string body = 7;
+}
+
+message AddCommentResponse {
+  Comment comment = 1;
+}
+
+message UpdateCommentRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string task_id = 3;
+  string comment_id = 4;
+  int64 expected_version = 5;
+  string body = 6;
+}
+
+message UpdateCommentResponse {
+  Comment comment = 1;
+}
+
+message DeleteCommentRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string task_id = 3;
+  string comment_id = 4;
+  int64 expected_version = 5;
+}
+
+message DeleteCommentResponse {}
+
+message AddArtifactRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string company_id = 3;
+  string task_id = 4;
+  string object_key = 5;
+  string file_name = 6;
+  string content_type = 7;
+  int64 size_bytes = 8;
+  string sha256 = 9;
+  google.protobuf.Struct metadata = 10;
+}
+
+message AddArtifactResponse {
+  Artifact artifact = 1;
+}
+
+message DeleteArtifactRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string task_id = 3;
+  string artifact_id = 4;
+}
+
+message DeleteArtifactResponse {}
+
+message AddChecklistItemRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string task_id = 3;
+  string title = 4;
+}
+
+message AddChecklistItemResponse {
+  ChecklistItem item = 1;
+}
+
+message UpdateChecklistItemRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string task_id = 3;
+  string item_id = 4;
+  int64 expected_version = 5;
+  optional string title = 6;
+  optional bool completed = 7;
+}
+
+message UpdateChecklistItemResponse {
+  ChecklistItem item = 1;
+}
+
+message DeleteChecklistItemRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string task_id = 3;
+  string item_id = 4;
+  int64 expected_version = 5;
+}
+
+message DeleteChecklistItemResponse {}
+
+message UpsertTaskScheduleRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string task_id = 3;
+  google.protobuf.Timestamp not_before = 4;
+  google.protobuf.Timestamp due_at = 5;
+  string timezone = 6;
+}
+
+message UpsertTaskScheduleResponse {
+  TaskSchedule schedule = 1;
+}
+
+message DeleteTaskScheduleRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string task_id = 3;
+}
+
+message DeleteTaskScheduleResponse {}

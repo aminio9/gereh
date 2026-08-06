@@ -77,7 +77,7 @@ topics="$(
 required_topics=(
   gereh.tenant.events.v1
   gereh.organization-agent.events.v1
-  gereh.work-management.events.v1
+  gereh.work.events.v1
   gereh.policy-approval.events.v1
   gereh.execution.commands.v1
   gereh.execution.events.v1

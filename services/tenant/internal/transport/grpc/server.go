@@ -297,6 +297,26 @@ func (server *Server) ListMembers(
 	}, nil
 }
 
+// GetMember returns one tenant membership.
+func (server *Server) GetMember(
+	ctx context.Context,
+	request *tenantv1.GetMemberRequest,
+) (*tenantv1.GetMemberResponse, error) {
+	membership, err := server.service.GetMember(
+		ctx,
+		request.GetActorUserId(),
+		request.GetTenantId(),
+		request.GetUserId(),
+	)
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	return &tenantv1.GetMemberResponse{
+		Membership: protoutil.Membership(membership),
+	}, nil
+}
+
 // AddMember adds a tenant member.
 func (server *Server) AddMember(
 	ctx context.Context,

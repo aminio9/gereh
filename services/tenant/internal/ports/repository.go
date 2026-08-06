@@ -164,6 +164,13 @@ type Repository interface {
 		userID string,
 	) (domain.Membership, error)
 
+	GetMembershipAsActor(
+		ctx context.Context,
+		tenantID string,
+		actorUserID string,
+		targetUserID string,
+	) (domain.Membership, error)
+
 	ListMembers(
 		ctx context.Context,
 		tenantID string,

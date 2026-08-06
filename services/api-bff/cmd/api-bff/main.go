@@ -10,12 +10,14 @@ import (
 	identityv1 "github.com/aminio9/gereh/gen/go/gereh/identity/v1"
 	organizationv1 "github.com/aminio9/gereh/gen/go/gereh/organization/v1"
 	tenantv1 "github.com/aminio9/gereh/gen/go/gereh/tenant/v1"
+	workv1 "github.com/aminio9/gereh/gen/go/gereh/work/v1"
 	"github.com/aminio9/gereh/platform/go/grpcx"
 	"github.com/aminio9/gereh/platform/go/service"
 	bffconfig "github.com/aminio9/gereh/services/api-bff/internal/config"
 	authhttp "github.com/aminio9/gereh/services/api-bff/internal/http/auth"
 	organizationhttp "github.com/aminio9/gereh/services/api-bff/internal/http/organization"
 	tenanthttp "github.com/aminio9/gereh/services/api-bff/internal/http/tenant"
+	workhttp "github.com/aminio9/gereh/services/api-bff/internal/http/work"
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 )
@@ -47,6 +49,17 @@ func main() {
 	if err != nil {
 		slog.Error(
 			"load Organization Service configuration",
+			"error",
+			err,
+		)
+
+		os.Exit(1)
+	}
+
+	workConfig, err := bffconfig.WorkConfigFromEnv()
+	if err != nil {
+		slog.Error(
+			"load Work Management Service configuration",
 			"error",
 			err,
 		)
@@ -175,6 +188,47 @@ func main() {
 		slog.Default(),
 	)
 
+	workClientConfig := grpcx.DefaultClientConfig(
+		workConfig.Target,
+	)
+
+	workClientConfig.Insecure =
+		workConfig.Insecure
+
+	workConnection, err := grpcx.NewClient(
+		workClientConfig,
+		nil,
+	)
+	if err != nil {
+		slog.Error(
+			"create Work Management Service gRPC client",
+			"error",
+			err,
+		)
+
+		os.Exit(1)
+	}
+
+	defer func() {
+		if err := workConnection.Close(); err != nil {
+			slog.Warn(
+				"close Work Management Service gRPC client",
+				"error",
+				err,
+			)
+		}
+	}()
+
+	workClient := workv1.NewWorkManagementServiceClient(
+		workConnection,
+	)
+
+	workHandler := workhttp.New(
+		workClient,
+		tenantClient,
+		slog.Default(),
+	)
+
 	service.Run(
 		service.Config{
 			Name:           "api-bff",
@@ -191,6 +245,10 @@ func main() {
 			authHandler.Register(router)
 			tenantHandler.Register(router, authHandler)
 			organizationHandler.Register(
+				router,
+				authHandler,
+			)
+			workHandler.Register(
 				router,
 				authHandler,
 			)

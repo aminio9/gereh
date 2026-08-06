@@ -101,6 +101,48 @@ func (repository *Repository) GetMembership(
 	return result, nil
 }
 
+// GetMembershipAsActor returns one membership using actorUserID as the
+// security principal and targetUserID only as the row predicate.
+func (repository *Repository) GetMembershipAsActor(
+	ctx context.Context,
+	tenantID string,
+	actorUserID string,
+	targetUserID string,
+) (domain.Membership, error) {
+	transaction, err := repository.beginTenant(
+		ctx,
+		tenantID,
+		actorUserID,
+		pgx.TxOptions{
+			AccessMode: pgx.ReadOnly,
+		},
+	)
+	if err != nil {
+		return domain.Membership{}, err
+	}
+
+	defer func() {
+		_ = transaction.Rollback(ctx)
+	}()
+
+	result, err := queryMembership(
+		ctx,
+		transaction,
+		tenantID,
+		targetUserID,
+		false,
+	)
+	if err != nil {
+		return domain.Membership{}, err
+	}
+
+	if err := commit(ctx, transaction); err != nil {
+		return domain.Membership{}, err
+	}
+
+	return result, nil
+}
+
 // ListMembers lists memberships after validating actor membership.
 func (repository *Repository) ListMembers(
 	ctx context.Context,

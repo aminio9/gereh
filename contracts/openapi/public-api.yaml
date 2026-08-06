@@ -14,6 +14,8 @@ tags:
     description: Platform status and metadata
   - name: Tenant
     description: Tenant provisioning and membership operations
+  - name: Work
+    description: Goal, project, and task management operations
 
 paths:
   /v1/status:
@@ -118,6 +120,1186 @@ paths:
                 $ref: "#/components/schemas/Operation"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/tenants/{tenantId}/goals:
+    post:
+      operationId: createGoal
+      summary: Create a goal
+      description: Creates a goal under a company.
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGoalRequest"
+      responses:
+        "201":
+          description: Goal created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateGoalResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    get:
+      operationId: listGoals
+      summary: List goals
+      description: Lists goals, optionally filtered by company.
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: company_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+        - name: page_token
+          in: query
+          schema:
+            type: string
+        - name: include_archived
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Goal page.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListGoalsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /v1/tenants/{tenantId}/goals/{goalId}:
+    get:
+      operationId: getGoal
+      summary: Get a goal
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: goalId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Goal.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetGoalResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateGoal
+      summary: Update a goal
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: goalId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateGoalRequest"
+      responses:
+        "200":
+          description: Updated goal.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateGoalResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/tenants/{tenantId}/goals/{goalId}/status:
+    post:
+      operationId: changeGoalStatus
+      summary: Change a goal status
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: goalId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangeStatusRequest"
+      responses:
+        "200":
+          description: Updated goal.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChangeGoalStatusResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/tenants/{tenantId}/goals/{goalId}/projects:
+    post:
+      operationId: createProject
+      summary: Create a project
+      description: Creates a project under a goal.
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: goalId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProjectRequest"
+      responses:
+        "201":
+          description: Project created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateProjectResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    get:
+      operationId: listProjects
+      summary: List projects
+      description: Lists projects, optionally filtered by company.
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: goalId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: company_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+        - name: page_token
+          in: query
+          schema:
+            type: string
+        - name: include_archived
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Project page.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListProjectsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /v1/tenants/{tenantId}/projects/{projectId}:
+    get:
+      operationId: getProject
+      summary: Get a project
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Project.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetProjectResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateProject
+      summary: Update a project
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProjectRequest"
+      responses:
+        "200":
+          description: Updated project.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateProjectResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/tenants/{tenantId}/projects/{projectId}/status:
+    post:
+      operationId: changeProjectStatus
+      summary: Change a project status
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangeStatusRequest"
+      responses:
+        "200":
+          description: Updated project.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChangeProjectStatusResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/tenants/{tenantId}/projects/{projectId}/tasks:
+    post:
+      operationId: createTask
+      summary: Create a task
+      description: Creates a task under a project.
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTaskRequest"
+      responses:
+        "201":
+          description: Task created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateTaskResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    get:
+      operationId: listTasks
+      summary: List tasks
+      description: Lists tasks, optionally filtered by company.
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: company_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+        - name: page_token
+          in: query
+          schema:
+            type: string
+        - name: include_canceled
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Task page.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListTasksResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /v1/tenants/{tenantId}/tasks/{taskId}:
+    get:
+      operationId: getTask
+      summary: Get a task
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Task.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetTaskResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateTask
+      summary: Update a task
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTaskRequest"
+      responses:
+        "200":
+          description: Updated task.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateTaskResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/tenants/{tenantId}/tasks/{taskId}/status:
+    post:
+      operationId: changeTaskStatus
+      summary: Change a task status
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangeStatusRequest"
+      responses:
+        "200":
+          description: Updated task.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChangeTaskStatusResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/tenants/{tenantId}/tasks/{taskId}/dependencies:
+    post:
+      operationId: addTaskDependency
+      summary: Add a task dependency
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddTaskDependencyRequest"
+      responses:
+        "201":
+          description: Dependency created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AddTaskDependencyResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/tenants/{tenantId}/tasks/{taskId}/dependencies/{dependsOnTaskId}:
+    delete:
+      operationId: removeTaskDependency
+      summary: Remove a task dependency
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: dependsOnTaskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Dependency removed.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/tenants/{tenantId}/tasks/{taskId}/assignments:
+    post:
+      operationId: assignTask
+      summary: Assign a task
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignTaskRequest"
+      responses:
+        "201":
+          description: Assignment created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssignTaskResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/tenants/{tenantId}/tasks/{taskId}/assignments/{assignmentId}:
+    delete:
+      operationId: unassignTask
+      summary: Unassign a task
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Assignment removed.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/tenants/{tenantId}/tasks/{taskId}/comments:
+    post:
+      operationId: addComment
+      summary: Add a comment
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddCommentRequest"
+      responses:
+        "201":
+          description: Comment created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AddCommentResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/tenants/{tenantId}/tasks/{taskId}/comments/{commentId}:
+    patch:
+      operationId: updateComment
+      summary: Update a comment
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCommentRequest"
+      responses:
+        "200":
+          description: Updated comment.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateCommentResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      operationId: deleteComment
+      summary: Delete a comment
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteCommentRequest"
+      responses:
+        "200":
+          description: Comment deleted.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/tenants/{tenantId}/tasks/{taskId}/artifacts:
+    post:
+      operationId: addArtifact
+      summary: Add an artifact
+      description: Records artifact metadata for a task.
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddArtifactRequest"
+      responses:
+        "201":
+          description: Artifact recorded.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AddArtifactResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/tenants/{tenantId}/tasks/{taskId}/artifacts/{artifactId}:
+    delete:
+      operationId: deleteArtifact
+      summary: Delete an artifact
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: artifactId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Artifact deleted.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/tenants/{tenantId}/tasks/{taskId}/checklist:
+    post:
+      operationId: addChecklistItem
+      summary: Add a checklist item
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddChecklistItemRequest"
+      responses:
+        "201":
+          description: Checklist item created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AddChecklistItemResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/tenants/{tenantId}/tasks/{taskId}/checklist/{itemId}:
+    patch:
+      operationId: updateChecklistItem
+      summary: Update a checklist item
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateChecklistItemRequest"
+      responses:
+        "200":
+          description: Updated checklist item.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateChecklistItemResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      operationId: deleteChecklistItem
+      summary: Delete a checklist item
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteChecklistItemRequest"
+      responses:
+        "200":
+          description: Checklist item deleted.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/tenants/{tenantId}/tasks/{taskId}/schedule:
+    put:
+      operationId: upsertTaskSchedule
+      summary: Create or update a task schedule
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertTaskScheduleRequest"
+      responses:
+        "200":
+          description: Schedule stored.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpsertTaskScheduleResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteTaskSchedule
+      summary: Delete a task schedule
+      tags:
+        - Work
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Schedule deleted.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
 
@@ -300,6 +1482,987 @@ components:
           examples:
             - dev
 
+    CreateGoalRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - companyId
+        - title
+      properties:
+        companyId:
+          type: string
+          format: uuid
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 4000
+
+    CreateGoalResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - goal
+      properties:
+        goal:
+          $ref: "#/components/schemas/Goal"
+
+    GetGoalResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - goal
+      properties:
+        goal:
+          $ref: "#/components/schemas/Goal"
+
+    ListGoalsResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        goals:
+          type: array
+          items:
+            $ref: "#/components/schemas/Goal"
+        nextPageToken:
+          type: string
+
+    UpdateGoalRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - expectedVersion
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 4000
+
+    UpdateGoalResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - goal
+      properties:
+        goal:
+          $ref: "#/components/schemas/Goal"
+
+    ChangeStatusRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - expectedVersion
+        - status
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+        status:
+          type: integer
+          minimum: 1
+
+    ChangeGoalStatusResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - goal
+      properties:
+        goal:
+          $ref: "#/components/schemas/Goal"
+
+    Goal:
+      type: object
+      additionalProperties: false
+      required:
+        - tenantId
+        - companyId
+        - goalId
+        - title
+        - status
+        - version
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        companyId:
+          type: string
+          format: uuid
+        goalId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum:
+            - GOAL_STATUS_ACTIVE
+            - GOAL_STATUS_COMPLETED
+            - GOAL_STATUS_CANCELED
+            - GOAL_STATUS_ARCHIVED
+        version:
+          type: integer
+          format: int64
+        createdByUserId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+        archivedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+
+    CreateProjectRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - companyId
+        - title
+      properties:
+        companyId:
+          type: string
+          format: uuid
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 4000
+
+    CreateProjectResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - project
+      properties:
+        project:
+          $ref: "#/components/schemas/Project"
+
+    GetProjectResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - project
+      properties:
+        project:
+          $ref: "#/components/schemas/Project"
+
+    ListProjectsResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        projects:
+          type: array
+          items:
+            $ref: "#/components/schemas/Project"
+        nextPageToken:
+          type: string
+
+    UpdateProjectRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - expectedVersion
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 4000
+
+    UpdateProjectResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - project
+      properties:
+        project:
+          $ref: "#/components/schemas/Project"
+
+    ChangeProjectStatusResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - project
+      properties:
+        project:
+          $ref: "#/components/schemas/Project"
+
+    Project:
+      type: object
+      additionalProperties: false
+      required:
+        - tenantId
+        - companyId
+        - goalId
+        - projectId
+        - title
+        - status
+        - version
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        companyId:
+          type: string
+          format: uuid
+        goalId:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum:
+            - PROJECT_STATUS_PLANNED
+            - PROJECT_STATUS_ACTIVE
+            - PROJECT_STATUS_ON_HOLD
+            - PROJECT_STATUS_COMPLETED
+            - PROJECT_STATUS_CANCELED
+            - PROJECT_STATUS_ARCHIVED
+        version:
+          type: integer
+          format: int64
+        createdByUserId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+        archivedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+
+    CreateTaskRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - companyId
+        - title
+      properties:
+        companyId:
+          type: string
+          format: uuid
+        parentTaskId:
+          type:
+            - string
+            - "null"
+          format: uuid
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 4000
+        priority:
+          type: string
+          enum:
+            - TASK_PRIORITY_UNSPECIFIED
+            - TASK_PRIORITY_LOW
+            - TASK_PRIORITY_NORMAL
+            - TASK_PRIORITY_HIGH
+            - TASK_PRIORITY_URGENT
+
+    CreateTaskResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - task
+      properties:
+        task:
+          $ref: "#/components/schemas/Task"
+
+    GetTaskResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - task
+      properties:
+        task:
+          $ref: "#/components/schemas/Task"
+
+    ListTasksResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
+        nextPageToken:
+          type: string
+
+    UpdateTaskRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - expectedVersion
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 4000
+        priority:
+          type: string
+          enum:
+            - TASK_PRIORITY_UNSPECIFIED
+            - TASK_PRIORITY_LOW
+            - TASK_PRIORITY_NORMAL
+            - TASK_PRIORITY_HIGH
+            - TASK_PRIORITY_URGENT
+
+    UpdateTaskResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - task
+      properties:
+        task:
+          $ref: "#/components/schemas/Task"
+
+    ChangeTaskStatusResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - task
+      properties:
+        task:
+          $ref: "#/components/schemas/Task"
+
+    Task:
+      type: object
+      additionalProperties: false
+      required:
+        - tenantId
+        - companyId
+        - projectId
+        - taskId
+        - title
+        - status
+        - priority
+        - blocked
+        - dependencyCount
+        - incompleteDependencyCount
+        - version
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        companyId:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        taskId:
+          type: string
+          format: uuid
+        parentTaskId:
+          type:
+            - string
+            - "null"
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum:
+            - TASK_STATUS_BACKLOG
+            - TASK_STATUS_READY
+            - TASK_STATUS_IN_PROGRESS
+            - TASK_STATUS_WAITING_APPROVAL
+            - TASK_STATUS_COMPLETED
+            - TASK_STATUS_CANCELED
+        priority:
+          type: string
+          enum:
+            - TASK_PRIORITY_LOW
+            - TASK_PRIORITY_NORMAL
+            - TASK_PRIORITY_HIGH
+            - TASK_PRIORITY_URGENT
+        blocked:
+          type: boolean
+        dependencyCount:
+          type: integer
+        incompleteDependencyCount:
+          type: integer
+        version:
+          type: integer
+          format: int64
+        createdByUserId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+        canceledAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+
+    AddTaskDependencyRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - dependsOnTaskId
+      properties:
+        dependsOnTaskId:
+          type: string
+          format: uuid
+
+    AddTaskDependencyResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - dependency
+      properties:
+        dependency:
+          $ref: "#/components/schemas/TaskDependency"
+
+    TaskDependency:
+      type: object
+      additionalProperties: false
+      required:
+        - tenantId
+        - projectId
+        - taskId
+        - dependsOnTaskId
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        taskId:
+          type: string
+          format: uuid
+        dependsOnTaskId:
+          type: string
+          format: uuid
+        createdByUserId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+
+    AssignTaskRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - assigneeType
+        - role
+      properties:
+        assigneeType:
+          type: string
+          enum:
+            - ASSIGNEE_TYPE_USER
+            - ASSIGNEE_TYPE_AGENT
+        userId:
+          type:
+            - string
+            - "null"
+          format: uuid
+        agentId:
+          type:
+            - string
+            - "null"
+          format: uuid
+        role:
+          type: string
+          enum:
+            - ASSIGNMENT_ROLE_PRIMARY
+            - ASSIGNMENT_ROLE_COLLABORATOR
+            - ASSIGNMENT_ROLE_REVIEWER
+
+    AssignTaskResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - assignment
+      properties:
+        assignment:
+          $ref: "#/components/schemas/TaskAssignment"
+
+    TaskAssignment:
+      type: object
+      additionalProperties: false
+      required:
+        - tenantId
+        - taskId
+        - assignmentId
+        - assigneeType
+        - role
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        taskId:
+          type: string
+          format: uuid
+        assignmentId:
+          type: string
+          format: uuid
+        assigneeType:
+          type: string
+          enum:
+            - ASSIGNEE_TYPE_USER
+            - ASSIGNEE_TYPE_AGENT
+        userId:
+          type:
+            - string
+            - "null"
+          format: uuid
+        agentId:
+          type:
+            - string
+            - "null"
+          format: uuid
+        role:
+          type: string
+          enum:
+            - ASSIGNMENT_ROLE_PRIMARY
+            - ASSIGNMENT_ROLE_COLLABORATOR
+            - ASSIGNMENT_ROLE_REVIEWER
+        assignedByUserId:
+          type: string
+          format: uuid
+        assignedAt:
+          type: string
+          format: date-time
+
+    AddCommentRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - authorType
+        - body
+      properties:
+        authorType:
+          type: string
+          enum:
+            - COMMENT_AUTHOR_TYPE_USER
+            - COMMENT_AUTHOR_TYPE_AGENT
+        authorUserId:
+          type:
+            - string
+            - "null"
+          format: uuid
+        authorAgentId:
+          type:
+            - string
+            - "null"
+          format: uuid
+        body:
+          type: string
+          minLength: 1
+          maxLength: 4000
+
+    AddCommentResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - comment
+      properties:
+        comment:
+          $ref: "#/components/schemas/Comment"
+
+    UpdateCommentRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - expectedVersion
+        - body
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+        body:
+          type: string
+          minLength: 1
+          maxLength: 4000
+
+    UpdateCommentResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - comment
+      properties:
+        comment:
+          $ref: "#/components/schemas/Comment"
+
+    DeleteCommentRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - expectedVersion
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+
+    Comment:
+      type: object
+      additionalProperties: false
+      required:
+        - tenantId
+        - taskId
+        - commentId
+        - authorType
+        - body
+        - version
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        taskId:
+          type: string
+          format: uuid
+        commentId:
+          type: string
+          format: uuid
+        authorType:
+          type: string
+          enum:
+            - COMMENT_AUTHOR_TYPE_USER
+            - COMMENT_AUTHOR_TYPE_AGENT
+        authorUserId:
+          type:
+            - string
+            - "null"
+          format: uuid
+        authorAgentId:
+          type:
+            - string
+            - "null"
+          format: uuid
+        body:
+          type: string
+        version:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+
+    AddArtifactRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - companyId
+        - objectKey
+        - fileName
+        - contentType
+        - sizeBytes
+        - sha256
+      properties:
+        companyId:
+          type: string
+          format: uuid
+        objectKey:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        fileName:
+          type: string
+          minLength: 1
+          maxLength: 500
+        contentType:
+          type: string
+          minLength: 1
+          maxLength: 200
+        sizeBytes:
+          type: integer
+          format: int64
+          minimum: 0
+        sha256:
+          type: string
+          pattern: "^[a-f0-9]{64}$"
+        metadata:
+          type: object
+
+    AddArtifactResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - artifact
+      properties:
+        artifact:
+          $ref: "#/components/schemas/Artifact"
+
+    Artifact:
+      type: object
+      additionalProperties: false
+      required:
+        - tenantId
+        - companyId
+        - taskId
+        - artifactId
+        - objectKey
+        - fileName
+        - contentType
+        - sizeBytes
+        - sha256
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        companyId:
+          type: string
+          format: uuid
+        taskId:
+          type: string
+          format: uuid
+        artifactId:
+          type: string
+          format: uuid
+        objectKey:
+          type: string
+        fileName:
+          type: string
+        contentType:
+          type: string
+        sizeBytes:
+          type: integer
+          format: int64
+        sha256:
+          type: string
+        metadata:
+          type: object
+        createdByUserId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+
+    AddChecklistItemRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+
+    AddChecklistItemResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - item
+      properties:
+        item:
+          $ref: "#/components/schemas/ChecklistItem"
+
+    UpdateChecklistItemRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - expectedVersion
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+        completed:
+          type: boolean
+
+    UpdateChecklistItemResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - item
+      properties:
+        item:
+          $ref: "#/components/schemas/ChecklistItem"
+
+    DeleteChecklistItemRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - expectedVersion
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+
+    ChecklistItem:
+      type: object
+      additionalProperties: false
+      required:
+        - tenantId
+        - taskId
+        - itemId
+        - title
+        - completed
+        - position
+        - version
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        taskId:
+          type: string
+          format: uuid
+        itemId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        completed:
+          type: boolean
+        position:
+          type: integer
+        version:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UpsertTaskScheduleRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        notBefore:
+          type:
+            - string
+            - "null"
+          format: date-time
+        dueAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 64
+
+    UpsertTaskScheduleResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - schedule
+      properties:
+        schedule:
+          $ref: "#/components/schemas/TaskSchedule"
+
+    TaskSchedule:
+      type: object
+      additionalProperties: false
+      required:
+        - tenantId
+        - taskId
+        - timezone
+        - version
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        taskId:
+          type: string
+          format: uuid
+        notBefore:
+          type:
+            - string
+            - "null"
+          format: date-time
+        dueAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+        timezone:
+          type: string
+        version:
+          type: integer
+          format: int64
+        updatedAt:
+          type: string
+          format: date-time
+
     Error:
       type: object
       additionalProperties: false
@@ -343,8 +2506,22 @@ components:
           schema:
             $ref: "#/components/schemas/Error"
 
+    Forbidden:
+      description: The actor lacks the required permission.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
     NotFound:
       description: The requested resource does not exist.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    Conflict:
+      description: The request conflicts with the current resource state.
       content:
         application/problem+json:
           schema:

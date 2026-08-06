@@ -629,6 +629,83 @@ func (service *Service) ListMembers(
 	return memberships, nextToken, nil
 }
 
+// GetMember returns one membership while acting on behalf of actorUserID.
+//
+// An actor may always read their own membership. Reading another member
+// requires PermissionMemberList.
+func (service *Service) GetMember(
+	ctx context.Context,
+	actorUserID string,
+	tenantID string,
+	targetUserID string,
+) (domain.Membership, error) {
+	if err := validateUUID(
+		"actor_user_id",
+		actorUserID,
+	); err != nil {
+		return domain.Membership{}, err
+	}
+
+	if err := validateUUID(
+		"tenant_id",
+		tenantID,
+	); err != nil {
+		return domain.Membership{}, err
+	}
+
+	if err := validateUUID(
+		"user_id",
+		targetUserID,
+	); err != nil {
+		return domain.Membership{}, err
+	}
+
+	if actorUserID != targetUserID {
+		if err := service.requirePermission(
+			ctx,
+			actorUserID,
+			tenantID,
+			domain.PermissionMemberList,
+		); err != nil {
+			return domain.Membership{}, err
+		}
+	}
+
+	return service.repository.GetMembershipAsActor(
+		ctx,
+		tenantID,
+		actorUserID,
+		targetUserID,
+	)
+}
+
+// requirePermission validates actor membership and permission within the
+// tenant context.
+func (service *Service) requirePermission(
+	ctx context.Context,
+	actorUserID string,
+	tenantID string,
+	permission domain.Permission,
+) error {
+	current, err := service.GetTenantContext(
+		ctx,
+		actorUserID,
+		tenantID,
+	)
+	if err != nil {
+		return err
+	}
+
+	if err := requirePermission(
+		current,
+		permission,
+	); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // AddMember creates a tenant membership.
 func (service *Service) AddMember(
 	ctx context.Context,
