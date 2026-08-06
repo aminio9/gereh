@@ -113,9 +113,11 @@ func (trigger *TenantCreatedTrigger) Handle(
 		},
 		ProvisionTenantWorkflow,
 		domain.ProvisionTenantInput{
-			TenantID:    tenant.GetTenantId(),
-			OperationID: payload.GetOperationId(),
-			Region:      tenant.GetRegion(),
+			TenantID:          tenant.GetTenantId(),
+			OperationID:       payload.GetOperationId(),
+			Region:            tenant.GetRegion(),
+			ActorUserID:       tenant.GetCreatedByUserId(),
+			TenantDisplayName: tenant.GetDisplayName(),
 		},
 	)
 	if err == nil {

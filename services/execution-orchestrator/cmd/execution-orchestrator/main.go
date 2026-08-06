@@ -17,6 +17,7 @@ import (
 
 	platformkafka "github.com/aminio9/gereh/platform/go/events/kafka"
 	"github.com/aminio9/gereh/platform/go/observability"
+	organizationadapter "github.com/aminio9/gereh/services/execution-orchestrator/internal/adapters/organization"
 	runtimeadapter "github.com/aminio9/gereh/services/execution-orchestrator/internal/adapters/runtime"
 	tenantadapter "github.com/aminio9/gereh/services/execution-orchestrator/internal/adapters/tenant"
 	"github.com/aminio9/gereh/services/execution-orchestrator/internal/application"
@@ -137,6 +138,29 @@ func run() (runErr error) {
 		runtimeConfig.InternalDevelopmentToken,
 	)
 
+	organizationConnection, err := grpc.NewClient(
+		runtimeConfig.OrganizationGRPCTarget,
+		grpc.WithTransportCredentials(
+			transportCredentials(
+				runtimeConfig.Environment,
+			),
+		),
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"connect to Organization Service: %w",
+			err,
+		)
+	}
+	defer func() {
+		_ = organizationConnection.Close()
+	}()
+
+	organizationClient := organizationadapter.New(
+		organizationConnection,
+		runtimeConfig.InternalDevelopmentToken,
+	)
+
 	var runtimeProvisioner ports.RuntimeProvisioner
 
 	switch runtimeConfig.RuntimeMode {
@@ -178,6 +202,7 @@ func run() (runErr error) {
 	activities := application.NewActivities(
 		tenantClient,
 		runtimeProvisioner,
+		organizationClient,
 	)
 
 	temporalWorker := worker.New(

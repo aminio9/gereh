@@ -14,18 +14,21 @@ import (
 
 // Activities are the Temporal activities used by the provisioning workflow.
 type Activities struct {
-	tenant  ports.TenantOnboardingClient
-	runtime ports.RuntimeProvisioner
+	tenant       ports.TenantOnboardingClient
+	runtime      ports.RuntimeProvisioner
+	organization ports.OrganizationBootstrapClient
 }
 
 // NewActivities creates the activity implementation.
 func NewActivities(
 	tenant ports.TenantOnboardingClient,
 	runtime ports.RuntimeProvisioner,
+	organization ports.OrganizationBootstrapClient,
 ) *Activities {
 	return &Activities{
-		tenant:  tenant,
-		runtime: runtime,
+		tenant:       tenant,
+		runtime:      runtime,
+		organization: organization,
 	}
 }
 
@@ -49,6 +52,22 @@ func (activities *Activities) MarkRunning(
 			OperationID:   input.OperationID,
 			WorkflowID:    info.WorkflowExecution.ID,
 			WorkflowRunID: info.WorkflowExecution.RunID,
+		},
+	)
+}
+
+// EnsureDefaultCompany idempotently creates a tenant's default company.
+func (activities *Activities) EnsureDefaultCompany(
+	ctx context.Context,
+	input domain.ProvisionTenantInput,
+) error {
+	return activities.organization.EnsureDefaultCompany(
+		ctx,
+		ports.EnsureDefaultCompanyRequest{
+			TenantID:              input.TenantID,
+			OnboardingOperationID: input.OperationID,
+			ActorUserID:           input.ActorUserID,
+			TenantDisplayName:     input.TenantDisplayName,
 		},
 	)
 }

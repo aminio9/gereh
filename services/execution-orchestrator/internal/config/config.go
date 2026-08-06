@@ -26,6 +26,8 @@ type Config struct {
 	KafkaDLQTopic    string
 	TenantGRPCTarget string
 
+	OrganizationGRPCTarget string
+
 	RuntimeMode       string
 	RuntimeGRPCTarget string
 
@@ -77,6 +79,10 @@ func FromEnv(version string) (Config, error) {
 		TenantGRPCTarget: envOrDefault(
 			"TENANT_GRPC_TARGET",
 			"127.0.0.1:18082",
+		),
+		OrganizationGRPCTarget: envOrDefault(
+			"ORGANIZATION_GRPC_TARGET",
+			"127.0.0.1:18083",
 		),
 		RuntimeMode: envOrDefault(
 			"ORCHESTRATOR_RUNTIME_MODE",

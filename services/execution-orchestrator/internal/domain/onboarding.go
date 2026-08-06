@@ -3,9 +3,11 @@ package domain
 
 // ProvisionTenantInput is the input to the tenant provisioning workflow.
 type ProvisionTenantInput struct {
-	TenantID    string
-	OperationID string
-	Region      string
+	TenantID          string
+	OperationID       string
+	Region            string
+	ActorUserID       string
+	TenantDisplayName string
 }
 
 // OperationFailure is safe customer-visible failure information. It must not

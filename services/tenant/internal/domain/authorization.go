@@ -17,6 +17,18 @@ const (
 	PermissionMemberRemove     Permission = "member.remove"
 
 	PermissionEntitlementRead Permission = "entitlement.read"
+
+	PermissionCompanyRead    Permission = "company.read"
+	PermissionCompanyCreate  Permission = "company.create"
+	PermissionCompanyUpdate  Permission = "company.update"
+	PermissionCompanyArchive Permission = "company.archive"
+
+	PermissionAgentRead            Permission = "agent.read"
+	PermissionAgentCreate          Permission = "agent.create"
+	PermissionAgentUpdate          Permission = "agent.update"
+	PermissionAgentDelete          Permission = "agent.delete"
+	PermissionAgentHierarchyManage Permission = "agent.hierarchy_manage"
+	PermissionAgentLifecycleManage Permission = "agent.lifecycle_manage"
 )
 
 // DenialReason identifies why authorization was denied.
@@ -27,6 +39,7 @@ const (
 	DenialReasonNone                 DenialReason = "none"
 	DenialReasonNotMember            DenialReason = "not_member"
 	DenialReasonTenantArchived       DenialReason = "tenant_archived"
+	DenialReasonTenantNotActive      DenialReason = "tenant_not_active"
 	DenialReasonPermissionNotGranted DenialReason = "permission_not_granted"
 )
 
@@ -51,6 +64,18 @@ var knownPermissions = []Permission{
 	PermissionMemberUpdateRole,
 	PermissionMemberRemove,
 	PermissionEntitlementRead,
+
+	PermissionCompanyRead,
+	PermissionCompanyCreate,
+	PermissionCompanyUpdate,
+	PermissionCompanyArchive,
+
+	PermissionAgentRead,
+	PermissionAgentCreate,
+	PermissionAgentUpdate,
+	PermissionAgentDelete,
+	PermissionAgentHierarchyManage,
+	PermissionAgentLifecycleManage,
 }
 
 var ownerPermissions = append(
@@ -61,22 +86,40 @@ var ownerPermissions = append(
 var adminPermissions = []Permission{
 	PermissionTenantRead,
 	PermissionTenantUpdate,
+
 	PermissionMemberList,
 	PermissionMemberAdd,
 	PermissionMemberUpdateRole,
 	PermissionMemberRemove,
+
 	PermissionEntitlementRead,
+
+	PermissionCompanyRead,
+	PermissionCompanyCreate,
+	PermissionCompanyUpdate,
+	PermissionCompanyArchive,
+
+	PermissionAgentRead,
+	PermissionAgentCreate,
+	PermissionAgentUpdate,
+	PermissionAgentDelete,
+	PermissionAgentHierarchyManage,
+	PermissionAgentLifecycleManage,
 }
 
 var memberPermissions = []Permission{
 	PermissionTenantRead,
 	PermissionMemberList,
 	PermissionEntitlementRead,
+	PermissionCompanyRead,
+	PermissionAgentRead,
 }
 
 var viewerPermissions = []Permission{
 	PermissionTenantRead,
 	PermissionEntitlementRead,
+	PermissionCompanyRead,
+	PermissionAgentRead,
 }
 
 // IsKnownPermission reports whether a permission is supported.
@@ -137,7 +180,15 @@ func IsMutationPermission(
 		PermissionTenantArchive,
 		PermissionMemberAdd,
 		PermissionMemberUpdateRole,
-		PermissionMemberRemove:
+		PermissionMemberRemove,
+		PermissionCompanyCreate,
+		PermissionCompanyUpdate,
+		PermissionCompanyArchive,
+		PermissionAgentCreate,
+		PermissionAgentUpdate,
+		PermissionAgentDelete,
+		PermissionAgentHierarchyManage,
+		PermissionAgentLifecycleManage:
 		return true
 
 	default:
@@ -147,14 +198,14 @@ func IsMutationPermission(
 
 // EffectivePermissions returns permissions after applying tenant state.
 //
-// Archived tenants remain readable but grant no mutation permissions.
+// Non-active tenants remain readable but grant no mutation permissions.
 func EffectivePermissions(
 	status Status,
 	role Role,
 ) []Permission {
 	rolePermissions := PermissionsForRole(role)
 
-	if status != StatusArchived {
+	if status == StatusActive {
 		return rolePermissions
 	}
 
@@ -189,10 +240,15 @@ func EvaluateAuthorization(
 		DenialReason:      DenialReasonPermissionNotGranted,
 	}
 
-	if tenant.Status == StatusArchived &&
-		IsMutationPermission(permission) {
-		decision.DenialReason =
-			DenialReasonTenantArchived
+	if IsMutationPermission(permission) &&
+		tenant.Status != StatusActive {
+		if tenant.Status == StatusArchived {
+			decision.DenialReason =
+				DenialReasonTenantArchived
+		} else {
+			decision.DenialReason =
+				DenialReasonTenantNotActive
+		}
 
 		return decision
 	}

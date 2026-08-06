@@ -25,6 +25,16 @@ func TestPermissionsForRole(t *testing.T) {
 				PermissionMemberUpdateRole,
 				PermissionMemberRemove,
 				PermissionEntitlementRead,
+				PermissionCompanyRead,
+				PermissionCompanyCreate,
+				PermissionCompanyUpdate,
+				PermissionCompanyArchive,
+				PermissionAgentRead,
+				PermissionAgentCreate,
+				PermissionAgentUpdate,
+				PermissionAgentDelete,
+				PermissionAgentHierarchyManage,
+				PermissionAgentLifecycleManage,
 			},
 		},
 		{
@@ -38,6 +48,16 @@ func TestPermissionsForRole(t *testing.T) {
 				PermissionMemberUpdateRole,
 				PermissionMemberRemove,
 				PermissionEntitlementRead,
+				PermissionCompanyRead,
+				PermissionCompanyCreate,
+				PermissionCompanyUpdate,
+				PermissionCompanyArchive,
+				PermissionAgentRead,
+				PermissionAgentCreate,
+				PermissionAgentUpdate,
+				PermissionAgentDelete,
+				PermissionAgentHierarchyManage,
+				PermissionAgentLifecycleManage,
 			},
 		},
 		{
@@ -47,6 +67,8 @@ func TestPermissionsForRole(t *testing.T) {
 				PermissionTenantRead,
 				PermissionMemberList,
 				PermissionEntitlementRead,
+				PermissionCompanyRead,
+				PermissionAgentRead,
 			},
 		},
 		{
@@ -55,6 +77,8 @@ func TestPermissionsForRole(t *testing.T) {
 			permissions: []Permission{
 				PermissionTenantRead,
 				PermissionEntitlementRead,
+				PermissionCompanyRead,
+				PermissionAgentRead,
 			},
 		},
 	}
@@ -192,6 +216,127 @@ func TestUnknownPermissionDenied(t *testing.T) {
 	) {
 		t.Fatal(
 			"unknown permission was unexpectedly allowed",
+		)
+	}
+}
+
+func TestProvisioningTenantHasNoOrganizationMutations(
+	t *testing.T,
+) {
+	t.Parallel()
+
+	permissions := EffectivePermissions(
+		StatusProvisioning,
+		RoleOwner,
+	)
+
+	if !slices.Contains(
+		permissions,
+		PermissionCompanyRead,
+	) {
+		t.Fatal(
+			"provisioning tenant lost company read access",
+		)
+	}
+
+	if slices.Contains(
+		permissions,
+		PermissionCompanyCreate,
+	) {
+		t.Fatal(
+			"provisioning tenant must not grant company create",
+		)
+	}
+
+	if slices.Contains(
+		permissions,
+		PermissionAgentCreate,
+	) {
+		t.Fatal(
+			"provisioning tenant must not grant agent create",
+		)
+	}
+}
+
+func TestNonActiveTenantRejectsOrganizationMutations(
+	t *testing.T) {
+	t.Parallel()
+
+	provisioningTenant := Tenant{
+		ID:     "0198abc0-0000-7000-8000-000000000003",
+		Status: StatusProvisioning,
+	}
+
+	failedTenant := Tenant{
+		ID:     "0198abc0-0000-7000-8000-000000000004",
+		Status: StatusProvisioningFailed,
+	}
+
+	owner := Membership{
+		TenantID: provisioningTenant.ID,
+		UserID:   "0198abc0-0000-7000-8000-000000000002",
+		Role:     RoleOwner,
+	}
+
+	tests := []struct {
+		name       string
+		tenant     Tenant
+		permission Permission
+		allowed    bool
+		reason     DenialReason
+	}{
+		{
+			name:       "provisioning tenant denies company create",
+			tenant:     provisioningTenant,
+			permission: PermissionCompanyCreate,
+			reason:     DenialReasonTenantNotActive,
+		},
+		{
+			name:       "failed tenant denies agent create",
+			tenant:     failedTenant,
+			permission: PermissionAgentCreate,
+			reason:     DenialReasonTenantNotActive,
+		},
+		{
+			name:       "provisioning tenant allows company read",
+			tenant:     provisioningTenant,
+			permission: PermissionCompanyRead,
+			allowed:    true,
+			reason:     DenialReasonNone,
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+
+		t.Run(
+			test.name,
+			func(t *testing.T) {
+				t.Parallel()
+
+				decision := EvaluateAuthorization(
+					test.tenant,
+					owner,
+					test.permission,
+				)
+
+				if decision.Allowed != test.allowed {
+					t.Fatalf(
+						"Allowed = %v, want %v",
+						decision.Allowed,
+						test.allowed,
+					)
+				}
+
+				if decision.DenialReason !=
+					test.reason {
+					t.Fatalf(
+						"DenialReason = %q, want %q",
+						decision.DenialReason,
+						test.reason,
+					)
+				}
+			},
 		)
 	}
 }

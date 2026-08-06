@@ -115,6 +115,36 @@ func Permission(
 	case domain.PermissionEntitlementRead:
 		return tenantv1.Permission_PERMISSION_ENTITLEMENT_READ
 
+	case domain.PermissionCompanyRead:
+		return tenantv1.Permission_PERMISSION_COMPANY_READ
+
+	case domain.PermissionCompanyCreate:
+		return tenantv1.Permission_PERMISSION_COMPANY_CREATE
+
+	case domain.PermissionCompanyUpdate:
+		return tenantv1.Permission_PERMISSION_COMPANY_UPDATE
+
+	case domain.PermissionCompanyArchive:
+		return tenantv1.Permission_PERMISSION_COMPANY_ARCHIVE
+
+	case domain.PermissionAgentRead:
+		return tenantv1.Permission_PERMISSION_AGENT_READ
+
+	case domain.PermissionAgentCreate:
+		return tenantv1.Permission_PERMISSION_AGENT_CREATE
+
+	case domain.PermissionAgentUpdate:
+		return tenantv1.Permission_PERMISSION_AGENT_UPDATE
+
+	case domain.PermissionAgentDelete:
+		return tenantv1.Permission_PERMISSION_AGENT_DELETE
+
+	case domain.PermissionAgentHierarchyManage:
+		return tenantv1.Permission_PERMISSION_AGENT_HIERARCHY_MANAGE
+
+	case domain.PermissionAgentLifecycleManage:
+		return tenantv1.Permission_PERMISSION_AGENT_LIFECYCLE_MANAGE
+
 	default:
 		return tenantv1.Permission_PERMISSION_UNSPECIFIED
 	}
@@ -149,6 +179,36 @@ func DomainPermission(
 	case tenantv1.Permission_PERMISSION_ENTITLEMENT_READ:
 		return domain.PermissionEntitlementRead
 
+	case tenantv1.Permission_PERMISSION_COMPANY_READ:
+		return domain.PermissionCompanyRead
+
+	case tenantv1.Permission_PERMISSION_COMPANY_CREATE:
+		return domain.PermissionCompanyCreate
+
+	case tenantv1.Permission_PERMISSION_COMPANY_UPDATE:
+		return domain.PermissionCompanyUpdate
+
+	case tenantv1.Permission_PERMISSION_COMPANY_ARCHIVE:
+		return domain.PermissionCompanyArchive
+
+	case tenantv1.Permission_PERMISSION_AGENT_READ:
+		return domain.PermissionAgentRead
+
+	case tenantv1.Permission_PERMISSION_AGENT_CREATE:
+		return domain.PermissionAgentCreate
+
+	case tenantv1.Permission_PERMISSION_AGENT_UPDATE:
+		return domain.PermissionAgentUpdate
+
+	case tenantv1.Permission_PERMISSION_AGENT_DELETE:
+		return domain.PermissionAgentDelete
+
+	case tenantv1.Permission_PERMISSION_AGENT_HIERARCHY_MANAGE:
+		return domain.PermissionAgentHierarchyManage
+
+	case tenantv1.Permission_PERMISSION_AGENT_LIFECYCLE_MANAGE:
+		return domain.PermissionAgentLifecycleManage
+
 	default:
 		return ""
 	}
@@ -170,6 +230,9 @@ func DenialReason(
 
 	case domain.DenialReasonPermissionNotGranted:
 		return tenantv1.AuthorizationDenialReason_AUTHORIZATION_DENIAL_REASON_PERMISSION_NOT_GRANTED
+
+	case domain.DenialReasonTenantNotActive:
+		return tenantv1.AuthorizationDenialReason_AUTHORIZATION_DENIAL_REASON_TENANT_NOT_ACTIVE
 
 	default:
 		return tenantv1.AuthorizationDenialReason_AUTHORIZATION_DENIAL_REASON_UNSPECIFIED
