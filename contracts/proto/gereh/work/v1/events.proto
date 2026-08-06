@@ -1,0 +1,100 @@
+syntax = "proto3";
+
+package gereh.work.v1;
+
+import "gereh/work/v1/work.proto";
+
+option go_package = "github.com/aminio9/gereh/gen/go/gereh/work/v1;workv1";
+
+message GoalCreated {
+  Goal goal = 1;
+}
+
+message GoalUpdated {
+  Goal goal = 1;
+  string updated_by_user_id = 2;
+}
+
+message GoalStatusChanged {
+  Goal goal = 1;
+  GoalStatus previous_status = 2;
+  string changed_by_user_id = 3;
+}
+
+message ProjectCreated {
+  Project project = 1;
+}
+
+message ProjectUpdated {
+  Project project = 1;
+  string updated_by_user_id = 2;
+}
+
+message ProjectStatusChanged {
+  Project project = 1;
+  ProjectStatus previous_status = 2;
+  string changed_by_user_id = 3;
+}
+
+message TaskCreated {
+  Task task = 1;
+}
+
+message TaskUpdated {
+  Task task = 1;
+  string updated_by_user_id = 2;
+}
+
+message TaskStatusChanged {
+  Task task = 1;
+  TaskStatus previous_status = 2;
+  string changed_by_user_id = 3;
+}
+
+message TaskDependencyAdded {
+  TaskDependency dependency = 1;
+}
+
+message TaskDependencyRemoved {
+  TaskDependency dependency = 1;
+  string removed_by_user_id = 2;
+}
+
+message TaskAssigned {
+  TaskAssignment assignment = 1;
+}
+
+message TaskUnassigned {
+  TaskAssignment assignment = 1;
+  string removed_by_user_id = 2;
+}
+
+message TaskCommentAdded {
+  Comment comment = 1;
+}
+
+message TaskCommentUpdated {
+  Comment comment = 1;
+}
+
+message TaskCommentDeleted {
+  Comment comment = 1;
+}
+
+message TaskArtifactAdded {
+  Artifact artifact = 1;
+}
+
+message TaskArtifactDeleted {
+  Artifact artifact = 1;
+}
+
+message TaskChecklistChanged {
+  ChecklistItem item = 1;
+  string change_kind = 2;
+}
+
+message TaskScheduleChanged {
+  TaskSchedule schedule = 1;
+  string change_kind = 2;
+}

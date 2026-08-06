@@ -161,6 +161,43 @@ tasks:
     cmds:
       - atlas migrate apply --env organization --dry-run
 
+  db:work:hash:
+    desc: Recompute the work migration integrity checksum
+    cmds:
+      - atlas migrate hash --env work
+
+  db:work:status:
+    desc: Show work database migration status
+    cmds:
+      - atlas migrate status --env work
+
+  db:work:validate:
+    desc: Validate work migration integrity
+    cmds:
+      - atlas migrate validate --env work
+
+  db:work:apply:
+    desc: Apply pending work database migrations
+    preconditions:
+      - sh: test -n "${WORK_MIGRATION_DATABASE_URL:-}"
+        msg: WORK_MIGRATION_DATABASE_URL is required
+    cmds:
+      - atlas migrate apply --env work
+
+  db:work:dry-run:
+    desc: Print pending work migrations without applying them
+    preconditions:
+      - sh: test -n "${WORK_MIGRATION_DATABASE_URL:-}"
+        msg: WORK_MIGRATION_DATABASE_URL is required
+    cmds:
+      - atlas migrate apply --env work --dry-run
+
+  test:work:
+    desc: Run Work Management Service tests
+    cmds:
+      - go test -race -count=1 ./services/work-management/...
+      - go test -race -count=1 ./services/api-bff/internal/http/work/...
+
   test:organization:
     desc: Run Company and Agent Service tests
     cmds:
@@ -245,8 +282,10 @@ tasks:
       - task: lint
       - task: db:tenant:validate
       - task: db:organization:validate
+      - task: db:work:validate
       - task: workflow:check
       - task: test:organization
+      - task: test:work
       - task: test
       - task: build
       - task: contracts:check-generated

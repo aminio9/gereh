@@ -145,6 +145,51 @@ func Permission(
 	case domain.PermissionAgentLifecycleManage:
 		return tenantv1.Permission_PERMISSION_AGENT_LIFECYCLE_MANAGE
 
+	case domain.PermissionWorkRead:
+		return tenantv1.Permission_PERMISSION_WORK_READ
+
+	case domain.PermissionGoalCreate:
+		return tenantv1.Permission_PERMISSION_GOAL_CREATE
+
+	case domain.PermissionGoalUpdate:
+		return tenantv1.Permission_PERMISSION_GOAL_UPDATE
+
+	case domain.PermissionProjectCreate:
+		return tenantv1.Permission_PERMISSION_PROJECT_CREATE
+
+	case domain.PermissionProjectUpdate:
+		return tenantv1.Permission_PERMISSION_PROJECT_UPDATE
+
+	case domain.PermissionTaskCreate:
+		return tenantv1.Permission_PERMISSION_TASK_CREATE
+
+	case domain.PermissionTaskUpdate:
+		return tenantv1.Permission_PERMISSION_TASK_UPDATE
+
+	case domain.PermissionTaskStatusUpdate:
+		return tenantv1.Permission_PERMISSION_TASK_STATUS_UPDATE
+
+	case domain.PermissionTaskAssign:
+		return tenantv1.Permission_PERMISSION_TASK_ASSIGN
+
+	case domain.PermissionTaskDependencyManage:
+		return tenantv1.Permission_PERMISSION_TASK_DEPENDENCY_MANAGE
+
+	case domain.PermissionTaskCommentCreate:
+		return tenantv1.Permission_PERMISSION_TASK_COMMENT_CREATE
+
+	case domain.PermissionTaskCommentModerate:
+		return tenantv1.Permission_PERMISSION_TASK_COMMENT_MODERATE
+
+	case domain.PermissionTaskArtifactManage:
+		return tenantv1.Permission_PERMISSION_TASK_ARTIFACT_MANAGE
+
+	case domain.PermissionTaskChecklistManage:
+		return tenantv1.Permission_PERMISSION_TASK_CHECKLIST_MANAGE
+
+	case domain.PermissionTaskScheduleManage:
+		return tenantv1.Permission_PERMISSION_TASK_SCHEDULE_MANAGE
+
 	default:
 		return tenantv1.Permission_PERMISSION_UNSPECIFIED
 	}
@@ -208,6 +253,51 @@ func DomainPermission(
 
 	case tenantv1.Permission_PERMISSION_AGENT_LIFECYCLE_MANAGE:
 		return domain.PermissionAgentLifecycleManage
+
+	case tenantv1.Permission_PERMISSION_WORK_READ:
+		return domain.PermissionWorkRead
+
+	case tenantv1.Permission_PERMISSION_GOAL_CREATE:
+		return domain.PermissionGoalCreate
+
+	case tenantv1.Permission_PERMISSION_GOAL_UPDATE:
+		return domain.PermissionGoalUpdate
+
+	case tenantv1.Permission_PERMISSION_PROJECT_CREATE:
+		return domain.PermissionProjectCreate
+
+	case tenantv1.Permission_PERMISSION_PROJECT_UPDATE:
+		return domain.PermissionProjectUpdate
+
+	case tenantv1.Permission_PERMISSION_TASK_CREATE:
+		return domain.PermissionTaskCreate
+
+	case tenantv1.Permission_PERMISSION_TASK_UPDATE:
+		return domain.PermissionTaskUpdate
+
+	case tenantv1.Permission_PERMISSION_TASK_STATUS_UPDATE:
+		return domain.PermissionTaskStatusUpdate
+
+	case tenantv1.Permission_PERMISSION_TASK_ASSIGN:
+		return domain.PermissionTaskAssign
+
+	case tenantv1.Permission_PERMISSION_TASK_DEPENDENCY_MANAGE:
+		return domain.PermissionTaskDependencyManage
+
+	case tenantv1.Permission_PERMISSION_TASK_COMMENT_CREATE:
+		return domain.PermissionTaskCommentCreate
+
+	case tenantv1.Permission_PERMISSION_TASK_COMMENT_MODERATE:
+		return domain.PermissionTaskCommentModerate
+
+	case tenantv1.Permission_PERMISSION_TASK_ARTIFACT_MANAGE:
+		return domain.PermissionTaskArtifactManage
+
+	case tenantv1.Permission_PERMISSION_TASK_CHECKLIST_MANAGE:
+		return domain.PermissionTaskChecklistManage
+
+	case tenantv1.Permission_PERMISSION_TASK_SCHEDULE_MANAGE:
+		return domain.PermissionTaskScheduleManage
 
 	default:
 		return ""

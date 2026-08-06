@@ -25,6 +25,7 @@ service TenantService {
   rpc BatchCheckAuthorization(BatchCheckAuthorizationRequest) returns (BatchCheckAuthorizationResponse);
 
   rpc ListMembers(ListMembersRequest) returns (ListMembersResponse);
+  rpc GetMember(GetMemberRequest) returns (GetMemberResponse);
   rpc AddMember(AddMemberRequest) returns (AddMemberResponse);
   rpc UpdateMemberRole(UpdateMemberRoleRequest) returns (UpdateMemberRoleResponse);
   rpc RemoveMember(RemoveMemberRequest) returns (RemoveMemberResponse);
@@ -170,6 +171,16 @@ message ListMembersRequest {
 message ListMembersResponse {
   repeated TenantMembership memberships = 1;
   string next_page_token = 2;
+}
+
+message GetMemberRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string user_id = 3;
+}
+
+message GetMemberResponse {
+  TenantMembership membership = 1;
 }
 
 message AddMemberRequest {

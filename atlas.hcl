@@ -25,3 +25,17 @@ env "organization" {
     format = golang-migrate
   }
 }
+
+variable "work_database_url" {
+  type    = string
+  default = getenv("WORK_MIGRATION_DATABASE_URL")
+}
+
+env "work" {
+  url = var.work_database_url
+
+  migration {
+    dir    = "file://services/work-management/migrations"
+    format = golang-migrate
+  }
+}

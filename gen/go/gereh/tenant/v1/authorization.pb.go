@@ -47,6 +47,21 @@ const (
 	Permission_PERMISSION_AGENT_DELETE           Permission = 43
 	Permission_PERMISSION_AGENT_HIERARCHY_MANAGE Permission = 44
 	Permission_PERMISSION_AGENT_LIFECYCLE_MANAGE Permission = 45
+	Permission_PERMISSION_WORK_READ              Permission = 50
+	Permission_PERMISSION_GOAL_CREATE            Permission = 51
+	Permission_PERMISSION_GOAL_UPDATE            Permission = 52
+	Permission_PERMISSION_PROJECT_CREATE         Permission = 53
+	Permission_PERMISSION_PROJECT_UPDATE         Permission = 54
+	Permission_PERMISSION_TASK_CREATE            Permission = 55
+	Permission_PERMISSION_TASK_UPDATE            Permission = 56
+	Permission_PERMISSION_TASK_STATUS_UPDATE     Permission = 57
+	Permission_PERMISSION_TASK_ASSIGN            Permission = 58
+	Permission_PERMISSION_TASK_DEPENDENCY_MANAGE Permission = 59
+	Permission_PERMISSION_TASK_COMMENT_CREATE    Permission = 60
+	Permission_PERMISSION_TASK_COMMENT_MODERATE  Permission = 61
+	Permission_PERMISSION_TASK_ARTIFACT_MANAGE   Permission = 62
+	Permission_PERMISSION_TASK_CHECKLIST_MANAGE  Permission = 63
+	Permission_PERMISSION_TASK_SCHEDULE_MANAGE   Permission = 64
 )
 
 // Enum value maps for Permission.
@@ -71,6 +86,21 @@ var (
 		43: "PERMISSION_AGENT_DELETE",
 		44: "PERMISSION_AGENT_HIERARCHY_MANAGE",
 		45: "PERMISSION_AGENT_LIFECYCLE_MANAGE",
+		50: "PERMISSION_WORK_READ",
+		51: "PERMISSION_GOAL_CREATE",
+		52: "PERMISSION_GOAL_UPDATE",
+		53: "PERMISSION_PROJECT_CREATE",
+		54: "PERMISSION_PROJECT_UPDATE",
+		55: "PERMISSION_TASK_CREATE",
+		56: "PERMISSION_TASK_UPDATE",
+		57: "PERMISSION_TASK_STATUS_UPDATE",
+		58: "PERMISSION_TASK_ASSIGN",
+		59: "PERMISSION_TASK_DEPENDENCY_MANAGE",
+		60: "PERMISSION_TASK_COMMENT_CREATE",
+		61: "PERMISSION_TASK_COMMENT_MODERATE",
+		62: "PERMISSION_TASK_ARTIFACT_MANAGE",
+		63: "PERMISSION_TASK_CHECKLIST_MANAGE",
+		64: "PERMISSION_TASK_SCHEDULE_MANAGE",
 	}
 	Permission_value = map[string]int32{
 		"PERMISSION_UNSPECIFIED":            0,
@@ -92,6 +122,21 @@ var (
 		"PERMISSION_AGENT_DELETE":           43,
 		"PERMISSION_AGENT_HIERARCHY_MANAGE": 44,
 		"PERMISSION_AGENT_LIFECYCLE_MANAGE": 45,
+		"PERMISSION_WORK_READ":              50,
+		"PERMISSION_GOAL_CREATE":            51,
+		"PERMISSION_GOAL_UPDATE":            52,
+		"PERMISSION_PROJECT_CREATE":         53,
+		"PERMISSION_PROJECT_UPDATE":         54,
+		"PERMISSION_TASK_CREATE":            55,
+		"PERMISSION_TASK_UPDATE":            56,
+		"PERMISSION_TASK_STATUS_UPDATE":     57,
+		"PERMISSION_TASK_ASSIGN":            58,
+		"PERMISSION_TASK_DEPENDENCY_MANAGE": 59,
+		"PERMISSION_TASK_COMMENT_CREATE":    60,
+		"PERMISSION_TASK_COMMENT_MODERATE":  61,
+		"PERMISSION_TASK_ARTIFACT_MANAGE":   62,
+		"PERMISSION_TASK_CHECKLIST_MANAGE":  63,
+		"PERMISSION_TASK_SCHEDULE_MANAGE":   64,
 	}
 )
 
@@ -577,7 +622,7 @@ const file_gereh_tenant_v1_authorization_proto_rawDesc = "" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12=\n" +
 	"\vpermissions\x18\x03 \x03(\x0e2\x1b.gereh.tenant.v1.PermissionR\vpermissions\"g\n" +
 	"\x1fBatchCheckAuthorizationResponse\x12D\n" +
-	"\tdecisions\x18\x01 \x03(\v2&.gereh.tenant.v1.AuthorizationDecisionR\tdecisions*\xd5\x04\n" +
+	"\tdecisions\x18\x01 \x03(\v2&.gereh.tenant.v1.AuthorizationDecisionR\tdecisions*\xbd\b\n" +
 	"\n" +
 	"Permission\x12\x1a\n" +
 	"\x16PERMISSION_UNSPECIFIED\x10\x00\x12\x1a\n" +
@@ -599,7 +644,22 @@ const file_gereh_tenant_v1_authorization_proto_rawDesc = "" +
 	"\x17PERMISSION_AGENT_UPDATE\x10*\x12\x1b\n" +
 	"\x17PERMISSION_AGENT_DELETE\x10+\x12%\n" +
 	"!PERMISSION_AGENT_HIERARCHY_MANAGE\x10,\x12%\n" +
-	"!PERMISSION_AGENT_LIFECYCLE_MANAGE\x10-*\x87\x01\n" +
+	"!PERMISSION_AGENT_LIFECYCLE_MANAGE\x10-\x12\x18\n" +
+	"\x14PERMISSION_WORK_READ\x102\x12\x1a\n" +
+	"\x16PERMISSION_GOAL_CREATE\x103\x12\x1a\n" +
+	"\x16PERMISSION_GOAL_UPDATE\x104\x12\x1d\n" +
+	"\x19PERMISSION_PROJECT_CREATE\x105\x12\x1d\n" +
+	"\x19PERMISSION_PROJECT_UPDATE\x106\x12\x1a\n" +
+	"\x16PERMISSION_TASK_CREATE\x107\x12\x1a\n" +
+	"\x16PERMISSION_TASK_UPDATE\x108\x12!\n" +
+	"\x1dPERMISSION_TASK_STATUS_UPDATE\x109\x12\x1a\n" +
+	"\x16PERMISSION_TASK_ASSIGN\x10:\x12%\n" +
+	"!PERMISSION_TASK_DEPENDENCY_MANAGE\x10;\x12\"\n" +
+	"\x1ePERMISSION_TASK_COMMENT_CREATE\x10<\x12$\n" +
+	" PERMISSION_TASK_COMMENT_MODERATE\x10=\x12#\n" +
+	"\x1fPERMISSION_TASK_ARTIFACT_MANAGE\x10>\x12$\n" +
+	" PERMISSION_TASK_CHECKLIST_MANAGE\x10?\x12#\n" +
+	"\x1fPERMISSION_TASK_SCHEDULE_MANAGE\x10@*\x87\x01\n" +
 	"\n" +
 	"TenantRole\x12\x1b\n" +
 	"\x17TENANT_ROLE_UNSPECIFIED\x10\x00\x12\x15\n" +

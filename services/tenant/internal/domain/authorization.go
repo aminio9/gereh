@@ -29,6 +29,26 @@ const (
 	PermissionAgentDelete          Permission = "agent.delete"
 	PermissionAgentHierarchyManage Permission = "agent.hierarchy_manage"
 	PermissionAgentLifecycleManage Permission = "agent.lifecycle_manage"
+
+	PermissionWorkRead Permission = "work.read"
+
+	PermissionGoalCreate Permission = "goal.create"
+	PermissionGoalUpdate Permission = "goal.update"
+
+	PermissionProjectCreate Permission = "project.create"
+	PermissionProjectUpdate Permission = "project.update"
+
+	PermissionTaskCreate           Permission = "task.create"
+	PermissionTaskUpdate           Permission = "task.update"
+	PermissionTaskStatusUpdate     Permission = "task.status_update"
+	PermissionTaskAssign           Permission = "task.assign"
+	PermissionTaskDependencyManage Permission = "task.dependency_manage"
+
+	PermissionTaskCommentCreate   Permission = "task.comment_create"
+	PermissionTaskCommentModerate Permission = "task.comment_moderate"
+	PermissionTaskArtifactManage  Permission = "task.artifact_manage"
+	PermissionTaskChecklistManage Permission = "task.checklist_manage"
+	PermissionTaskScheduleManage  Permission = "task.schedule_manage"
 )
 
 // DenialReason identifies why authorization was denied.
@@ -76,6 +96,26 @@ var knownPermissions = []Permission{
 	PermissionAgentDelete,
 	PermissionAgentHierarchyManage,
 	PermissionAgentLifecycleManage,
+
+	PermissionWorkRead,
+
+	PermissionGoalCreate,
+	PermissionGoalUpdate,
+
+	PermissionProjectCreate,
+	PermissionProjectUpdate,
+
+	PermissionTaskCreate,
+	PermissionTaskUpdate,
+	PermissionTaskStatusUpdate,
+	PermissionTaskAssign,
+	PermissionTaskDependencyManage,
+
+	PermissionTaskCommentCreate,
+	PermissionTaskCommentModerate,
+	PermissionTaskArtifactManage,
+	PermissionTaskChecklistManage,
+	PermissionTaskScheduleManage,
 }
 
 var ownerPermissions = append(
@@ -105,6 +145,26 @@ var adminPermissions = []Permission{
 	PermissionAgentDelete,
 	PermissionAgentHierarchyManage,
 	PermissionAgentLifecycleManage,
+
+	PermissionWorkRead,
+
+	PermissionGoalCreate,
+	PermissionGoalUpdate,
+
+	PermissionProjectCreate,
+	PermissionProjectUpdate,
+
+	PermissionTaskCreate,
+	PermissionTaskUpdate,
+	PermissionTaskStatusUpdate,
+	PermissionTaskAssign,
+	PermissionTaskDependencyManage,
+
+	PermissionTaskCommentCreate,
+	PermissionTaskCommentModerate,
+	PermissionTaskArtifactManage,
+	PermissionTaskChecklistManage,
+	PermissionTaskScheduleManage,
 }
 
 var memberPermissions = []Permission{
@@ -113,6 +173,16 @@ var memberPermissions = []Permission{
 	PermissionEntitlementRead,
 	PermissionCompanyRead,
 	PermissionAgentRead,
+	PermissionWorkRead,
+	PermissionTaskCreate,
+	PermissionTaskUpdate,
+	PermissionTaskStatusUpdate,
+	PermissionTaskAssign,
+	PermissionTaskDependencyManage,
+	PermissionTaskCommentCreate,
+	PermissionTaskArtifactManage,
+	PermissionTaskChecklistManage,
+	PermissionTaskScheduleManage,
 }
 
 var viewerPermissions = []Permission{
@@ -120,6 +190,7 @@ var viewerPermissions = []Permission{
 	PermissionEntitlementRead,
 	PermissionCompanyRead,
 	PermissionAgentRead,
+	PermissionWorkRead,
 }
 
 // IsKnownPermission reports whether a permission is supported.
@@ -188,7 +259,21 @@ func IsMutationPermission(
 		PermissionAgentUpdate,
 		PermissionAgentDelete,
 		PermissionAgentHierarchyManage,
-		PermissionAgentLifecycleManage:
+		PermissionAgentLifecycleManage,
+		PermissionGoalCreate,
+		PermissionGoalUpdate,
+		PermissionProjectCreate,
+		PermissionProjectUpdate,
+		PermissionTaskCreate,
+		PermissionTaskUpdate,
+		PermissionTaskStatusUpdate,
+		PermissionTaskAssign,
+		PermissionTaskDependencyManage,
+		PermissionTaskCommentCreate,
+		PermissionTaskCommentModerate,
+		PermissionTaskArtifactManage,
+		PermissionTaskChecklistManage,
+		PermissionTaskScheduleManage:
 		return true
 
 	default:

@@ -29,6 +29,7 @@ const (
 	TenantService_CheckAuthorization_FullMethodName      = "/gereh.tenant.v1.TenantService/CheckAuthorization"
 	TenantService_BatchCheckAuthorization_FullMethodName = "/gereh.tenant.v1.TenantService/BatchCheckAuthorization"
 	TenantService_ListMembers_FullMethodName             = "/gereh.tenant.v1.TenantService/ListMembers"
+	TenantService_GetMember_FullMethodName               = "/gereh.tenant.v1.TenantService/GetMember"
 	TenantService_AddMember_FullMethodName               = "/gereh.tenant.v1.TenantService/AddMember"
 	TenantService_UpdateMemberRole_FullMethodName        = "/gereh.tenant.v1.TenantService/UpdateMemberRole"
 	TenantService_RemoveMember_FullMethodName            = "/gereh.tenant.v1.TenantService/RemoveMember"
@@ -51,6 +52,7 @@ type TenantServiceClient interface {
 	CheckAuthorization(ctx context.Context, in *CheckAuthorizationRequest, opts ...grpc.CallOption) (*CheckAuthorizationResponse, error)
 	BatchCheckAuthorization(ctx context.Context, in *BatchCheckAuthorizationRequest, opts ...grpc.CallOption) (*BatchCheckAuthorizationResponse, error)
 	ListMembers(ctx context.Context, in *ListMembersRequest, opts ...grpc.CallOption) (*ListMembersResponse, error)
+	GetMember(ctx context.Context, in *GetMemberRequest, opts ...grpc.CallOption) (*GetMemberResponse, error)
 	AddMember(ctx context.Context, in *AddMemberRequest, opts ...grpc.CallOption) (*AddMemberResponse, error)
 	UpdateMemberRole(ctx context.Context, in *UpdateMemberRoleRequest, opts ...grpc.CallOption) (*UpdateMemberRoleResponse, error)
 	RemoveMember(ctx context.Context, in *RemoveMemberRequest, opts ...grpc.CallOption) (*RemoveMemberResponse, error)
@@ -164,6 +166,16 @@ func (c *tenantServiceClient) ListMembers(ctx context.Context, in *ListMembersRe
 	return out, nil
 }
 
+func (c *tenantServiceClient) GetMember(ctx context.Context, in *GetMemberRequest, opts ...grpc.CallOption) (*GetMemberResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetMemberResponse)
+	err := c.cc.Invoke(ctx, TenantService_GetMember_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *tenantServiceClient) AddMember(ctx context.Context, in *AddMemberRequest, opts ...grpc.CallOption) (*AddMemberResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AddMemberResponse)
@@ -211,6 +223,7 @@ type TenantServiceServer interface {
 	CheckAuthorization(context.Context, *CheckAuthorizationRequest) (*CheckAuthorizationResponse, error)
 	BatchCheckAuthorization(context.Context, *BatchCheckAuthorizationRequest) (*BatchCheckAuthorizationResponse, error)
 	ListMembers(context.Context, *ListMembersRequest) (*ListMembersResponse, error)
+	GetMember(context.Context, *GetMemberRequest) (*GetMemberResponse, error)
 	AddMember(context.Context, *AddMemberRequest) (*AddMemberResponse, error)
 	UpdateMemberRole(context.Context, *UpdateMemberRoleRequest) (*UpdateMemberRoleResponse, error)
 	RemoveMember(context.Context, *RemoveMemberRequest) (*RemoveMemberResponse, error)
@@ -253,6 +266,9 @@ func (UnimplementedTenantServiceServer) BatchCheckAuthorization(context.Context,
 }
 func (UnimplementedTenantServiceServer) ListMembers(context.Context, *ListMembersRequest) (*ListMembersResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListMembers not implemented")
+}
+func (UnimplementedTenantServiceServer) GetMember(context.Context, *GetMemberRequest) (*GetMemberResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetMember not implemented")
 }
 func (UnimplementedTenantServiceServer) AddMember(context.Context, *AddMemberRequest) (*AddMemberResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method AddMember not implemented")
@@ -464,6 +480,24 @@ func _TenantService_ListMembers_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TenantService_GetMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetMemberRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TenantServiceServer).GetMember(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TenantService_GetMember_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TenantServiceServer).GetMember(ctx, req.(*GetMemberRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _TenantService_AddMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AddMemberRequest)
 	if err := dec(in); err != nil {
@@ -564,6 +598,10 @@ var TenantService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListMembers",
 			Handler:    _TenantService_ListMembers_Handler,
+		},
+		{
+			MethodName: "GetMember",
+			Handler:    _TenantService_GetMember_Handler,
 		},
 		{
 			MethodName: "AddMember",
