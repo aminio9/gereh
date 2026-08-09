@@ -20,6 +20,10 @@ const (
 // company creation. Older histories keep their original path.
 const ensureDefaultCompanyChangeID = "tenant-onboarding-default-company-v1"
 
+// ensureDefaultPoliciesChangeID marks the workflow change that added default
+// policy bootstrap. Older histories keep their original path.
+const ensureDefaultPoliciesChangeID = "tenant-onboarding-default-policies-v1"
+
 // ProvisionTenantWorkflow provisions tenant infrastructure and activates the
 // tenant. It contains no network or database calls; every external effect is
 // an activity, preserving Temporal determinism.
@@ -83,6 +87,23 @@ func ProvisionTenantWorkflow(
 		if err := workflow.ExecuteActivity(
 			ctx,
 			"EnsureDefaultCompany",
+			input,
+		).Get(ctx, nil); err != nil {
+			return failWorkflow(ctx, input, err)
+		}
+	}
+
+	policiesVersion := workflow.GetVersion(
+		ctx,
+		ensureDefaultPoliciesChangeID,
+		workflow.DefaultVersion,
+		1,
+	)
+
+	if policiesVersion >= 1 {
+		if err := workflow.ExecuteActivity(
+			ctx,
+			"EnsureDefaultPolicies",
 			input,
 		).Get(ctx, nil); err != nil {
 			return failWorkflow(ctx, input, err)

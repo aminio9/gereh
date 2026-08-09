@@ -315,3 +315,30 @@ message EnsureDefaultCompanyRequest {
 message EnsureDefaultCompanyResponse {
   Company company = 1;
 }
+
+// OrganizationPolicyContextService is a workload-only API used by the Policy
+// Service to resolve trusted agent context. It is never called by end users.
+service OrganizationPolicyContextService {
+  rpc GetAgentPolicyContext(GetAgentPolicyContextRequest) returns (GetAgentPolicyContextResponse);
+}
+
+message GetAgentPolicyContextRequest {
+  string tenant_id = 1;
+  string agent_id = 2;
+}
+
+message AgentPolicyContext {
+  string tenant_id = 1;
+  string company_id = 2;
+  string agent_id = 3;
+
+  AgentStatus status = 4;
+  AgentAutonomyLevel autonomy_level = 5;
+
+  repeated string capabilities = 6;
+  int64 version = 7;
+}
+
+message GetAgentPolicyContextResponse {
+  AgentPolicyContext context = 1;
+}

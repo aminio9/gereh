@@ -28,6 +28,8 @@ type Config struct {
 
 	OrganizationGRPCTarget string
 
+	PolicyGRPCTarget string
+
 	RuntimeMode       string
 	RuntimeGRPCTarget string
 
@@ -83,6 +85,10 @@ func FromEnv(version string) (Config, error) {
 		OrganizationGRPCTarget: envOrDefault(
 			"ORGANIZATION_GRPC_TARGET",
 			"127.0.0.1:18083",
+		),
+		PolicyGRPCTarget: envOrDefault(
+			"POLICY_GRPC_TARGET",
+			"127.0.0.1:18085",
 		),
 		RuntimeMode: envOrDefault(
 			"ORCHESTRATOR_RUNTIME_MODE",

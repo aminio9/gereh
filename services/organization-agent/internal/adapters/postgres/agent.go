@@ -1030,3 +1030,46 @@ func scanAgent(
 
 	return agent, nil
 }
+
+// GetAgentAsService retrieves an agent under the service principal scope.
+//
+// It is used by the workload-only policy-context API so the Policy Service can
+// resolve trusted agent context without impersonating a user.
+func (repository *Repository) GetAgentAsService(
+	ctx context.Context,
+	tenantID string,
+	servicePrincipalID string,
+	agentID string,
+) (domain.Agent, error) {
+	transaction, err := repository.beginServiceTenant(
+		ctx,
+		tenantID,
+		servicePrincipalID,
+		pgx.TxOptions{
+			AccessMode: pgx.ReadOnly,
+		},
+	)
+	if err != nil {
+		return domain.Agent{}, err
+	}
+
+	defer func() {
+		_ = transaction.Rollback(ctx)
+	}()
+
+	agent, err := queryAgent(
+		ctx,
+		transaction,
+		tenantID,
+		agentID,
+	)
+	if err != nil {
+		return domain.Agent{}, err
+	}
+
+	if err := commit(ctx, transaction); err != nil {
+		return domain.Agent{}, err
+	}
+
+	return agent, nil
+}

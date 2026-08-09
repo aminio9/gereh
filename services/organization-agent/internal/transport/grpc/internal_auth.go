@@ -14,6 +14,7 @@ import (
 )
 
 const bootstrapServicePrefix = "/gereh.organization.v1.OrganizationBootstrapService/"
+const policyContextServicePrefix = "/gereh.organization.v1.OrganizationPolicyContextService/"
 
 // InternalAuthConfig configures workload identity for the internal bootstrap
 // service.
@@ -24,7 +25,8 @@ type InternalAuthConfig struct {
 }
 
 // InternalWorkloadUnaryInterceptor authenticates trusted workload callers of
-// OrganizationBootstrapService. All other methods pass through unchanged.
+// OrganizationBootstrapService and OrganizationPolicyContextService. All
+// other methods pass through unchanged.
 func InternalWorkloadUnaryInterceptor(
 	config InternalAuthConfig,
 ) grpc.UnaryServerInterceptor {
@@ -37,6 +39,9 @@ func InternalWorkloadUnaryInterceptor(
 		if !strings.HasPrefix(
 			info.FullMethod,
 			bootstrapServicePrefix,
+		) && !strings.HasPrefix(
+			info.FullMethod,
+			policyContextServicePrefix,
 		) {
 			return handler(ctx, request)
 		}

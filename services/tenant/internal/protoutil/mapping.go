@@ -190,6 +190,24 @@ func Permission(
 	case domain.PermissionTaskScheduleManage:
 		return tenantv1.Permission_PERMISSION_TASK_SCHEDULE_MANAGE
 
+	case domain.PermissionPolicyRead:
+		return tenantv1.Permission_PERMISSION_POLICY_READ
+
+	case domain.PermissionPolicyCreate:
+		return tenantv1.Permission_PERMISSION_POLICY_CREATE
+
+	case domain.PermissionPolicyUpdate:
+		return tenantv1.Permission_PERMISSION_POLICY_UPDATE
+
+	case domain.PermissionPolicyActivate:
+		return tenantv1.Permission_PERMISSION_POLICY_ACTIVATE
+
+	case domain.PermissionPolicyArchive:
+		return tenantv1.Permission_PERMISSION_POLICY_ARCHIVE
+
+	case domain.PermissionPolicyDecisionRead:
+		return tenantv1.Permission_PERMISSION_POLICY_DECISION_READ
+
 	default:
 		return tenantv1.Permission_PERMISSION_UNSPECIFIED
 	}
@@ -298,6 +316,24 @@ func DomainPermission(
 
 	case tenantv1.Permission_PERMISSION_TASK_SCHEDULE_MANAGE:
 		return domain.PermissionTaskScheduleManage
+
+	case tenantv1.Permission_PERMISSION_POLICY_READ:
+		return domain.PermissionPolicyRead
+
+	case tenantv1.Permission_PERMISSION_POLICY_CREATE:
+		return domain.PermissionPolicyCreate
+
+	case tenantv1.Permission_PERMISSION_POLICY_UPDATE:
+		return domain.PermissionPolicyUpdate
+
+	case tenantv1.Permission_PERMISSION_POLICY_ACTIVATE:
+		return domain.PermissionPolicyActivate
+
+	case tenantv1.Permission_PERMISSION_POLICY_ARCHIVE:
+		return domain.PermissionPolicyArchive
+
+	case tenantv1.Permission_PERMISSION_POLICY_DECISION_READ:
+		return domain.PermissionPolicyDecisionRead
 
 	default:
 		return ""

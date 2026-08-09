@@ -51,7 +51,7 @@ func Agent(
 		ExecutionProfile: executionProfile(
 			value.ExecutionProfile,
 		),
-		AutonomyLevel:   autonomyLevel(value.AutonomyLevel),
+		AutonomyLevel:   AutonomyLevel(value.AutonomyLevel),
 		Capabilities:    append([]string(nil), value.Capabilities...),
 		Configuration:   configuration,
 		Version:         value.Version,
@@ -204,7 +204,8 @@ func DomainExecutionProfile(
 	}
 }
 
-func autonomyLevel(
+// AutonomyLevel maps a domain autonomy level to its gRPC enum.
+func AutonomyLevel(
 	value domain.AutonomyLevel,
 ) organizationv1.AgentAutonomyLevel {
 	switch value {

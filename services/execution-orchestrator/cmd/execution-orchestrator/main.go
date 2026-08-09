@@ -18,6 +18,7 @@ import (
 	platformkafka "github.com/aminio9/gereh/platform/go/events/kafka"
 	"github.com/aminio9/gereh/platform/go/observability"
 	organizationadapter "github.com/aminio9/gereh/services/execution-orchestrator/internal/adapters/organization"
+	policyadapter "github.com/aminio9/gereh/services/execution-orchestrator/internal/adapters/policy"
 	runtimeadapter "github.com/aminio9/gereh/services/execution-orchestrator/internal/adapters/runtime"
 	tenantadapter "github.com/aminio9/gereh/services/execution-orchestrator/internal/adapters/tenant"
 	"github.com/aminio9/gereh/services/execution-orchestrator/internal/application"
@@ -161,6 +162,29 @@ func run() (runErr error) {
 		runtimeConfig.InternalDevelopmentToken,
 	)
 
+	policyConnection, err := grpc.NewClient(
+		runtimeConfig.PolicyGRPCTarget,
+		grpc.WithTransportCredentials(
+			transportCredentials(
+				runtimeConfig.Environment,
+			),
+		),
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"connect to Policy Service: %w",
+			err,
+		)
+	}
+	defer func() {
+		_ = policyConnection.Close()
+	}()
+
+	policyClient := policyadapter.New(
+		policyConnection,
+		runtimeConfig.InternalDevelopmentToken,
+	)
+
 	var runtimeProvisioner ports.RuntimeProvisioner
 
 	switch runtimeConfig.RuntimeMode {
@@ -203,6 +227,7 @@ func run() (runErr error) {
 		tenantClient,
 		runtimeProvisioner,
 		organizationClient,
+		policyClient,
 	)
 
 	temporalWorker := worker.New(

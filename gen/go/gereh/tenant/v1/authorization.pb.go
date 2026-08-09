@@ -62,6 +62,12 @@ const (
 	Permission_PERMISSION_TASK_ARTIFACT_MANAGE   Permission = 62
 	Permission_PERMISSION_TASK_CHECKLIST_MANAGE  Permission = 63
 	Permission_PERMISSION_TASK_SCHEDULE_MANAGE   Permission = 64
+	Permission_PERMISSION_POLICY_READ            Permission = 70
+	Permission_PERMISSION_POLICY_CREATE          Permission = 71
+	Permission_PERMISSION_POLICY_UPDATE          Permission = 72
+	Permission_PERMISSION_POLICY_ACTIVATE        Permission = 73
+	Permission_PERMISSION_POLICY_ARCHIVE         Permission = 74
+	Permission_PERMISSION_POLICY_DECISION_READ   Permission = 75
 )
 
 // Enum value maps for Permission.
@@ -101,6 +107,12 @@ var (
 		62: "PERMISSION_TASK_ARTIFACT_MANAGE",
 		63: "PERMISSION_TASK_CHECKLIST_MANAGE",
 		64: "PERMISSION_TASK_SCHEDULE_MANAGE",
+		70: "PERMISSION_POLICY_READ",
+		71: "PERMISSION_POLICY_CREATE",
+		72: "PERMISSION_POLICY_UPDATE",
+		73: "PERMISSION_POLICY_ACTIVATE",
+		74: "PERMISSION_POLICY_ARCHIVE",
+		75: "PERMISSION_POLICY_DECISION_READ",
 	}
 	Permission_value = map[string]int32{
 		"PERMISSION_UNSPECIFIED":            0,
@@ -137,6 +149,12 @@ var (
 		"PERMISSION_TASK_ARTIFACT_MANAGE":   62,
 		"PERMISSION_TASK_CHECKLIST_MANAGE":  63,
 		"PERMISSION_TASK_SCHEDULE_MANAGE":   64,
+		"PERMISSION_POLICY_READ":            70,
+		"PERMISSION_POLICY_CREATE":          71,
+		"PERMISSION_POLICY_UPDATE":          72,
+		"PERMISSION_POLICY_ACTIVATE":        73,
+		"PERMISSION_POLICY_ARCHIVE":         74,
+		"PERMISSION_POLICY_DECISION_READ":   75,
 	}
 )
 
@@ -622,7 +640,7 @@ const file_gereh_tenant_v1_authorization_proto_rawDesc = "" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12=\n" +
 	"\vpermissions\x18\x03 \x03(\x0e2\x1b.gereh.tenant.v1.PermissionR\vpermissions\"g\n" +
 	"\x1fBatchCheckAuthorizationResponse\x12D\n" +
-	"\tdecisions\x18\x01 \x03(\v2&.gereh.tenant.v1.AuthorizationDecisionR\tdecisions*\xbd\b\n" +
+	"\tdecisions\x18\x01 \x03(\v2&.gereh.tenant.v1.AuthorizationDecisionR\tdecisions*\xf9\t\n" +
 	"\n" +
 	"Permission\x12\x1a\n" +
 	"\x16PERMISSION_UNSPECIFIED\x10\x00\x12\x1a\n" +
@@ -659,7 +677,13 @@ const file_gereh_tenant_v1_authorization_proto_rawDesc = "" +
 	" PERMISSION_TASK_COMMENT_MODERATE\x10=\x12#\n" +
 	"\x1fPERMISSION_TASK_ARTIFACT_MANAGE\x10>\x12$\n" +
 	" PERMISSION_TASK_CHECKLIST_MANAGE\x10?\x12#\n" +
-	"\x1fPERMISSION_TASK_SCHEDULE_MANAGE\x10@*\x87\x01\n" +
+	"\x1fPERMISSION_TASK_SCHEDULE_MANAGE\x10@\x12\x1a\n" +
+	"\x16PERMISSION_POLICY_READ\x10F\x12\x1c\n" +
+	"\x18PERMISSION_POLICY_CREATE\x10G\x12\x1c\n" +
+	"\x18PERMISSION_POLICY_UPDATE\x10H\x12\x1e\n" +
+	"\x1aPERMISSION_POLICY_ACTIVATE\x10I\x12\x1d\n" +
+	"\x19PERMISSION_POLICY_ARCHIVE\x10J\x12#\n" +
+	"\x1fPERMISSION_POLICY_DECISION_READ\x10K*\x87\x01\n" +
 	"\n" +
 	"TenantRole\x12\x1b\n" +
 	"\x17TENANT_ROLE_UNSPECIFIED\x10\x00\x12\x15\n" +

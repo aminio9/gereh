@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package gereh.policy.v1;
+
+import "gereh/policy/v1/policy.proto";
+
+option go_package = "github.com/aminio9/gereh/gen/go/gereh/policy/v1;policyv1";
+
+message PolicyCreated {
+  Policy policy = 1;
+}
+
+message PolicyVersionCreated {
+  Policy policy = 1;
+  PolicyVersion version = 2;
+}
+
+message PolicyActivated {
+  Policy policy = 1;
+  PolicyVersion version = 2;
+}
+
+message PolicyArchived {
+  Policy policy = 1;
+  string archived_by_user_id = 2;
+}
+
+message PolicyDecisionRecorded {
+  PolicyDecision decision = 1;
+}

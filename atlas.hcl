@@ -39,3 +39,17 @@ env "work" {
     format = golang-migrate
   }
 }
+
+variable "policy_database_url" {
+  type    = string
+  default = getenv("POLICY_MIGRATION_DATABASE_URL")
+}
+
+env "policy" {
+  url = var.policy_database_url
+
+  migration {
+    dir    = "file://services/policy-approval/migrations"
+    format = golang-migrate
+  }
+}

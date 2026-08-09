@@ -636,6 +636,114 @@ func TestDependencyCycleIsRejected(t *testing.T) {
 	require.ErrorIs(t, firstError, domain.ErrDependencyCycle)
 }
 
+func TestCanceledPrerequisiteRemainsBlocking(
+	t *testing.T,
+) {
+	repository := workIntegrationTest(t)
+
+	ctx := context.Background()
+
+	actorUserID := mustUUID(t)
+	tenantID := mustUUID(t)
+	companyID := mustUUID(t)
+
+	t.Cleanup(func() {
+		cleanupTenant(t, repository, tenantID)
+	})
+
+	goal := createTestGoal(
+		ctx,
+		t,
+		repository,
+		tenantID,
+		companyID,
+		actorUserID,
+		"Ship v1",
+	)
+
+	project := createTestProject(
+		ctx,
+		t,
+		repository,
+		tenantID,
+		companyID,
+		goal.ID,
+		actorUserID,
+		"Release",
+	)
+
+	prerequisite := createTestTask(
+		ctx,
+		t,
+		repository,
+		tenantID,
+		companyID,
+		project.ID,
+		actorUserID,
+		"Prerequisite",
+	)
+
+	dependent := createTestTask(
+		ctx,
+		t,
+		repository,
+		tenantID,
+		companyID,
+		project.ID,
+		actorUserID,
+		"Dependent",
+	)
+
+	_, err := repository.AddDependency(
+		ctx,
+		ports.AddDependencyParams{
+			ActorUserID: actorUserID,
+			Dependency: domain.TaskDependency{
+				TenantID:        tenantID,
+				TaskID:          dependent.ID,
+				DependsOnTaskID: prerequisite.ID,
+				CreatedByUserID: actorUserID,
+				CreatedAt:       time.Now().UTC(),
+			},
+			Event: testEvent(t, tenantID),
+		},
+	)
+	require.NoError(t, err)
+
+	now := time.Now().UTC()
+
+	prerequisite.Status = domain.TaskStatusCanceled
+	prerequisite.Version = 2
+	prerequisite.CanceledAt = &now
+
+	_, err = repository.ChangeTaskStatus(
+		ctx,
+		ports.TaskChangeParams{
+			ActorUserID:     actorUserID,
+			Task:            prerequisite,
+			PreviousStatus:  domain.TaskStatusBacklog,
+			ExpectedVersion: 1,
+			Event:           testEvent(t, tenantID),
+		},
+	)
+	require.NoError(t, err)
+
+	current, err := repository.GetTask(
+		ctx,
+		actorUserID,
+		tenantID,
+		dependent.ID,
+	)
+	require.NoError(t, err)
+
+	require.True(t, current.Blocked)
+	require.EqualValues(
+		t,
+		1,
+		current.IncompleteDependencyCount,
+	)
+}
+
 func TestOutboxClaimPublishRelease(t *testing.T) {
 	repository := workIntegrationTest(t)
 

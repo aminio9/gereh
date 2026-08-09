@@ -49,6 +49,18 @@ const (
 	PermissionTaskArtifactManage  Permission = "task.artifact_manage"
 	PermissionTaskChecklistManage Permission = "task.checklist_manage"
 	PermissionTaskScheduleManage  Permission = "task.schedule_manage"
+
+	PermissionPolicyRead Permission = "policy.read"
+
+	PermissionPolicyCreate Permission = "policy.create"
+
+	PermissionPolicyUpdate Permission = "policy.update"
+
+	PermissionPolicyActivate Permission = "policy.activate"
+
+	PermissionPolicyArchive Permission = "policy.archive"
+
+	PermissionPolicyDecisionRead Permission = "policy.decision_read"
 )
 
 // DenialReason identifies why authorization was denied.
@@ -116,6 +128,13 @@ var knownPermissions = []Permission{
 	PermissionTaskArtifactManage,
 	PermissionTaskChecklistManage,
 	PermissionTaskScheduleManage,
+
+	PermissionPolicyRead,
+	PermissionPolicyCreate,
+	PermissionPolicyUpdate,
+	PermissionPolicyActivate,
+	PermissionPolicyArchive,
+	PermissionPolicyDecisionRead,
 }
 
 var ownerPermissions = append(
@@ -165,6 +184,13 @@ var adminPermissions = []Permission{
 	PermissionTaskArtifactManage,
 	PermissionTaskChecklistManage,
 	PermissionTaskScheduleManage,
+
+	PermissionPolicyRead,
+	PermissionPolicyCreate,
+	PermissionPolicyUpdate,
+	PermissionPolicyActivate,
+	PermissionPolicyArchive,
+	PermissionPolicyDecisionRead,
 }
 
 var memberPermissions = []Permission{
@@ -273,7 +299,11 @@ func IsMutationPermission(
 		PermissionTaskCommentModerate,
 		PermissionTaskArtifactManage,
 		PermissionTaskChecklistManage,
-		PermissionTaskScheduleManage:
+		PermissionTaskScheduleManage,
+		PermissionPolicyCreate,
+		PermissionPolicyUpdate,
+		PermissionPolicyActivate,
+		PermissionPolicyArchive:
 		return true
 
 	default:

@@ -2509,6 +2509,194 @@ func (x *EnsureDefaultCompanyResponse) GetCompany() *Company {
 	return nil
 }
 
+type GetAgentPolicyContextRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	AgentId       string                 `protobuf:"bytes,2,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAgentPolicyContextRequest) Reset() {
+	*x = GetAgentPolicyContextRequest{}
+	mi := &file_gereh_organization_v1_organization_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAgentPolicyContextRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAgentPolicyContextRequest) ProtoMessage() {}
+
+func (x *GetAgentPolicyContextRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gereh_organization_v1_organization_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAgentPolicyContextRequest.ProtoReflect.Descriptor instead.
+func (*GetAgentPolicyContextRequest) Descriptor() ([]byte, []int) {
+	return file_gereh_organization_v1_organization_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *GetAgentPolicyContextRequest) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+func (x *GetAgentPolicyContextRequest) GetAgentId() string {
+	if x != nil {
+		return x.AgentId
+	}
+	return ""
+}
+
+type AgentPolicyContext struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	CompanyId     string                 `protobuf:"bytes,2,opt,name=company_id,json=companyId,proto3" json:"company_id,omitempty"`
+	AgentId       string                 `protobuf:"bytes,3,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	Status        AgentStatus            `protobuf:"varint,4,opt,name=status,proto3,enum=gereh.organization.v1.AgentStatus" json:"status,omitempty"`
+	AutonomyLevel AgentAutonomyLevel     `protobuf:"varint,5,opt,name=autonomy_level,json=autonomyLevel,proto3,enum=gereh.organization.v1.AgentAutonomyLevel" json:"autonomy_level,omitempty"`
+	Capabilities  []string               `protobuf:"bytes,6,rep,name=capabilities,proto3" json:"capabilities,omitempty"`
+	Version       int64                  `protobuf:"varint,7,opt,name=version,proto3" json:"version,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AgentPolicyContext) Reset() {
+	*x = AgentPolicyContext{}
+	mi := &file_gereh_organization_v1_organization_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AgentPolicyContext) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AgentPolicyContext) ProtoMessage() {}
+
+func (x *AgentPolicyContext) ProtoReflect() protoreflect.Message {
+	mi := &file_gereh_organization_v1_organization_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AgentPolicyContext.ProtoReflect.Descriptor instead.
+func (*AgentPolicyContext) Descriptor() ([]byte, []int) {
+	return file_gereh_organization_v1_organization_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *AgentPolicyContext) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+func (x *AgentPolicyContext) GetCompanyId() string {
+	if x != nil {
+		return x.CompanyId
+	}
+	return ""
+}
+
+func (x *AgentPolicyContext) GetAgentId() string {
+	if x != nil {
+		return x.AgentId
+	}
+	return ""
+}
+
+func (x *AgentPolicyContext) GetStatus() AgentStatus {
+	if x != nil {
+		return x.Status
+	}
+	return AgentStatus_AGENT_STATUS_UNSPECIFIED
+}
+
+func (x *AgentPolicyContext) GetAutonomyLevel() AgentAutonomyLevel {
+	if x != nil {
+		return x.AutonomyLevel
+	}
+	return AgentAutonomyLevel_AGENT_AUTONOMY_LEVEL_UNSPECIFIED
+}
+
+func (x *AgentPolicyContext) GetCapabilities() []string {
+	if x != nil {
+		return x.Capabilities
+	}
+	return nil
+}
+
+func (x *AgentPolicyContext) GetVersion() int64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+type GetAgentPolicyContextResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Context       *AgentPolicyContext    `protobuf:"bytes,1,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAgentPolicyContextResponse) Reset() {
+	*x = GetAgentPolicyContextResponse{}
+	mi := &file_gereh_organization_v1_organization_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAgentPolicyContextResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAgentPolicyContextResponse) ProtoMessage() {}
+
+func (x *GetAgentPolicyContextResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_gereh_organization_v1_organization_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAgentPolicyContextResponse.ProtoReflect.Descriptor instead.
+func (*GetAgentPolicyContextResponse) Descriptor() ([]byte, []int) {
+	return file_gereh_organization_v1_organization_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *GetAgentPolicyContextResponse) GetContext() *AgentPolicyContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
 var File_gereh_organization_v1_organization_proto protoreflect.FileDescriptor
 
 const file_gereh_organization_v1_organization_proto_rawDesc = "" +
@@ -2711,7 +2899,21 @@ const file_gereh_organization_v1_organization_proto_rawDesc = "" +
 	"\ractor_user_id\x18\x03 \x01(\tR\vactorUserId\x12.\n" +
 	"\x13tenant_display_name\x18\x04 \x01(\tR\x11tenantDisplayName\"X\n" +
 	"\x1cEnsureDefaultCompanyResponse\x128\n" +
-	"\acompany\x18\x01 \x01(\v2\x1e.gereh.organization.v1.CompanyR\acompany*g\n" +
+	"\acompany\x18\x01 \x01(\v2\x1e.gereh.organization.v1.CompanyR\acompany\"V\n" +
+	"\x1cGetAgentPolicyContextRequest\x12\x1b\n" +
+	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x19\n" +
+	"\bagent_id\x18\x02 \x01(\tR\aagentId\"\xb7\x02\n" +
+	"\x12AgentPolicyContext\x12\x1b\n" +
+	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x1d\n" +
+	"\n" +
+	"company_id\x18\x02 \x01(\tR\tcompanyId\x12\x19\n" +
+	"\bagent_id\x18\x03 \x01(\tR\aagentId\x12:\n" +
+	"\x06status\x18\x04 \x01(\x0e2\".gereh.organization.v1.AgentStatusR\x06status\x12P\n" +
+	"\x0eautonomy_level\x18\x05 \x01(\x0e2).gereh.organization.v1.AgentAutonomyLevelR\rautonomyLevel\x12\"\n" +
+	"\fcapabilities\x18\x06 \x03(\tR\fcapabilities\x12\x18\n" +
+	"\aversion\x18\a \x01(\x03R\aversion\"d\n" +
+	"\x1dGetAgentPolicyContextResponse\x12C\n" +
+	"\acontext\x18\x01 \x01(\v2).gereh.organization.v1.AgentPolicyContextR\acontext*g\n" +
 	"\rCompanyStatus\x12\x1e\n" +
 	"\x1aCOMPANY_STATUS_UNSPECIFIED\x10\x00\x12\x19\n" +
 	"\x15COMPANY_STATUS_ACTIVE\x10\x01\x12\x1b\n" +
@@ -2759,7 +2961,9 @@ const file_gereh_organization_v1_organization_proto_rawDesc = "" +
 	"\vDeleteAgent\x12).gereh.organization.v1.DeleteAgentRequest\x1a*.gereh.organization.v1.DeleteAgentResponse\x12v\n" +
 	"\x11GetAgentHierarchy\x12/.gereh.organization.v1.GetAgentHierarchyRequest\x1a0.gereh.organization.v1.GetAgentHierarchyResponse2\x9f\x01\n" +
 	"\x1cOrganizationBootstrapService\x12\x7f\n" +
-	"\x14EnsureDefaultCompany\x122.gereh.organization.v1.EnsureDefaultCompanyRequest\x1a3.gereh.organization.v1.EnsureDefaultCompanyResponseB\xea\x01\n" +
+	"\x14EnsureDefaultCompany\x122.gereh.organization.v1.EnsureDefaultCompanyRequest\x1a3.gereh.organization.v1.EnsureDefaultCompanyResponse2\xa7\x01\n" +
+	" OrganizationPolicyContextService\x12\x82\x01\n" +
+	"\x15GetAgentPolicyContext\x123.gereh.organization.v1.GetAgentPolicyContextRequest\x1a4.gereh.organization.v1.GetAgentPolicyContextResponseB\xea\x01\n" +
 	"\x19com.gereh.organization.v1B\x11OrganizationProtoP\x01ZDgithub.com/aminio9/gereh/gen/go/gereh/organization/v1;organizationv1\xa2\x02\x03GOX\xaa\x02\x15Gereh.Organization.V1\xca\x02\x15Gereh\\Organization\\V1\xe2\x02!Gereh\\Organization\\V1\\GPBMetadata\xea\x02\x17Gereh::Organization::V1b\x06proto3"
 
 var (
@@ -2775,61 +2979,64 @@ func file_gereh_organization_v1_organization_proto_rawDescGZIP() []byte {
 }
 
 var file_gereh_organization_v1_organization_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_gereh_organization_v1_organization_proto_msgTypes = make([]protoimpl.MessageInfo, 34)
+var file_gereh_organization_v1_organization_proto_msgTypes = make([]protoimpl.MessageInfo, 37)
 var file_gereh_organization_v1_organization_proto_goTypes = []any{
-	(CompanyStatus)(0),                   // 0: gereh.organization.v1.CompanyStatus
-	(AgentStatus)(0),                     // 1: gereh.organization.v1.AgentStatus
-	(AgentExecutionProfile)(0),           // 2: gereh.organization.v1.AgentExecutionProfile
-	(AgentAutonomyLevel)(0),              // 3: gereh.organization.v1.AgentAutonomyLevel
-	(*Company)(nil),                      // 4: gereh.organization.v1.Company
-	(*Agent)(nil),                        // 5: gereh.organization.v1.Agent
-	(*CreateCompanyRequest)(nil),         // 6: gereh.organization.v1.CreateCompanyRequest
-	(*CreateCompanyResponse)(nil),        // 7: gereh.organization.v1.CreateCompanyResponse
-	(*GetCompanyRequest)(nil),            // 8: gereh.organization.v1.GetCompanyRequest
-	(*GetCompanyResponse)(nil),           // 9: gereh.organization.v1.GetCompanyResponse
-	(*ListCompaniesRequest)(nil),         // 10: gereh.organization.v1.ListCompaniesRequest
-	(*ListCompaniesResponse)(nil),        // 11: gereh.organization.v1.ListCompaniesResponse
-	(*UpdateCompanyRequest)(nil),         // 12: gereh.organization.v1.UpdateCompanyRequest
-	(*UpdateCompanyResponse)(nil),        // 13: gereh.organization.v1.UpdateCompanyResponse
-	(*ArchiveCompanyRequest)(nil),        // 14: gereh.organization.v1.ArchiveCompanyRequest
-	(*ArchiveCompanyResponse)(nil),       // 15: gereh.organization.v1.ArchiveCompanyResponse
-	(*CapabilitySet)(nil),                // 16: gereh.organization.v1.CapabilitySet
-	(*CreateAgentRequest)(nil),           // 17: gereh.organization.v1.CreateAgentRequest
-	(*CreateAgentResponse)(nil),          // 18: gereh.organization.v1.CreateAgentResponse
-	(*GetAgentRequest)(nil),              // 19: gereh.organization.v1.GetAgentRequest
-	(*GetAgentResponse)(nil),             // 20: gereh.organization.v1.GetAgentResponse
-	(*ListAgentsRequest)(nil),            // 21: gereh.organization.v1.ListAgentsRequest
-	(*ListAgentsResponse)(nil),           // 22: gereh.organization.v1.ListAgentsResponse
-	(*UpdateAgentRequest)(nil),           // 23: gereh.organization.v1.UpdateAgentRequest
-	(*UpdateAgentResponse)(nil),          // 24: gereh.organization.v1.UpdateAgentResponse
-	(*SetAgentManagerRequest)(nil),       // 25: gereh.organization.v1.SetAgentManagerRequest
-	(*SetAgentManagerResponse)(nil),      // 26: gereh.organization.v1.SetAgentManagerResponse
-	(*PauseAgentRequest)(nil),            // 27: gereh.organization.v1.PauseAgentRequest
-	(*PauseAgentResponse)(nil),           // 28: gereh.organization.v1.PauseAgentResponse
-	(*ResumeAgentRequest)(nil),           // 29: gereh.organization.v1.ResumeAgentRequest
-	(*ResumeAgentResponse)(nil),          // 30: gereh.organization.v1.ResumeAgentResponse
-	(*DeleteAgentRequest)(nil),           // 31: gereh.organization.v1.DeleteAgentRequest
-	(*DeleteAgentResponse)(nil),          // 32: gereh.organization.v1.DeleteAgentResponse
-	(*AgentHierarchyNode)(nil),           // 33: gereh.organization.v1.AgentHierarchyNode
-	(*GetAgentHierarchyRequest)(nil),     // 34: gereh.organization.v1.GetAgentHierarchyRequest
-	(*GetAgentHierarchyResponse)(nil),    // 35: gereh.organization.v1.GetAgentHierarchyResponse
-	(*EnsureDefaultCompanyRequest)(nil),  // 36: gereh.organization.v1.EnsureDefaultCompanyRequest
-	(*EnsureDefaultCompanyResponse)(nil), // 37: gereh.organization.v1.EnsureDefaultCompanyResponse
-	(*timestamppb.Timestamp)(nil),        // 38: google.protobuf.Timestamp
-	(*structpb.Struct)(nil),              // 39: google.protobuf.Struct
+	(CompanyStatus)(0),                    // 0: gereh.organization.v1.CompanyStatus
+	(AgentStatus)(0),                      // 1: gereh.organization.v1.AgentStatus
+	(AgentExecutionProfile)(0),            // 2: gereh.organization.v1.AgentExecutionProfile
+	(AgentAutonomyLevel)(0),               // 3: gereh.organization.v1.AgentAutonomyLevel
+	(*Company)(nil),                       // 4: gereh.organization.v1.Company
+	(*Agent)(nil),                         // 5: gereh.organization.v1.Agent
+	(*CreateCompanyRequest)(nil),          // 6: gereh.organization.v1.CreateCompanyRequest
+	(*CreateCompanyResponse)(nil),         // 7: gereh.organization.v1.CreateCompanyResponse
+	(*GetCompanyRequest)(nil),             // 8: gereh.organization.v1.GetCompanyRequest
+	(*GetCompanyResponse)(nil),            // 9: gereh.organization.v1.GetCompanyResponse
+	(*ListCompaniesRequest)(nil),          // 10: gereh.organization.v1.ListCompaniesRequest
+	(*ListCompaniesResponse)(nil),         // 11: gereh.organization.v1.ListCompaniesResponse
+	(*UpdateCompanyRequest)(nil),          // 12: gereh.organization.v1.UpdateCompanyRequest
+	(*UpdateCompanyResponse)(nil),         // 13: gereh.organization.v1.UpdateCompanyResponse
+	(*ArchiveCompanyRequest)(nil),         // 14: gereh.organization.v1.ArchiveCompanyRequest
+	(*ArchiveCompanyResponse)(nil),        // 15: gereh.organization.v1.ArchiveCompanyResponse
+	(*CapabilitySet)(nil),                 // 16: gereh.organization.v1.CapabilitySet
+	(*CreateAgentRequest)(nil),            // 17: gereh.organization.v1.CreateAgentRequest
+	(*CreateAgentResponse)(nil),           // 18: gereh.organization.v1.CreateAgentResponse
+	(*GetAgentRequest)(nil),               // 19: gereh.organization.v1.GetAgentRequest
+	(*GetAgentResponse)(nil),              // 20: gereh.organization.v1.GetAgentResponse
+	(*ListAgentsRequest)(nil),             // 21: gereh.organization.v1.ListAgentsRequest
+	(*ListAgentsResponse)(nil),            // 22: gereh.organization.v1.ListAgentsResponse
+	(*UpdateAgentRequest)(nil),            // 23: gereh.organization.v1.UpdateAgentRequest
+	(*UpdateAgentResponse)(nil),           // 24: gereh.organization.v1.UpdateAgentResponse
+	(*SetAgentManagerRequest)(nil),        // 25: gereh.organization.v1.SetAgentManagerRequest
+	(*SetAgentManagerResponse)(nil),       // 26: gereh.organization.v1.SetAgentManagerResponse
+	(*PauseAgentRequest)(nil),             // 27: gereh.organization.v1.PauseAgentRequest
+	(*PauseAgentResponse)(nil),            // 28: gereh.organization.v1.PauseAgentResponse
+	(*ResumeAgentRequest)(nil),            // 29: gereh.organization.v1.ResumeAgentRequest
+	(*ResumeAgentResponse)(nil),           // 30: gereh.organization.v1.ResumeAgentResponse
+	(*DeleteAgentRequest)(nil),            // 31: gereh.organization.v1.DeleteAgentRequest
+	(*DeleteAgentResponse)(nil),           // 32: gereh.organization.v1.DeleteAgentResponse
+	(*AgentHierarchyNode)(nil),            // 33: gereh.organization.v1.AgentHierarchyNode
+	(*GetAgentHierarchyRequest)(nil),      // 34: gereh.organization.v1.GetAgentHierarchyRequest
+	(*GetAgentHierarchyResponse)(nil),     // 35: gereh.organization.v1.GetAgentHierarchyResponse
+	(*EnsureDefaultCompanyRequest)(nil),   // 36: gereh.organization.v1.EnsureDefaultCompanyRequest
+	(*EnsureDefaultCompanyResponse)(nil),  // 37: gereh.organization.v1.EnsureDefaultCompanyResponse
+	(*GetAgentPolicyContextRequest)(nil),  // 38: gereh.organization.v1.GetAgentPolicyContextRequest
+	(*AgentPolicyContext)(nil),            // 39: gereh.organization.v1.AgentPolicyContext
+	(*GetAgentPolicyContextResponse)(nil), // 40: gereh.organization.v1.GetAgentPolicyContextResponse
+	(*timestamppb.Timestamp)(nil),         // 41: google.protobuf.Timestamp
+	(*structpb.Struct)(nil),               // 42: google.protobuf.Struct
 }
 var file_gereh_organization_v1_organization_proto_depIdxs = []int32{
 	0,  // 0: gereh.organization.v1.Company.status:type_name -> gereh.organization.v1.CompanyStatus
-	38, // 1: gereh.organization.v1.Company.created_at:type_name -> google.protobuf.Timestamp
-	38, // 2: gereh.organization.v1.Company.updated_at:type_name -> google.protobuf.Timestamp
-	38, // 3: gereh.organization.v1.Company.archived_at:type_name -> google.protobuf.Timestamp
+	41, // 1: gereh.organization.v1.Company.created_at:type_name -> google.protobuf.Timestamp
+	41, // 2: gereh.organization.v1.Company.updated_at:type_name -> google.protobuf.Timestamp
+	41, // 3: gereh.organization.v1.Company.archived_at:type_name -> google.protobuf.Timestamp
 	1,  // 4: gereh.organization.v1.Agent.status:type_name -> gereh.organization.v1.AgentStatus
 	2,  // 5: gereh.organization.v1.Agent.execution_profile:type_name -> gereh.organization.v1.AgentExecutionProfile
 	3,  // 6: gereh.organization.v1.Agent.autonomy_level:type_name -> gereh.organization.v1.AgentAutonomyLevel
-	39, // 7: gereh.organization.v1.Agent.configuration:type_name -> google.protobuf.Struct
-	38, // 8: gereh.organization.v1.Agent.created_at:type_name -> google.protobuf.Timestamp
-	38, // 9: gereh.organization.v1.Agent.updated_at:type_name -> google.protobuf.Timestamp
-	38, // 10: gereh.organization.v1.Agent.deleted_at:type_name -> google.protobuf.Timestamp
+	42, // 7: gereh.organization.v1.Agent.configuration:type_name -> google.protobuf.Struct
+	41, // 8: gereh.organization.v1.Agent.created_at:type_name -> google.protobuf.Timestamp
+	41, // 9: gereh.organization.v1.Agent.updated_at:type_name -> google.protobuf.Timestamp
+	41, // 10: gereh.organization.v1.Agent.deleted_at:type_name -> google.protobuf.Timestamp
 	4,  // 11: gereh.organization.v1.CreateCompanyResponse.company:type_name -> gereh.organization.v1.Company
 	4,  // 12: gereh.organization.v1.GetCompanyResponse.company:type_name -> gereh.organization.v1.Company
 	4,  // 13: gereh.organization.v1.ListCompaniesResponse.companies:type_name -> gereh.organization.v1.Company
@@ -2837,14 +3044,14 @@ var file_gereh_organization_v1_organization_proto_depIdxs = []int32{
 	4,  // 15: gereh.organization.v1.ArchiveCompanyResponse.company:type_name -> gereh.organization.v1.Company
 	2,  // 16: gereh.organization.v1.CreateAgentRequest.execution_profile:type_name -> gereh.organization.v1.AgentExecutionProfile
 	3,  // 17: gereh.organization.v1.CreateAgentRequest.autonomy_level:type_name -> gereh.organization.v1.AgentAutonomyLevel
-	39, // 18: gereh.organization.v1.CreateAgentRequest.configuration:type_name -> google.protobuf.Struct
+	42, // 18: gereh.organization.v1.CreateAgentRequest.configuration:type_name -> google.protobuf.Struct
 	5,  // 19: gereh.organization.v1.CreateAgentResponse.agent:type_name -> gereh.organization.v1.Agent
 	5,  // 20: gereh.organization.v1.GetAgentResponse.agent:type_name -> gereh.organization.v1.Agent
 	5,  // 21: gereh.organization.v1.ListAgentsResponse.agents:type_name -> gereh.organization.v1.Agent
 	2,  // 22: gereh.organization.v1.UpdateAgentRequest.execution_profile:type_name -> gereh.organization.v1.AgentExecutionProfile
 	3,  // 23: gereh.organization.v1.UpdateAgentRequest.autonomy_level:type_name -> gereh.organization.v1.AgentAutonomyLevel
 	16, // 24: gereh.organization.v1.UpdateAgentRequest.capabilities:type_name -> gereh.organization.v1.CapabilitySet
-	39, // 25: gereh.organization.v1.UpdateAgentRequest.configuration:type_name -> google.protobuf.Struct
+	42, // 25: gereh.organization.v1.UpdateAgentRequest.configuration:type_name -> google.protobuf.Struct
 	5,  // 26: gereh.organization.v1.UpdateAgentResponse.agent:type_name -> gereh.organization.v1.Agent
 	5,  // 27: gereh.organization.v1.SetAgentManagerResponse.agent:type_name -> gereh.organization.v1.Agent
 	5,  // 28: gereh.organization.v1.PauseAgentResponse.agent:type_name -> gereh.organization.v1.Agent
@@ -2853,41 +3060,46 @@ var file_gereh_organization_v1_organization_proto_depIdxs = []int32{
 	5,  // 31: gereh.organization.v1.AgentHierarchyNode.agent:type_name -> gereh.organization.v1.Agent
 	33, // 32: gereh.organization.v1.GetAgentHierarchyResponse.nodes:type_name -> gereh.organization.v1.AgentHierarchyNode
 	4,  // 33: gereh.organization.v1.EnsureDefaultCompanyResponse.company:type_name -> gereh.organization.v1.Company
-	6,  // 34: gereh.organization.v1.OrganizationService.CreateCompany:input_type -> gereh.organization.v1.CreateCompanyRequest
-	8,  // 35: gereh.organization.v1.OrganizationService.GetCompany:input_type -> gereh.organization.v1.GetCompanyRequest
-	10, // 36: gereh.organization.v1.OrganizationService.ListCompanies:input_type -> gereh.organization.v1.ListCompaniesRequest
-	12, // 37: gereh.organization.v1.OrganizationService.UpdateCompany:input_type -> gereh.organization.v1.UpdateCompanyRequest
-	14, // 38: gereh.organization.v1.OrganizationService.ArchiveCompany:input_type -> gereh.organization.v1.ArchiveCompanyRequest
-	17, // 39: gereh.organization.v1.OrganizationService.CreateAgent:input_type -> gereh.organization.v1.CreateAgentRequest
-	19, // 40: gereh.organization.v1.OrganizationService.GetAgent:input_type -> gereh.organization.v1.GetAgentRequest
-	21, // 41: gereh.organization.v1.OrganizationService.ListAgents:input_type -> gereh.organization.v1.ListAgentsRequest
-	23, // 42: gereh.organization.v1.OrganizationService.UpdateAgent:input_type -> gereh.organization.v1.UpdateAgentRequest
-	25, // 43: gereh.organization.v1.OrganizationService.SetAgentManager:input_type -> gereh.organization.v1.SetAgentManagerRequest
-	27, // 44: gereh.organization.v1.OrganizationService.PauseAgent:input_type -> gereh.organization.v1.PauseAgentRequest
-	29, // 45: gereh.organization.v1.OrganizationService.ResumeAgent:input_type -> gereh.organization.v1.ResumeAgentRequest
-	31, // 46: gereh.organization.v1.OrganizationService.DeleteAgent:input_type -> gereh.organization.v1.DeleteAgentRequest
-	34, // 47: gereh.organization.v1.OrganizationService.GetAgentHierarchy:input_type -> gereh.organization.v1.GetAgentHierarchyRequest
-	36, // 48: gereh.organization.v1.OrganizationBootstrapService.EnsureDefaultCompany:input_type -> gereh.organization.v1.EnsureDefaultCompanyRequest
-	7,  // 49: gereh.organization.v1.OrganizationService.CreateCompany:output_type -> gereh.organization.v1.CreateCompanyResponse
-	9,  // 50: gereh.organization.v1.OrganizationService.GetCompany:output_type -> gereh.organization.v1.GetCompanyResponse
-	11, // 51: gereh.organization.v1.OrganizationService.ListCompanies:output_type -> gereh.organization.v1.ListCompaniesResponse
-	13, // 52: gereh.organization.v1.OrganizationService.UpdateCompany:output_type -> gereh.organization.v1.UpdateCompanyResponse
-	15, // 53: gereh.organization.v1.OrganizationService.ArchiveCompany:output_type -> gereh.organization.v1.ArchiveCompanyResponse
-	18, // 54: gereh.organization.v1.OrganizationService.CreateAgent:output_type -> gereh.organization.v1.CreateAgentResponse
-	20, // 55: gereh.organization.v1.OrganizationService.GetAgent:output_type -> gereh.organization.v1.GetAgentResponse
-	22, // 56: gereh.organization.v1.OrganizationService.ListAgents:output_type -> gereh.organization.v1.ListAgentsResponse
-	24, // 57: gereh.organization.v1.OrganizationService.UpdateAgent:output_type -> gereh.organization.v1.UpdateAgentResponse
-	26, // 58: gereh.organization.v1.OrganizationService.SetAgentManager:output_type -> gereh.organization.v1.SetAgentManagerResponse
-	28, // 59: gereh.organization.v1.OrganizationService.PauseAgent:output_type -> gereh.organization.v1.PauseAgentResponse
-	30, // 60: gereh.organization.v1.OrganizationService.ResumeAgent:output_type -> gereh.organization.v1.ResumeAgentResponse
-	32, // 61: gereh.organization.v1.OrganizationService.DeleteAgent:output_type -> gereh.organization.v1.DeleteAgentResponse
-	35, // 62: gereh.organization.v1.OrganizationService.GetAgentHierarchy:output_type -> gereh.organization.v1.GetAgentHierarchyResponse
-	37, // 63: gereh.organization.v1.OrganizationBootstrapService.EnsureDefaultCompany:output_type -> gereh.organization.v1.EnsureDefaultCompanyResponse
-	49, // [49:64] is the sub-list for method output_type
-	34, // [34:49] is the sub-list for method input_type
-	34, // [34:34] is the sub-list for extension type_name
-	34, // [34:34] is the sub-list for extension extendee
-	0,  // [0:34] is the sub-list for field type_name
+	1,  // 34: gereh.organization.v1.AgentPolicyContext.status:type_name -> gereh.organization.v1.AgentStatus
+	3,  // 35: gereh.organization.v1.AgentPolicyContext.autonomy_level:type_name -> gereh.organization.v1.AgentAutonomyLevel
+	39, // 36: gereh.organization.v1.GetAgentPolicyContextResponse.context:type_name -> gereh.organization.v1.AgentPolicyContext
+	6,  // 37: gereh.organization.v1.OrganizationService.CreateCompany:input_type -> gereh.organization.v1.CreateCompanyRequest
+	8,  // 38: gereh.organization.v1.OrganizationService.GetCompany:input_type -> gereh.organization.v1.GetCompanyRequest
+	10, // 39: gereh.organization.v1.OrganizationService.ListCompanies:input_type -> gereh.organization.v1.ListCompaniesRequest
+	12, // 40: gereh.organization.v1.OrganizationService.UpdateCompany:input_type -> gereh.organization.v1.UpdateCompanyRequest
+	14, // 41: gereh.organization.v1.OrganizationService.ArchiveCompany:input_type -> gereh.organization.v1.ArchiveCompanyRequest
+	17, // 42: gereh.organization.v1.OrganizationService.CreateAgent:input_type -> gereh.organization.v1.CreateAgentRequest
+	19, // 43: gereh.organization.v1.OrganizationService.GetAgent:input_type -> gereh.organization.v1.GetAgentRequest
+	21, // 44: gereh.organization.v1.OrganizationService.ListAgents:input_type -> gereh.organization.v1.ListAgentsRequest
+	23, // 45: gereh.organization.v1.OrganizationService.UpdateAgent:input_type -> gereh.organization.v1.UpdateAgentRequest
+	25, // 46: gereh.organization.v1.OrganizationService.SetAgentManager:input_type -> gereh.organization.v1.SetAgentManagerRequest
+	27, // 47: gereh.organization.v1.OrganizationService.PauseAgent:input_type -> gereh.organization.v1.PauseAgentRequest
+	29, // 48: gereh.organization.v1.OrganizationService.ResumeAgent:input_type -> gereh.organization.v1.ResumeAgentRequest
+	31, // 49: gereh.organization.v1.OrganizationService.DeleteAgent:input_type -> gereh.organization.v1.DeleteAgentRequest
+	34, // 50: gereh.organization.v1.OrganizationService.GetAgentHierarchy:input_type -> gereh.organization.v1.GetAgentHierarchyRequest
+	36, // 51: gereh.organization.v1.OrganizationBootstrapService.EnsureDefaultCompany:input_type -> gereh.organization.v1.EnsureDefaultCompanyRequest
+	38, // 52: gereh.organization.v1.OrganizationPolicyContextService.GetAgentPolicyContext:input_type -> gereh.organization.v1.GetAgentPolicyContextRequest
+	7,  // 53: gereh.organization.v1.OrganizationService.CreateCompany:output_type -> gereh.organization.v1.CreateCompanyResponse
+	9,  // 54: gereh.organization.v1.OrganizationService.GetCompany:output_type -> gereh.organization.v1.GetCompanyResponse
+	11, // 55: gereh.organization.v1.OrganizationService.ListCompanies:output_type -> gereh.organization.v1.ListCompaniesResponse
+	13, // 56: gereh.organization.v1.OrganizationService.UpdateCompany:output_type -> gereh.organization.v1.UpdateCompanyResponse
+	15, // 57: gereh.organization.v1.OrganizationService.ArchiveCompany:output_type -> gereh.organization.v1.ArchiveCompanyResponse
+	18, // 58: gereh.organization.v1.OrganizationService.CreateAgent:output_type -> gereh.organization.v1.CreateAgentResponse
+	20, // 59: gereh.organization.v1.OrganizationService.GetAgent:output_type -> gereh.organization.v1.GetAgentResponse
+	22, // 60: gereh.organization.v1.OrganizationService.ListAgents:output_type -> gereh.organization.v1.ListAgentsResponse
+	24, // 61: gereh.organization.v1.OrganizationService.UpdateAgent:output_type -> gereh.organization.v1.UpdateAgentResponse
+	26, // 62: gereh.organization.v1.OrganizationService.SetAgentManager:output_type -> gereh.organization.v1.SetAgentManagerResponse
+	28, // 63: gereh.organization.v1.OrganizationService.PauseAgent:output_type -> gereh.organization.v1.PauseAgentResponse
+	30, // 64: gereh.organization.v1.OrganizationService.ResumeAgent:output_type -> gereh.organization.v1.ResumeAgentResponse
+	32, // 65: gereh.organization.v1.OrganizationService.DeleteAgent:output_type -> gereh.organization.v1.DeleteAgentResponse
+	35, // 66: gereh.organization.v1.OrganizationService.GetAgentHierarchy:output_type -> gereh.organization.v1.GetAgentHierarchyResponse
+	37, // 67: gereh.organization.v1.OrganizationBootstrapService.EnsureDefaultCompany:output_type -> gereh.organization.v1.EnsureDefaultCompanyResponse
+	40, // 68: gereh.organization.v1.OrganizationPolicyContextService.GetAgentPolicyContext:output_type -> gereh.organization.v1.GetAgentPolicyContextResponse
+	53, // [53:69] is the sub-list for method output_type
+	37, // [37:53] is the sub-list for method input_type
+	37, // [37:37] is the sub-list for extension type_name
+	37, // [37:37] is the sub-list for extension extendee
+	0,  // [0:37] is the sub-list for field type_name
 }
 
 func init() { file_gereh_organization_v1_organization_proto_init() }
@@ -2906,9 +3118,9 @@ func file_gereh_organization_v1_organization_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_gereh_organization_v1_organization_proto_rawDesc), len(file_gereh_organization_v1_organization_proto_rawDesc)),
 			NumEnums:      4,
-			NumMessages:   34,
+			NumMessages:   37,
 			NumExtensions: 0,
-			NumServices:   2,
+			NumServices:   3,
 		},
 		GoTypes:           file_gereh_organization_v1_organization_proto_goTypes,
 		DependencyIndexes: file_gereh_organization_v1_organization_proto_depIdxs,

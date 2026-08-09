@@ -70,18 +70,32 @@ func (client *mockOrganizationClient) EnsureDefaultCompany(
 	return args.Error(0)
 }
 
+// mockPolicyClient satisfies ports.PolicyBootstrapClient.
+type mockPolicyClient struct {
+	mock.Mock
+}
+
+func (client *mockPolicyClient) EnsureDefaultPolicies(
+	_ context.Context,
+	request ports.EnsureDefaultPoliciesRequest,
+) error {
+	args := client.Called(request)
+	return args.Error(0)
+}
+
 func newTestWorkflowEnvironment(
 	t *testing.T,
 	tenant *mockTenantClient,
 	runtime *mockRuntimeProvisioner,
 	organization *mockOrganizationClient,
+	policy *mockPolicyClient,
 ) *testsuite.TestWorkflowEnvironment {
 	t.Helper()
 
 	var suite testsuite.WorkflowTestSuite
 	environment := suite.NewTestWorkflowEnvironment()
 
-	activities := NewActivities(tenant, runtime, organization)
+	activities := NewActivities(tenant, runtime, organization, policy)
 	environment.RegisterActivity(activities)
 
 	return environment
@@ -101,11 +115,15 @@ func TestProvisionTenantWorkflowCompletes(
 	organization := new(mockOrganizationClient)
 	defer organization.AssertExpectations(t)
 
+	policy := new(mockPolicyClient)
+	defer policy.AssertExpectations(t)
+
 	environment := newTestWorkflowEnvironment(
 		t,
 		tenant,
 		runtime,
 		organization,
+		policy,
 	)
 
 	input := testProvisionInput()
@@ -117,6 +135,11 @@ func TestProvisionTenantWorkflowCompletes(
 
 	organization.
 		On("EnsureDefaultCompany", mock.Anything).
+		Return(nil).
+		Once()
+
+	policy.
+		On("EnsureDefaultPolicies", mock.Anything).
 		Return(nil).
 		Once()
 
@@ -151,11 +174,15 @@ func TestProvisionTenantWorkflowPersistsFailure(
 	organization := new(mockOrganizationClient)
 	defer organization.AssertExpectations(t)
 
+	policy := new(mockPolicyClient)
+	defer policy.AssertExpectations(t)
+
 	environment := newTestWorkflowEnvironment(
 		t,
 		tenant,
 		runtime,
 		organization,
+		policy,
 	)
 
 	input := testProvisionInput()
@@ -167,6 +194,11 @@ func TestProvisionTenantWorkflowPersistsFailure(
 
 	organization.
 		On("EnsureDefaultCompany", mock.Anything).
+		Return(nil).
+		Once()
+
+	policy.
+		On("EnsureDefaultPolicies", mock.Anything).
 		Return(nil).
 		Once()
 
@@ -201,11 +233,15 @@ func TestProvisionTenantWorkflowPersistsCompleteFailure(
 	organization := new(mockOrganizationClient)
 	defer organization.AssertExpectations(t)
 
+	policy := new(mockPolicyClient)
+	defer policy.AssertExpectations(t)
+
 	environment := newTestWorkflowEnvironment(
 		t,
 		tenant,
 		runtime,
 		organization,
+		policy,
 	)
 
 	input := testProvisionInput()
@@ -217,6 +253,11 @@ func TestProvisionTenantWorkflowPersistsCompleteFailure(
 
 	organization.
 		On("EnsureDefaultCompany", mock.Anything).
+		Return(nil).
+		Once()
+
+	policy.
+		On("EnsureDefaultPolicies", mock.Anything).
 		Return(nil).
 		Once()
 

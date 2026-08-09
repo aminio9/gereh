@@ -728,3 +728,112 @@ var OrganizationBootstrapService_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "gereh/organization/v1/organization.proto",
 }
+
+const (
+	OrganizationPolicyContextService_GetAgentPolicyContext_FullMethodName = "/gereh.organization.v1.OrganizationPolicyContextService/GetAgentPolicyContext"
+)
+
+// OrganizationPolicyContextServiceClient is the client API for OrganizationPolicyContextService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// OrganizationPolicyContextService is a workload-only API used by the Policy
+// Service to resolve trusted agent context. It is never called by end users.
+type OrganizationPolicyContextServiceClient interface {
+	GetAgentPolicyContext(ctx context.Context, in *GetAgentPolicyContextRequest, opts ...grpc.CallOption) (*GetAgentPolicyContextResponse, error)
+}
+
+type organizationPolicyContextServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewOrganizationPolicyContextServiceClient(cc grpc.ClientConnInterface) OrganizationPolicyContextServiceClient {
+	return &organizationPolicyContextServiceClient{cc}
+}
+
+func (c *organizationPolicyContextServiceClient) GetAgentPolicyContext(ctx context.Context, in *GetAgentPolicyContextRequest, opts ...grpc.CallOption) (*GetAgentPolicyContextResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAgentPolicyContextResponse)
+	err := c.cc.Invoke(ctx, OrganizationPolicyContextService_GetAgentPolicyContext_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// OrganizationPolicyContextServiceServer is the server API for OrganizationPolicyContextService service.
+// All implementations must embed UnimplementedOrganizationPolicyContextServiceServer
+// for forward compatibility.
+//
+// OrganizationPolicyContextService is a workload-only API used by the Policy
+// Service to resolve trusted agent context. It is never called by end users.
+type OrganizationPolicyContextServiceServer interface {
+	GetAgentPolicyContext(context.Context, *GetAgentPolicyContextRequest) (*GetAgentPolicyContextResponse, error)
+	mustEmbedUnimplementedOrganizationPolicyContextServiceServer()
+}
+
+// UnimplementedOrganizationPolicyContextServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedOrganizationPolicyContextServiceServer struct{}
+
+func (UnimplementedOrganizationPolicyContextServiceServer) GetAgentPolicyContext(context.Context, *GetAgentPolicyContextRequest) (*GetAgentPolicyContextResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetAgentPolicyContext not implemented")
+}
+func (UnimplementedOrganizationPolicyContextServiceServer) mustEmbedUnimplementedOrganizationPolicyContextServiceServer() {
+}
+func (UnimplementedOrganizationPolicyContextServiceServer) testEmbeddedByValue() {}
+
+// UnsafeOrganizationPolicyContextServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to OrganizationPolicyContextServiceServer will
+// result in compilation errors.
+type UnsafeOrganizationPolicyContextServiceServer interface {
+	mustEmbedUnimplementedOrganizationPolicyContextServiceServer()
+}
+
+func RegisterOrganizationPolicyContextServiceServer(s grpc.ServiceRegistrar, srv OrganizationPolicyContextServiceServer) {
+	// If the following call panics, it indicates UnimplementedOrganizationPolicyContextServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&OrganizationPolicyContextService_ServiceDesc, srv)
+}
+
+func _OrganizationPolicyContextService_GetAgentPolicyContext_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAgentPolicyContextRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrganizationPolicyContextServiceServer).GetAgentPolicyContext(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrganizationPolicyContextService_GetAgentPolicyContext_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrganizationPolicyContextServiceServer).GetAgentPolicyContext(ctx, req.(*GetAgentPolicyContextRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// OrganizationPolicyContextService_ServiceDesc is the grpc.ServiceDesc for OrganizationPolicyContextService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var OrganizationPolicyContextService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "gereh.organization.v1.OrganizationPolicyContextService",
+	HandlerType: (*OrganizationPolicyContextServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetAgentPolicyContext",
+			Handler:    _OrganizationPolicyContextService_GetAgentPolicyContext_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "gereh/organization/v1/organization.proto",
+}
