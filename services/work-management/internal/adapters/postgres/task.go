@@ -309,10 +309,7 @@ func (repository *Repository) ChangeTaskStatus(
 							dependency.depends_on_task_id
 					WHERE dependency.tenant_id = $1::uuid
 					  AND dependency.task_id = $2::uuid
-					  AND prerequisite.status NOT IN (
-							'completed',
-							'canceled'
-					  )
+					  AND prerequisite.status <> 'completed'
 				)
 			`,
 			params.Task.TenantID,
@@ -550,7 +547,7 @@ const taskViewSelect = `
 			 AND prerequisite.task_id = incoming.depends_on_task_id
 			WHERE incoming.tenant_id = t.tenant_id
 			  AND incoming.task_id = t.task_id
-			  AND prerequisite.status NOT IN ('completed', 'canceled')
+			  AND prerequisite.status <> 'completed'
 		) AS incomplete_dependency_count
 	FROM work_tasks AS t
 `

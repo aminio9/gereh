@@ -96,6 +96,16 @@ func (repository *mockRepository) GetAgent(
 	return args.Get(0).(domain.Agent), args.Error(1)
 }
 
+func (repository *mockRepository) GetAgentAsService(
+	ctx context.Context,
+	tenantID string,
+	servicePrincipalID string,
+	agentID string,
+) (domain.Agent, error) {
+	args := repository.Called(ctx, tenantID, servicePrincipalID, agentID)
+	return args.Get(0).(domain.Agent), args.Error(1)
+}
+
 func (repository *mockRepository) ListAgents(
 	ctx context.Context,
 	actorUserID string,

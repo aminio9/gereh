@@ -252,6 +252,11 @@ func run() error {
 		organizationgrpc.NewBootstrap(organizationService),
 	)
 
+	organizationv1.RegisterOrganizationPolicyContextServiceServer(
+		server.GRPC(),
+		organizationgrpc.NewPolicyContext(organizationService),
+	)
+
 	listenConfig := net.ListenConfig{}
 
 	listener, err := listenConfig.Listen(

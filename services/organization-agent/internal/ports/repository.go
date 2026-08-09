@@ -106,6 +106,13 @@ type Repository interface {
 		agentID string,
 	) (domain.Agent, error)
 
+	GetAgentAsService(
+		ctx context.Context,
+		tenantID string,
+		servicePrincipalID string,
+		agentID string,
+	) (domain.Agent, error)
+
 	ListAgents(
 		ctx context.Context,
 		actorUserID string,

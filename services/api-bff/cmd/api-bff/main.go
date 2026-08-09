@@ -10,6 +10,7 @@ import (
 
 	identityv1 "github.com/aminio9/gereh/gen/go/gereh/identity/v1"
 	organizationv1 "github.com/aminio9/gereh/gen/go/gereh/organization/v1"
+	policyv1 "github.com/aminio9/gereh/gen/go/gereh/policy/v1"
 	tenantv1 "github.com/aminio9/gereh/gen/go/gereh/tenant/v1"
 	workv1 "github.com/aminio9/gereh/gen/go/gereh/work/v1"
 	"github.com/aminio9/gereh/platform/go/grpcx"
@@ -17,6 +18,7 @@ import (
 	bffconfig "github.com/aminio9/gereh/services/api-bff/internal/config"
 	authhttp "github.com/aminio9/gereh/services/api-bff/internal/http/auth"
 	organizationhttp "github.com/aminio9/gereh/services/api-bff/internal/http/organization"
+	policyhttp "github.com/aminio9/gereh/services/api-bff/internal/http/policy"
 	tenanthttp "github.com/aminio9/gereh/services/api-bff/internal/http/tenant"
 	workhttp "github.com/aminio9/gereh/services/api-bff/internal/http/work"
 	"github.com/go-chi/chi/v5"
@@ -65,6 +67,14 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf(
 			"load Work Management Service configuration: %w",
+			err,
+		)
+	}
+
+	policyConfig, err := bffconfig.PolicyConfigFromEnv()
+	if err != nil {
+		return fmt.Errorf(
+			"load Policy Service configuration: %w",
 			err,
 		)
 	}
@@ -220,6 +230,45 @@ func run() error {
 		slog.Default(),
 	)
 
+	policyClientConfig := grpcx.DefaultClientConfig(
+		policyConfig.Target,
+	)
+
+	policyClientConfig.Insecure =
+		policyConfig.Insecure
+
+	policyConnection, err := grpcx.NewClient(
+		policyClientConfig,
+		nil,
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"create Policy Service gRPC client: %w",
+			err,
+		)
+	}
+
+	defer func() {
+		if err := policyConnection.Close(); err != nil {
+			slog.Warn(
+				"close Policy Service gRPC client",
+				"error",
+				err,
+			)
+		}
+	}()
+
+	policyClient :=
+		policyv1.NewPolicyManagementServiceClient(
+			policyConnection,
+		)
+
+	policyHandler := policyhttp.New(
+		policyClient,
+		tenantClient,
+		slog.Default(),
+	)
+
 	service.Run(
 		service.Config{
 			Name:           "api-bff",
@@ -240,6 +289,10 @@ func run() error {
 				authHandler,
 			)
 			workHandler.Register(
+				router,
+				authHandler,
+			)
+			policyHandler.Register(
 				router,
 				authHandler,
 			)

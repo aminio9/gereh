@@ -17,6 +17,7 @@ type Activities struct {
 	tenant       ports.TenantOnboardingClient
 	runtime      ports.RuntimeProvisioner
 	organization ports.OrganizationBootstrapClient
+	policy       ports.PolicyBootstrapClient
 }
 
 // NewActivities creates the activity implementation.
@@ -24,11 +25,13 @@ func NewActivities(
 	tenant ports.TenantOnboardingClient,
 	runtime ports.RuntimeProvisioner,
 	organization ports.OrganizationBootstrapClient,
+	policy ports.PolicyBootstrapClient,
 ) *Activities {
 	return &Activities{
 		tenant:       tenant,
 		runtime:      runtime,
 		organization: organization,
+		policy:       policy,
 	}
 }
 
@@ -68,6 +71,21 @@ func (activities *Activities) EnsureDefaultCompany(
 			OnboardingOperationID: input.OperationID,
 			ActorUserID:           input.ActorUserID,
 			TenantDisplayName:     input.TenantDisplayName,
+		},
+	)
+}
+
+// EnsureDefaultPolicies idempotently creates a tenant's default policies.
+func (activities *Activities) EnsureDefaultPolicies(
+	ctx context.Context,
+	input domain.ProvisionTenantInput,
+) error {
+	return activities.policy.EnsureDefaultPolicies(
+		ctx,
+		ports.EnsureDefaultPoliciesRequest{
+			TenantID:              input.TenantID,
+			OnboardingOperationID: input.OperationID,
+			ActorUserID:           input.ActorUserID,
 		},
 	)
 }

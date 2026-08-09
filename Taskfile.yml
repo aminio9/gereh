@@ -192,6 +192,37 @@ tasks:
     cmds:
       - atlas migrate apply --env work --dry-run
 
+  db:policy:hash:
+    desc: Recompute the policy migration integrity checksum
+    cmds:
+      - atlas migrate hash --env policy
+
+  db:policy:status:
+    desc: Show policy database migration status
+    cmds:
+      - atlas migrate status --env policy
+
+  db:policy:validate:
+    desc: Validate policy migration integrity
+    cmds:
+      - atlas migrate validate --env policy
+
+  db:policy:apply:
+    desc: Apply pending policy database migrations
+    preconditions:
+      - sh: test -n "${POLICY_MIGRATION_DATABASE_URL:-}"
+        msg: POLICY_MIGRATION_DATABASE_URL is required
+    cmds:
+      - atlas migrate apply --env policy
+
+  db:policy:dry-run:
+    desc: Print pending policy migrations without applying them
+    preconditions:
+      - sh: test -n "${POLICY_MIGRATION_DATABASE_URL:-}"
+        msg: POLICY_MIGRATION_DATABASE_URL is required
+    cmds:
+      - atlas migrate apply --env policy --dry-run
+
   test:work:
     desc: Run Work Management Service tests
     cmds:
@@ -203,6 +234,13 @@ tasks:
     cmds:
       - go test -race -count=1 ./services/organization-agent/...
       - go test -race -count=1 ./services/api-bff/internal/http/organization/...
+      - go test -race -count=1 ./services/execution-orchestrator/...
+
+  test:policy:
+    desc: Run Policy Service tests
+    cmds:
+      - go test -race -count=1 ./services/policy-approval/...
+      - go test -race -count=1 ./services/api-bff/internal/http/policy/...
       - go test -race -count=1 ./services/execution-orchestrator/...
 
   dev:web:
@@ -283,9 +321,11 @@ tasks:
       - task: db:tenant:validate
       - task: db:organization:validate
       - task: db:work:validate
+      - task: db:policy:validate
       - task: workflow:check
       - task: test:organization
       - task: test:work
+      - task: test:policy
       - task: test
       - task: build
       - task: contracts:check-generated

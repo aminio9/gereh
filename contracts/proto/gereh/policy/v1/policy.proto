@@ -1,0 +1,333 @@
+syntax = "proto3";
+
+package gereh.policy.v1;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aminio9/gereh/gen/go/gereh/policy/v1;policyv1";
+
+// PolicyManagementService manages tenant-scoped policy sets, immutable policy
+// versions, and decision history.
+service PolicyManagementService {
+  rpc CreatePolicy(CreatePolicyRequest) returns (CreatePolicyResponse);
+
+  rpc GetPolicy(GetPolicyRequest) returns (GetPolicyResponse);
+
+  rpc ListPolicies(ListPoliciesRequest) returns (ListPoliciesResponse);
+
+  rpc CreatePolicyVersion(CreatePolicyVersionRequest) returns (CreatePolicyVersionResponse);
+
+  rpc ActivatePolicy(ActivatePolicyRequest) returns (ActivatePolicyResponse);
+
+  rpc ArchivePolicy(ArchivePolicyRequest) returns (ArchivePolicyResponse);
+
+  rpc GetDecision(GetDecisionRequest) returns (GetDecisionResponse);
+
+  rpc ListDecisions(ListDecisionsRequest) returns (ListDecisionsResponse);
+}
+
+// PolicyEvaluationService is a workload-only enforcement API. It is never
+// called by end users.
+service PolicyEvaluationService {
+  rpc Evaluate(EvaluateRequest) returns (EvaluateResponse);
+}
+
+// PolicyBootstrapService is a workload-only onboarding API. It is never called
+// by end users.
+service PolicyBootstrapService {
+  rpc EnsureDefaultPolicies(EnsureDefaultPoliciesRequest) returns (EnsureDefaultPoliciesResponse);
+}
+
+enum PolicyScopeType {
+  POLICY_SCOPE_TYPE_UNSPECIFIED = 0;
+  POLICY_SCOPE_TYPE_TENANT = 1;
+  POLICY_SCOPE_TYPE_COMPANY = 2;
+  POLICY_SCOPE_TYPE_AGENT = 3;
+}
+
+enum PolicyStatus {
+  POLICY_STATUS_UNSPECIFIED = 0;
+  POLICY_STATUS_DRAFT = 1;
+  POLICY_STATUS_ACTIVE = 2;
+  POLICY_STATUS_ARCHIVED = 3;
+}
+
+enum PolicyEffect {
+  POLICY_EFFECT_UNSPECIFIED = 0;
+  POLICY_EFFECT_ALLOW = 1;
+  POLICY_EFFECT_DENY = 2;
+  POLICY_EFFECT_REQUIRE_APPROVAL = 3;
+  POLICY_EFFECT_ALLOW_WITH_CONSTRAINTS = 4;
+}
+
+enum SubjectType {
+  SUBJECT_TYPE_UNSPECIFIED = 0;
+  SUBJECT_TYPE_USER = 1;
+  SUBJECT_TYPE_AGENT = 2;
+  SUBJECT_TYPE_SERVICE = 3;
+}
+
+enum RiskLevel {
+  RISK_LEVEL_UNSPECIFIED = 0;
+  RISK_LEVEL_LOW = 1;
+  RISK_LEVEL_MEDIUM = 2;
+  RISK_LEVEL_HIGH = 3;
+  RISK_LEVEL_CRITICAL = 4;
+}
+
+message PolicyScope {
+  PolicyScopeType type = 1;
+
+  // Empty for tenant scope.
+  optional string scope_id = 2;
+}
+
+message Policy {
+  string tenant_id = 1;
+  string policy_id = 2;
+
+  PolicyScope scope = 3;
+
+  string name = 4;
+  string description = 5;
+
+  PolicyStatus status = 6;
+
+  int64 active_policy_version = 7;
+  int64 resource_version = 8;
+
+  string created_by_user_id = 9;
+
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+  google.protobuf.Timestamp archived_at = 12;
+}
+
+message PolicyRule {
+  string rule_id = 1;
+  int32 priority = 2;
+
+  string name = 3;
+  bool enabled = 4;
+
+  PolicyEffect effect = 5;
+
+  repeated string action_patterns = 6;
+  repeated string resource_types = 7;
+  repeated RiskLevel risk_levels = 8;
+
+  optional int64 maximum_estimated_cost_micro_usd = 9;
+
+  // CEL expression that must evaluate to bool.
+  string condition = 10;
+
+  google.protobuf.Struct constraints = 11;
+  string reason = 12;
+}
+
+message PolicyVersion {
+  string tenant_id = 1;
+  string policy_id = 2;
+  int64 policy_version = 3;
+
+  PolicyEffect default_effect = 4;
+  repeated PolicyRule rules = 5;
+
+  string notes = 6;
+  string created_by_user_id = 7;
+
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp activated_at = 9;
+}
+
+message PolicySubject {
+  SubjectType type = 1;
+  string subject_id = 2;
+
+  // Resolved by the Policy Service for agents.
+  optional string company_id = 3;
+}
+
+message PolicyResource {
+  string type = 1;
+  string resource_id = 2;
+  google.protobuf.Struct attributes = 3;
+}
+
+message PolicyConstraints {
+  optional int64 max_cost_micro_usd = 1;
+  optional int64 max_runtime_seconds = 2;
+
+  repeated string allowed_domains = 3;
+  repeated string allowed_resource_ids = 4;
+
+  bool require_human_review = 5;
+}
+
+message PolicyDecision {
+  string decision_id = 1;
+  string evaluation_request_id = 2;
+
+  string tenant_id = 3;
+  PolicySubject subject = 4;
+
+  string action = 5;
+  PolicyResource resource = 6;
+
+  RiskLevel risk = 7;
+  int64 estimated_cost_micro_usd = 8;
+
+  PolicyEffect effect = 9;
+  PolicyConstraints constraints = 10;
+
+  string reason = 11;
+
+  optional string matched_policy_id = 12;
+  optional int64 matched_policy_version = 13;
+  optional string matched_rule_id = 14;
+
+  google.protobuf.Timestamp decided_at = 15;
+  google.protobuf.Timestamp expires_at = 16;
+
+  string signing_key_id = 17;
+  bytes signature = 18;
+}
+
+message CreatePolicyRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+
+  PolicyScope scope = 3;
+
+  string name = 4;
+  string description = 5;
+}
+
+message CreatePolicyResponse {
+  Policy policy = 1;
+}
+
+message GetPolicyRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string policy_id = 3;
+}
+
+message GetPolicyResponse {
+  Policy policy = 1;
+  PolicyVersion active_version = 2;
+}
+
+message ListPoliciesRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+
+  int32 page_size = 3;
+  string page_token = 4;
+
+  bool include_archived = 5;
+}
+
+message ListPoliciesResponse {
+  repeated Policy policies = 1;
+  string next_page_token = 2;
+}
+
+message CreatePolicyVersionRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string policy_id = 3;
+
+  int64 expected_resource_version = 4;
+
+  PolicyEffect default_effect = 5;
+  repeated PolicyRule rules = 6;
+  string notes = 7;
+}
+
+message CreatePolicyVersionResponse {
+  Policy policy = 1;
+  PolicyVersion version = 2;
+}
+
+message ActivatePolicyRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string policy_id = 3;
+
+  int64 expected_resource_version = 4;
+  int64 policy_version = 5;
+}
+
+message ActivatePolicyResponse {
+  Policy policy = 1;
+  PolicyVersion active_version = 2;
+}
+
+message ArchivePolicyRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string policy_id = 3;
+
+  int64 expected_resource_version = 4;
+}
+
+message ArchivePolicyResponse {
+  Policy policy = 1;
+}
+
+message EvaluateRequest {
+  // Stable caller-generated UUID. Retries return the same decision.
+  string evaluation_request_id = 1;
+
+  string tenant_id = 2;
+  PolicySubject subject = 3;
+
+  string action = 4;
+  PolicyResource resource = 5;
+
+  RiskLevel risk = 6;
+  int64 estimated_cost_micro_usd = 7;
+
+  google.protobuf.Struct context = 8;
+}
+
+message EvaluateResponse {
+  PolicyDecision decision = 1;
+}
+
+message GetDecisionRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string decision_id = 3;
+}
+
+message GetDecisionResponse {
+  PolicyDecision decision = 1;
+}
+
+message ListDecisionsRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+
+  int32 page_size = 3;
+  string page_token = 4;
+
+  optional string subject_id = 5;
+}
+
+message ListDecisionsResponse {
+  repeated PolicyDecision decisions = 1;
+  string next_page_token = 2;
+}
+
+message EnsureDefaultPoliciesRequest {
+  string tenant_id = 1;
+  string onboarding_operation_id = 2;
+  string actor_user_id = 3;
+}
+
+message EnsureDefaultPoliciesResponse {
+  repeated Policy policies = 1;
+}
