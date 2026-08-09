@@ -2,8 +2,8 @@
 set -Eeuo pipefail
 
 required_commands=(
-  go node pnpm docker task buf sqlc air golangci-lint grpcurl
-  psql redis-cli nc
+  go node pnpm docker task buf sqlc air golangci-lint grpcurl atlas trivy
+  govulncheck psql redis-cli nc
 )
 
 failed=0

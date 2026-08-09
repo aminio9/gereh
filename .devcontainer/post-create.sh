@@ -136,6 +136,9 @@ install_go_tool golangci-lint \
 install_go_tool grpcurl \
   github.com/fullstorydev/grpcurl/cmd/grpcurl@v1.9.3
 
+install_go_tool atlas \
+  ariga.io/atlas/cmd/atlas@v1.3.0
+
 install_go_tool protoc-gen-go \
   google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.10
 
