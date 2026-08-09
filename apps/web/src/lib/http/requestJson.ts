@@ -17,14 +17,15 @@ export class ApiError extends Error {
 export type RequestJsonOptions<TResponse> = Omit<RequestInit, "body" | "signal"> & {
   readonly schema: ZodType<TResponse>;
   readonly body?: unknown;
-  readonly signal?: AbortSignal;
+  readonly signal?: AbortSignal | undefined;
   readonly timeoutMs?: number;
 };
 
 async function readResponseBody(response: Response): Promise<unknown> {
   const contentType = response.headers.get("content-type") ?? "";
+  const mediaType = contentType.split(";", 1)[0]?.trim().toLowerCase() ?? "";
 
-  if (contentType.includes("application/json")) {
+  if (mediaType === "application/json" || mediaType.endsWith("+json")) {
     return response.json();
   }
 
@@ -34,13 +35,14 @@ async function readResponseBody(response: Response): Promise<unknown> {
 }
 
 function extractErrorMessage(payload: unknown, fallback: string): string {
-  if (
-    typeof payload === "object" &&
-    payload !== null &&
-    "message" in payload &&
-    typeof payload.message === "string"
-  ) {
-    return payload.message;
+  if (typeof payload === "object" && payload !== null) {
+    if ("message" in payload && typeof payload.message === "string") {
+      return payload.message;
+    }
+
+    if ("title" in payload && typeof payload.title === "string") {
+      return payload.title;
+    }
   }
 
   if (typeof payload === "string" && payload !== "") {
