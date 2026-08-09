@@ -11,6 +11,7 @@ import (
 	identityv1 "github.com/aminio9/gereh/gen/go/gereh/identity/v1"
 	organizationv1 "github.com/aminio9/gereh/gen/go/gereh/organization/v1"
 	policyv1 "github.com/aminio9/gereh/gen/go/gereh/policy/v1"
+	projectionv1 "github.com/aminio9/gereh/gen/go/gereh/projection/v1"
 	tenantv1 "github.com/aminio9/gereh/gen/go/gereh/tenant/v1"
 	workv1 "github.com/aminio9/gereh/gen/go/gereh/work/v1"
 	"github.com/aminio9/gereh/platform/go/grpcx"
@@ -19,6 +20,7 @@ import (
 	authhttp "github.com/aminio9/gereh/services/api-bff/internal/http/auth"
 	organizationhttp "github.com/aminio9/gereh/services/api-bff/internal/http/organization"
 	policyhttp "github.com/aminio9/gereh/services/api-bff/internal/http/policy"
+	projectionhttp "github.com/aminio9/gereh/services/api-bff/internal/http/projection"
 	tenanthttp "github.com/aminio9/gereh/services/api-bff/internal/http/tenant"
 	workhttp "github.com/aminio9/gereh/services/api-bff/internal/http/work"
 	"github.com/go-chi/chi/v5"
@@ -75,6 +77,15 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf(
 			"load Policy Service configuration: %w",
+			err,
+		)
+	}
+
+	projectionConfig, err :=
+		bffconfig.ProjectionConfigFromEnv()
+	if err != nil {
+		return fmt.Errorf(
+			"load Projection Service configuration: %w",
 			err,
 		)
 	}
@@ -269,6 +280,45 @@ func run() error {
 		slog.Default(),
 	)
 
+	projectionClientConfig := grpcx.DefaultClientConfig(
+		projectionConfig.Target,
+	)
+
+	projectionClientConfig.Insecure =
+		projectionConfig.Insecure
+
+	projectionConnection, err := grpcx.NewClient(
+		projectionClientConfig,
+		nil,
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"create Projection Service gRPC client: %w",
+			err,
+		)
+	}
+
+	defer func() {
+		if err := projectionConnection.Close(); err != nil {
+			slog.Warn(
+				"close Projection Service gRPC client",
+				"error",
+				err,
+			)
+		}
+	}()
+
+	projectionClient :=
+		projectionv1.NewProjectionServiceClient(
+			projectionConnection,
+		)
+
+	projectionHandler := projectionhttp.New(
+		projectionClient,
+		tenantClient,
+		slog.Default(),
+	)
+
 	service.Run(
 		service.Config{
 			Name:           "api-bff",
@@ -293,6 +343,10 @@ func run() error {
 				authHandler,
 			)
 			policyHandler.Register(
+				router,
+				authHandler,
+			)
+			projectionHandler.Register(
 				router,
 				authHandler,
 			)
