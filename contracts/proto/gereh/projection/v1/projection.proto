@@ -1,0 +1,208 @@
+syntax = "proto3";
+
+package gereh.projection.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aminio9/gereh/gen/go/gereh/projection/v1;projectionv1";
+
+// ProjectionService exposes the tenant-scoped read models built from Kafka
+// domain events. Responses are eventually consistent; ProjectionMetadata
+// reports how recently events have been applied.
+service ProjectionService {
+  rpc GetDashboardSummary(GetDashboardSummaryRequest) returns (GetDashboardSummaryResponse);
+
+  rpc GetCompanyOverview(GetCompanyOverviewRequest) returns (GetCompanyOverviewResponse);
+
+  rpc ListAgentOverviews(ListAgentOverviewsRequest) returns (ListAgentOverviewsResponse);
+
+  rpc ListTaskActivity(ListTaskActivityRequest) returns (ListTaskActivityResponse);
+
+  rpc Search(SearchRequest) returns (SearchResponse);
+}
+
+// ProjectionMetadata describes how current the read model is.
+message ProjectionMetadata {
+  google.protobuf.Timestamp projected_through_event_time = 1;
+  google.protobuf.Timestamp last_processed_at = 2;
+}
+
+message DashboardSummary {
+  int64 companies_total = 1;
+  int64 companies_active = 2;
+
+  int64 agents_total = 10;
+  int64 agents_ready = 11;
+  int64 agents_degraded = 12;
+  int64 agents_paused = 13;
+  int64 agents_failed = 14;
+
+  int64 goals_active = 20;
+  int64 goals_completed = 21;
+
+  int64 projects_active = 30;
+  int64 projects_on_hold = 31;
+  int64 projects_completed = 32;
+
+  int64 tasks_total = 40;
+  int64 tasks_backlog = 41;
+  int64 tasks_ready = 42;
+  int64 tasks_in_progress = 43;
+  int64 tasks_waiting_approval = 44;
+  int64 tasks_completed = 45;
+  int64 tasks_canceled = 46;
+  int64 tasks_blocked = 47;
+}
+
+message GetDashboardSummaryRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+}
+
+message GetDashboardSummaryResponse {
+  DashboardSummary summary = 1;
+  ProjectionMetadata metadata = 2;
+}
+
+message CompanyOverview {
+  string tenant_id = 1;
+  string company_id = 2;
+
+  string slug = 3;
+  string display_name = 4;
+  string status = 5;
+  bool is_default = 6;
+
+  int64 agents_total = 10;
+  int64 agents_ready = 11;
+  int64 agents_degraded = 12;
+  int64 agents_paused = 13;
+
+  int64 tasks_total = 20;
+  int64 tasks_ready = 21;
+  int64 tasks_in_progress = 22;
+  int64 tasks_waiting_approval = 23;
+  int64 tasks_completed = 24;
+  int64 tasks_blocked = 25;
+}
+
+message GetCompanyOverviewRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string company_id = 3;
+}
+
+message GetCompanyOverviewResponse {
+  CompanyOverview company = 1;
+  ProjectionMetadata metadata = 2;
+}
+
+message AgentOverview {
+  string tenant_id = 1;
+  string company_id = 2;
+  string agent_id = 3;
+
+  string slug = 4;
+  string display_name = 5;
+  string role_title = 6;
+  string status = 7;
+
+  optional string manager_agent_id = 8;
+
+  int64 assigned_task_count = 10;
+  int64 active_task_count = 11;
+
+  google.protobuf.Timestamp updated_at = 20;
+}
+
+message ListAgentOverviewsRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+
+  optional string company_id = 3;
+
+  int32 page_size = 4;
+  string page_token = 5;
+}
+
+message ListAgentOverviewsResponse {
+  repeated AgentOverview agents = 1;
+  string next_page_token = 2;
+  ProjectionMetadata metadata = 3;
+}
+
+message TaskActivityItem {
+  string event_id = 1;
+  string event_type = 2;
+
+  optional string company_id = 3;
+  optional string project_id = 4;
+  optional string task_id = 5;
+
+  optional string actor_type = 6;
+  optional string actor_id = 7;
+
+  string summary = 8;
+
+  google.protobuf.Timestamp occurred_at = 9;
+}
+
+message ListTaskActivityRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+
+  optional string company_id = 3;
+  optional string task_id = 4;
+
+  int32 page_size = 5;
+  string page_token = 6;
+}
+
+message ListTaskActivityResponse {
+  repeated TaskActivityItem items = 1;
+  string next_page_token = 2;
+  ProjectionMetadata metadata = 3;
+}
+
+enum SearchDocumentType {
+  SEARCH_DOCUMENT_TYPE_UNSPECIFIED = 0;
+  SEARCH_DOCUMENT_TYPE_COMPANY = 1;
+  SEARCH_DOCUMENT_TYPE_AGENT = 2;
+  SEARCH_DOCUMENT_TYPE_GOAL = 3;
+  SEARCH_DOCUMENT_TYPE_PROJECT = 4;
+  SEARCH_DOCUMENT_TYPE_TASK = 5;
+}
+
+message SearchResult {
+  SearchDocumentType type = 1;
+
+  string id = 2;
+  optional string company_id = 3;
+
+  string title = 4;
+  string subtitle = 5;
+  string status = 6;
+
+  double rank = 7;
+
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+message SearchRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+
+  string query = 3;
+
+  optional string company_id = 4;
+  repeated SearchDocumentType types = 5;
+
+  int32 page_size = 6;
+  string page_token = 7;
+}
+
+message SearchResponse {
+  repeated SearchResult results = 1;
+  string next_page_token = 2;
+  ProjectionMetadata metadata = 3;
+}

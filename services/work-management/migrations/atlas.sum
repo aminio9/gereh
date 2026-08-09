@@ -1,0 +1,4 @@
+h1:DTLHWwf+Okza6XMaGwGpuK39X3vcFYI34zOJiRqqyRs=
+000001_work_management.up.sql h1:FVibzxwLpb44eC3iio2nnkrxhY61MrDJtjWicwPK/Fo=
+000002_work_outbox_cleanup.up.sql h1:i14CNz7Knil54yGVZPNTFTEi3drQxXEh12VQ9dSMmBg=
+000003_work_outbox_least_privilege.up.sql h1:xL0eQGqF4QhUAEu6/h3FfISoOLJ5KlsTPkL1Q9hyP+E=

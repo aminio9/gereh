@@ -53,3 +53,19 @@ env "policy" {
     format = golang-migrate
   }
 }
+
+variable "projection_database_url" {
+  type    = string
+  default = getenv("PROJECTION_MIGRATION_DATABASE_URL")
+}
+
+env "projection" {
+  url = var.projection_database_url
+
+  dev = getenv("PROJECTION_DEV_DATABASE_URL")
+
+  migration {
+    dir    = "file://services/projection/migrations?format=golang-migrate"
+    format = golang-migrate
+  }
+}

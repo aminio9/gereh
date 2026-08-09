@@ -25,14 +25,15 @@ done
 
 create_topic() {
   local topic="$1"
-  local retention_ms="$2"
+  local partitions="$2"
+  local retention_ms="$3"
 
   "${kafka_topics}" \
     --bootstrap-server "${bootstrap_server}" \
     --create \
     --if-not-exists \
     --topic "${topic}" \
-    --partitions 3 \
+    --partitions "${partitions}" \
     --replication-factor 1 \
     --config cleanup.policy=delete \
     --config min.insync.replicas=1 \
@@ -43,17 +44,17 @@ seven_days="604800000"
 fourteen_days="1209600000"
 thirty_days="2592000000"
 
-create_topic "gereh.tenant.events.v1" "${seven_days}"
-create_topic "gereh.organization.company.events.v1" "${seven_days}"
-create_topic "gereh.organization.agent.events.v1" "${seven_days}"
-create_topic "gereh.work.events.v1" "${seven_days}"
-create_topic "gereh.policy.events.v1" "${seven_days}"
-create_topic "gereh.execution.commands.v1" "${seven_days}"
-create_topic "gereh.execution.events.v1" "${seven_days}"
-create_topic "gereh.model.usage.v1" "${thirty_days}"
-create_topic "gereh.audit.events.v1" "${thirty_days}"
-create_topic "gereh.events.dlq.v1" "${fourteen_days}"
-create_topic "gereh.execution-orchestrator.dlq.v1" "${fourteen_days}"
+create_topic "gereh.tenant.events.v1" 12 "${thirty_days}"
+create_topic "gereh.organization.company.events.v1" 12 "${thirty_days}"
+create_topic "gereh.organization.agent.events.v1" 12 "${thirty_days}"
+create_topic "gereh.work.events.v1" 12 "${thirty_days}"
+create_topic "gereh.policy.events.v1" 12 "${thirty_days}"
+create_topic "gereh.execution.commands.v1" 3 "${seven_days}"
+create_topic "gereh.execution.events.v1" 3 "${seven_days}"
+create_topic "gereh.model.usage.v1" 3 "${thirty_days}"
+create_topic "gereh.audit.events.v1" 3 "${thirty_days}"
+create_topic "gereh.events.dlq.v1" 3 "${fourteen_days}"
+create_topic "gereh.execution-orchestrator.dlq.v1" 3 "${fourteen_days}"
 
 echo
 echo "Kafka topics:"

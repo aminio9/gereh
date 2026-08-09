@@ -16,6 +16,8 @@ tags:
     description: Tenant provisioning and membership operations
   - name: Work
     description: Goal, project, and task management operations
+  - name: Projection
+    description: Eventually consistent tenant read models
 
 paths:
   /v1/status:
@@ -1303,7 +1305,226 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /v1/tenants/{tenantId}/dashboard:
+    get:
+      operationId: getTenantDashboard
+      tags: [Projection]
+      summary: Get the tenant dashboard read model
+      description: >
+        Read-model responses are eventually consistent. projectionMetadata
+        indicates how recently Kafka events have been applied.
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: The dashboard read model.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummaryResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /v1/tenants/{tenantId}/companies/{companyId}/overview:
+    get:
+      operationId: getCompanyOverview
+      tags: [Projection]
+      summary: Get one company overview read model
+      description: >
+        Read-model responses are eventually consistent. projectionMetadata
+        indicates how recently Kafka events have been applied.
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: The company overview read model.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompanyOverviewResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /v1/tenants/{tenantId}/agents/overview:
+    get:
+      operationId: listAgentOverviews
+      tags: [Projection]
+      summary: List agent overview read models
+      description: >
+        Read-model responses are eventually consistent. projectionMetadata
+        indicates how recently Kafka events have been applied.
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/Pagination"
+      responses:
+        "200":
+          description: A page of agent overviews.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentOverviewListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /v1/tenants/{tenantId}/companies/{companyId}/agents/overview:
+    get:
+      operationId: listCompanyAgentOverviews
+      tags: [Projection]
+      summary: List one company's agent overview read models
+      description: >
+        Read-model responses are eventually consistent. projectionMetadata
+        indicates how recently Kafka events have been applied.
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/Pagination"
+      responses:
+        "200":
+          description: A page of agent overviews.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentOverviewListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /v1/tenants/{tenantId}/activity:
+    get:
+      operationId: listTaskActivity
+      tags: [Projection]
+      summary: List the tenant task activity feed
+      description: >
+        Read-model responses are eventually consistent. projectionMetadata
+        indicates how recently Kafka events have been applied.
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/Pagination"
+      responses:
+        "200":
+          description: A page of task activity items.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskActivityListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /v1/tenants/{tenantId}/search:
+    get:
+      operationId: searchTenant
+      tags: [Projection]
+      summary: Search the tenant read models
+      description: >
+        Read-model responses are eventually consistent. projectionMetadata
+        indicates how recently Kafka events have been applied.
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: q
+          in: query
+          required: true
+          description: Search query, up to 256 UTF-8 characters.
+          schema:
+            type: string
+            maxLength: 256
+        - $ref: "#/components/parameters/Pagination"
+      responses:
+        "200":
+          description: A page of search results.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
 components:
+  parameters:
+    Pagination:
+      name: pageToken
+      in: query
+      required: false
+      description: Opaque keyset cursor returned by a previous page.
+      schema:
+        type: string
   headers:
     RequestId:
       description: Identifier used to correlate logs and traces.
@@ -2463,6 +2684,359 @@ components:
           type: string
           format: date-time
 
+    ProjectionMetadata:
+      type: object
+      additionalProperties: false
+      properties:
+        projectedThroughEventTime:
+          type:
+            - string
+            - "null"
+          format: date-time
+          description: >
+            The newest source event time included in this read model.
+            A null or old value means the projection has not caught up.
+        lastProcessedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+
+    DashboardSummary:
+      type: object
+      additionalProperties: false
+      required:
+        - companiesTotal
+        - companiesActive
+        - agentsTotal
+        - agentsReady
+        - agentsDegraded
+        - agentsPaused
+        - agentsFailed
+        - goalsActive
+        - goalsCompleted
+        - projectsActive
+        - projectsOnHold
+        - projectsCompleted
+        - tasksTotal
+        - tasksBacklog
+        - tasksReady
+        - tasksInProgress
+        - tasksWaitingApproval
+        - tasksCompleted
+        - tasksCanceled
+        - tasksBlocked
+      properties:
+        companiesTotal:
+          type: integer
+          format: int64
+        companiesActive:
+          type: integer
+          format: int64
+        agentsTotal:
+          type: integer
+          format: int64
+        agentsReady:
+          type: integer
+          format: int64
+        agentsDegraded:
+          type: integer
+          format: int64
+        agentsPaused:
+          type: integer
+          format: int64
+        agentsFailed:
+          type: integer
+          format: int64
+        goalsActive:
+          type: integer
+          format: int64
+        goalsCompleted:
+          type: integer
+          format: int64
+        projectsActive:
+          type: integer
+          format: int64
+        projectsOnHold:
+          type: integer
+          format: int64
+        projectsCompleted:
+          type: integer
+          format: int64
+        tasksTotal:
+          type: integer
+          format: int64
+        tasksBacklog:
+          type: integer
+          format: int64
+        tasksReady:
+          type: integer
+          format: int64
+        tasksInProgress:
+          type: integer
+          format: int64
+        tasksWaitingApproval:
+          type: integer
+          format: int64
+        tasksCompleted:
+          type: integer
+          format: int64
+        tasksCanceled:
+          type: integer
+          format: int64
+        tasksBlocked:
+          type: integer
+          format: int64
+
+    DashboardSummaryResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - summary
+      properties:
+        summary:
+          $ref: "#/components/schemas/DashboardSummary"
+        metadata:
+          $ref: "#/components/schemas/ProjectionMetadata"
+
+    CompanyOverview:
+      type: object
+      additionalProperties: false
+      required:
+        - tenantId
+        - companyId
+        - slug
+        - displayName
+        - status
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        companyId:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        displayName:
+          type: string
+        status:
+          type: string
+        isDefault:
+          type: boolean
+        agentsTotal:
+          type: integer
+          format: int64
+        agentsReady:
+          type: integer
+          format: int64
+        agentsDegraded:
+          type: integer
+          format: int64
+        agentsPaused:
+          type: integer
+          format: int64
+        tasksTotal:
+          type: integer
+          format: int64
+        tasksReady:
+          type: integer
+          format: int64
+        tasksInProgress:
+          type: integer
+          format: int64
+        tasksWaitingApproval:
+          type: integer
+          format: int64
+        tasksCompleted:
+          type: integer
+          format: int64
+        tasksBlocked:
+          type: integer
+          format: int64
+
+    CompanyOverviewResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - company
+      properties:
+        company:
+          $ref: "#/components/schemas/CompanyOverview"
+        metadata:
+          $ref: "#/components/schemas/ProjectionMetadata"
+
+    AgentOverview:
+      type: object
+      additionalProperties: false
+      required:
+        - tenantId
+        - companyId
+        - agentId
+        - slug
+        - displayName
+        - roleTitle
+        - status
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        companyId:
+          type: string
+          format: uuid
+        agentId:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        displayName:
+          type: string
+        roleTitle:
+          type: string
+        status:
+          type: string
+        managerAgentId:
+          type:
+            - string
+            - "null"
+          format: uuid
+        assignedTaskCount:
+          type: integer
+          format: int64
+        activeTaskCount:
+          type: integer
+          format: int64
+        updatedAt:
+          type: string
+          format: date-time
+
+    AgentOverviewListResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - agents
+      properties:
+        agents:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentOverview"
+        nextPageToken:
+          type: string
+        metadata:
+          $ref: "#/components/schemas/ProjectionMetadata"
+
+    TaskActivityItem:
+      type: object
+      additionalProperties: false
+      required:
+        - eventId
+        - eventType
+        - summary
+        - occurredAt
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        eventType:
+          type: string
+        companyId:
+          type:
+            - string
+            - "null"
+          format: uuid
+        projectId:
+          type:
+            - string
+            - "null"
+          format: uuid
+        taskId:
+          type:
+            - string
+            - "null"
+          format: uuid
+        actorType:
+          type:
+            - string
+            - "null"
+        actorId:
+          type:
+            - string
+            - "null"
+          format: uuid
+        summary:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+
+    TaskActivityListResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskActivityItem"
+        nextPageToken:
+          type: string
+        metadata:
+          $ref: "#/components/schemas/ProjectionMetadata"
+
+    SearchResult:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - id
+        - title
+        - subtitle
+        - status
+      properties:
+        type:
+          type: string
+          enum:
+            - company
+            - agent
+            - goal
+            - project
+            - task
+        id:
+          type: string
+          format: uuid
+        companyId:
+          type:
+            - string
+            - "null"
+          format: uuid
+        title:
+          type: string
+        subtitle:
+          type: string
+        status:
+          type: string
+        rank:
+          type: number
+          format: double
+        updatedAt:
+          type: string
+          format: date-time
+
+    SearchResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - results
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchResult"
+        nextPageToken:
+          type: string
+        metadata:
+          $ref: "#/components/schemas/ProjectionMetadata"
+
     Error:
       type: object
       additionalProperties: false
@@ -2522,6 +3096,13 @@ components:
 
     Conflict:
       description: The request conflicts with the current resource state.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    ServiceUnavailable:
+      description: The downstream read model service is unavailable.
       content:
         application/problem+json:
           schema:

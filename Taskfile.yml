@@ -243,6 +243,55 @@ tasks:
       - go test -race -count=1 ./services/api-bff/internal/http/policy/...
       - go test -race -count=1 ./services/execution-orchestrator/...
 
+  db:projection:hash:
+    desc: Recompute Projection Service migration checksums
+    cmds:
+      - atlas migrate hash --env projection
+
+  db:projection:validate:
+    desc: Validate Projection Service migrations
+    cmds:
+      - atlas migrate validate --env projection
+
+  db:projection:lint:
+    desc: Lint Projection Service migration
+    cmds:
+      - |
+        if atlas migrate lint --env projection --latest 1; then
+          :
+        elif atlas migrate lint --env projection --latest 1 2>&1 | grep -q "available only to Atlas Pro"; then
+          echo "atlas migrate lint skipped: requires Atlas Pro"
+        else
+          exit 1
+        fi
+
+  db:projection:status:
+    desc: Show Projection Service migration status
+    cmds:
+      - atlas migrate status --env projection
+
+  db:projection:dry-run:
+    desc: Show pending Projection Service migrations
+    preconditions:
+      - sh: test -n "${PROJECTION_MIGRATION_DATABASE_URL:-}"
+        msg: PROJECTION_MIGRATION_DATABASE_URL is required
+    cmds:
+      - atlas migrate apply --env projection --dry-run
+
+  db:projection:apply:
+    desc: Apply Projection Service migrations
+    preconditions:
+      - sh: test -n "${PROJECTION_MIGRATION_DATABASE_URL:-}"
+        msg: PROJECTION_MIGRATION_DATABASE_URL is required
+    cmds:
+      - atlas migrate apply --env projection
+
+  test:projection:
+    desc: Run Projection Service tests
+    cmds:
+      - go test -race -count=1 ./services/projection/...
+      - go test -race -count=1 ./services/api-bff/internal/http/projection/...
+
   dev:web:
     desc: Run the React development server
     cmds:
@@ -322,10 +371,13 @@ tasks:
       - task: db:organization:validate
       - task: db:work:validate
       - task: db:policy:validate
+      - task: db:projection:validate
+      - task: db:projection:lint
       - task: workflow:check
       - task: test:organization
       - task: test:work
       - task: test:policy
+      - task: test:projection
       - task: test
       - task: build
       - task: contracts:check-generated
