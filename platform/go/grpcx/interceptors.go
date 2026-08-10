@@ -34,9 +34,67 @@ func StreamServerInterceptors(
 }
 
 // UnaryClientInterceptors returns the standard unary client chain.
-func UnaryClientInterceptors() []grpc.UnaryClientInterceptor {
+//
+// The optional timeout applies a default deadline to calls that do not
+// already carry one. Zero falls back to the conservative five seconds.
+func UnaryClientInterceptors(
+	defaultTimeout ...time.Duration,
+) []grpc.UnaryClientInterceptor {
+	timeout := defaultUnaryTimeout
+
+	if len(defaultTimeout) > 0 &&
+		defaultTimeout[0] > 0 {
+		timeout = defaultTimeout[0]
+	}
+
 	return []grpc.UnaryClientInterceptor{
+		unaryClientDefaultDeadlineInterceptor(
+			timeout,
+		),
 		unaryClientMetadataInterceptor(),
+	}
+}
+
+func unaryClientDefaultDeadlineInterceptor(
+	defaultTimeout time.Duration,
+) grpc.UnaryClientInterceptor {
+	return func(
+		ctx context.Context,
+		method string,
+		request any,
+		response any,
+		connection *grpc.ClientConn,
+		invoker grpc.UnaryInvoker,
+		options ...grpc.CallOption,
+	) error {
+		if _, alreadyHasDeadline :=
+			ctx.Deadline(); alreadyHasDeadline {
+			return invoker(
+				ctx,
+				method,
+				request,
+				response,
+				connection,
+				options...,
+			)
+		}
+
+		callContext, cancel :=
+			context.WithTimeout(
+				ctx,
+				defaultTimeout,
+			)
+
+		defer cancel()
+
+		return invoker(
+			callContext,
+			method,
+			request,
+			response,
+			connection,
+			options...,
+		)
 	}
 }
 

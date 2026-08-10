@@ -12,7 +12,6 @@ import (
 	"github.com/aminio9/gereh/services/tenant/internal/domain"
 	"github.com/aminio9/gereh/services/tenant/internal/ports"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -37,6 +36,35 @@ func repositoryIntegrationTest(t *testing.T) *Repository {
 	return New(pool)
 }
 
+// testCleanupPool returns the test-administration connection used for
+// destructive cleanup. The runtime app role intentionally lacks DELETE on
+// durable tenant tables (least privilege), so cleanup runs as the
+// local-only gereh_tenant_test_admin role, which has BYPASSRLS.
+func testCleanupPool(t *testing.T) *pgxpool.Pool {
+	t.Helper()
+
+	databaseURL := os.Getenv("TENANT_TEST_ADMIN_DATABASE_URL")
+	if databaseURL == "" {
+		databaseURL = os.Getenv("TENANT_TEST_DATABASE_URL")
+	}
+
+	if databaseURL == "" {
+		t.Skip("TENANT_TEST_ADMIN_DATABASE_URL is not configured")
+	}
+
+	pool, err := pgxpool.New(
+		context.Background(),
+		databaseURL,
+	)
+	if err != nil {
+		t.Fatalf("create test cleanup pool: %v", err)
+	}
+
+	t.Cleanup(pool.Close)
+
+	return pool
+}
+
 func mustV7(t *testing.T) string {
 	t.Helper()
 
@@ -50,34 +78,44 @@ func mustV7(t *testing.T) string {
 
 func cleanupTenants(
 	t *testing.T,
-	repository *Repository,
+	cleanupPool *pgxpool.Pool,
 	tenantIDs []string,
-	actorUserID string,
+	_ string,
 ) {
 	t.Helper()
 
 	for _, tenantID := range tenantIDs {
 		cleanupTenant(
 			t,
-			repository,
+			cleanupPool,
 			tenantID,
-			actorUserID,
 		)
 	}
 }
 
 func cleanupTenant(
 	t *testing.T,
-	repository *Repository,
+	cleanupPool *pgxpool.Pool,
 	tenantID string,
-	actorUserID string,
 ) {
 	t.Helper()
 
 	ctx := context.Background()
 
-	// Outbox is operational and has no tenant RLS.
-	if _, err := repository.pool.Exec(
+	// The test-admin role has BYPASSRLS, so FORCE ROW LEVEL SECURITY does
+	// not hide rows and destructive cleanup is straight-forward. No DDL is
+	// involved, which keeps concurrent test packages deadlock-free.
+	transaction, err := cleanupPool.Begin(ctx)
+	if err != nil {
+		t.Errorf("begin tenant cleanup: %v", err)
+		return
+	}
+
+	defer func() {
+		_ = transaction.Rollback(ctx)
+	}()
+
+	if _, err := transaction.Exec(
 		ctx,
 		`
 			DELETE FROM tenant_outbox
@@ -89,23 +127,41 @@ func cleanupTenant(
 		return
 	}
 
-	transaction, err := repository.beginTenant(
+	if _, err := transaction.Exec(
 		ctx,
+		`
+			DELETE FROM tenant_onboarding_operations
+			WHERE tenant_id = $1::uuid
+		`,
 		tenantID,
-		actorUserID,
-		pgx.TxOptions{},
-	)
-	if err != nil {
-		t.Errorf(
-			"begin tenant cleanup: %v",
-			err,
-		)
+	); err != nil {
+		t.Errorf("cleanup onboarding operations: %v", err)
 		return
 	}
 
-	defer func() {
-		_ = transaction.Rollback(ctx)
-	}()
+	if _, err := transaction.Exec(
+		ctx,
+		`
+			DELETE FROM tenant_entitlements
+			WHERE tenant_id = $1::uuid
+		`,
+		tenantID,
+	); err != nil {
+		t.Errorf("cleanup entitlements: %v", err)
+		return
+	}
+
+	if _, err := transaction.Exec(
+		ctx,
+		`
+			DELETE FROM tenant_memberships
+			WHERE tenant_id = $1::uuid
+		`,
+		tenantID,
+	); err != nil {
+		t.Errorf("cleanup memberships: %v", err)
+		return
+	}
 
 	if _, err := transaction.Exec(
 		ctx,
@@ -362,7 +418,7 @@ func TestCreateTenantCreatesExactlyOneOwner(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{result.Context.Tenant.ID}, actor)
+		cleanupTenants(t, testCleanupPool(t), []string{result.Context.Tenant.ID}, actor)
 	})
 
 	if result.Context.Membership.Role != domain.RoleOwner {
@@ -401,7 +457,7 @@ func TestRepeatedCreationWithSameRequestIDReturnsSameTenant(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{first.Context.Tenant.ID}, actor)
+		cleanupTenants(t, testCleanupPool(t), []string{first.Context.Tenant.ID}, actor)
 	})
 
 	second, err := createTestTenant(
@@ -445,7 +501,7 @@ func TestDuplicateSlugReturnsConflict(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{first.Context.Tenant.ID}, actor)
+		cleanupTenants(t, testCleanupPool(t), []string{first.Context.Tenant.ID}, actor)
 	})
 
 	_, err = createTestTenant(
@@ -480,7 +536,7 @@ func TestStaleTenantVersionReturnsVersionConflict(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{result.Context.Tenant.ID}, actor)
+		cleanupTenants(t, testCleanupPool(t), []string{result.Context.Tenant.ID}, actor)
 	})
 
 	now := time.Now().UTC()
@@ -530,7 +586,7 @@ func TestAdminCannotPromoteToOwner(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{result.Context.Tenant.ID}, owner)
+		cleanupTenants(t, testCleanupPool(t), []string{result.Context.Tenant.ID}, owner)
 	})
 
 	tenantVersion := result.Context.Tenant.Version
@@ -621,7 +677,7 @@ func TestAdminCannotDemoteOrRemoveOwner(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{result.Context.Tenant.ID}, owner)
+		cleanupTenants(t, testCleanupPool(t), []string{result.Context.Tenant.ID}, owner)
 	})
 
 	tenantVersion := result.Context.Tenant.Version
@@ -720,7 +776,7 @@ func TestFinalOwnerCannotBeRemoved(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{result.Context.Tenant.ID}, owner)
+		cleanupTenants(t, testCleanupPool(t), []string{result.Context.Tenant.ID}, owner)
 	})
 
 	ownerMembership, err := repository.GetMembership(
@@ -778,7 +834,7 @@ func TestConcurrentOwnerDemotionsOnlyOneSucceeds(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{result.Context.Tenant.ID}, ownerA)
+		cleanupTenants(t, testCleanupPool(t), []string{result.Context.Tenant.ID}, ownerA)
 	})
 
 	tenantVersion := result.Context.Tenant.Version
@@ -892,7 +948,7 @@ func TestSuccessfulMutationInsertsOneOutboxRow(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{result.Context.Tenant.ID}, actor)
+		cleanupTenants(t, testCleanupPool(t), []string{result.Context.Tenant.ID}, actor)
 	})
 
 	count, err := outboxCount(ctx, repository, result.Context.Tenant.ID)
@@ -958,7 +1014,7 @@ func TestFailedMutationInsertsNoOutboxRow(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		cleanupTenants(t, repository, []string{result.Context.Tenant.ID}, actor)
+		cleanupTenants(t, testCleanupPool(t), []string{result.Context.Tenant.ID}, actor)
 	})
 
 	count, err := outboxCount(ctx, repository, result.Context.Tenant.ID)

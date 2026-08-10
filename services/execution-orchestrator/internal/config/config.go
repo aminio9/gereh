@@ -4,6 +4,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -34,6 +35,20 @@ type Config struct {
 	RuntimeGRPCTarget string
 
 	InternalDevelopmentToken string
+
+	// Downstream workload TLS.
+	TenantGRPCInsecure         bool
+	TenantGRPCServerName       string
+	OrganizationGRPCInsecure   bool
+	OrganizationGRPCServerName string
+	PolicyGRPCInsecure         bool
+	PolicyGRPCServerName       string
+	RuntimeGRPCInsecure        bool
+	RuntimeGRPCServerName      string
+
+	GRPCTLSCertFile string
+	GRPCTLSKeyFile  string
+	GRPCTLSCAFile   string
 
 	ShutdownTimeout time.Duration
 }
@@ -97,6 +112,47 @@ func FromEnv(version string) (Config, error) {
 		RuntimeGRPCTarget: strings.TrimSpace(
 			os.Getenv("RUNTIME_MANAGER_GRPC_TARGET"),
 		),
+		TenantGRPCInsecure: envBool(
+			"TENANT_GRPC_INSECURE",
+			true,
+		),
+		TenantGRPCServerName: envOrDefault(
+			"TENANT_GRPC_SERVER_NAME",
+			"tenant.control-plane.svc",
+		),
+		OrganizationGRPCInsecure: envBool(
+			"ORGANIZATION_GRPC_INSECURE",
+			true,
+		),
+		OrganizationGRPCServerName: envOrDefault(
+			"ORGANIZATION_GRPC_SERVER_NAME",
+			"organization-agent.control-plane.svc",
+		),
+		PolicyGRPCInsecure: envBool(
+			"POLICY_GRPC_INSECURE",
+			true,
+		),
+		PolicyGRPCServerName: envOrDefault(
+			"POLICY_GRPC_SERVER_NAME",
+			"policy-approval.control-plane.svc",
+		),
+		RuntimeGRPCInsecure: envBool(
+			"RUNTIME_MANAGER_GRPC_INSECURE",
+			true,
+		),
+		RuntimeGRPCServerName: envOrDefault(
+			"RUNTIME_MANAGER_GRPC_SERVER_NAME",
+			"runtime-manager.control-plane.svc",
+		),
+		GRPCTLSCertFile: strings.TrimSpace(
+			os.Getenv("GRPC_TLS_CERT_FILE"),
+		),
+		GRPCTLSKeyFile: strings.TrimSpace(
+			os.Getenv("GRPC_TLS_KEY_FILE"),
+		),
+		GRPCTLSCAFile: strings.TrimSpace(
+			os.Getenv("GRPC_TLS_CA_FILE"),
+		),
 		InternalDevelopmentToken: strings.TrimSpace(
 			os.Getenv("TENANT_INTERNAL_DEV_TOKEN"),
 		),
@@ -125,6 +181,29 @@ func FromEnv(version string) (Config, error) {
 		)
 	}
 
+	// In production, downstream services must be reachable over
+	// workload mTLS rather than insecure transport.
+	if strings.EqualFold(
+		config.Environment,
+		"production",
+	) {
+		if config.TenantGRPCInsecure ||
+			config.OrganizationGRPCInsecure ||
+			config.PolicyGRPCInsecure {
+			return Config{}, fmt.Errorf(
+				"downstream gRPC transport must not be insecure in production",
+			)
+		}
+
+		if strings.TrimSpace(config.GRPCTLSCertFile) == "" ||
+			strings.TrimSpace(config.GRPCTLSKeyFile) == "" ||
+			strings.TrimSpace(config.GRPCTLSCAFile) == "" {
+			return Config{}, fmt.Errorf(
+				"GRPC_TLS_CERT_FILE, GRPC_TLS_KEY_FILE and GRPC_TLS_CA_FILE are required in production",
+			)
+		}
+	}
+
 	if config.RuntimeMode == "grpc" &&
 		config.RuntimeGRPCTarget == "" {
 		return Config{}, fmt.Errorf(
@@ -145,4 +224,21 @@ func envOrDefault(
 	}
 
 	return value
+}
+
+func envBool(
+	name string,
+	fallback bool,
+) bool {
+	value := strings.TrimSpace(os.Getenv(name))
+	if value == "" {
+		return fallback
+	}
+
+	parsed, err := strconv.ParseBool(value)
+	if err != nil {
+		return fallback
+	}
+
+	return parsed
 }

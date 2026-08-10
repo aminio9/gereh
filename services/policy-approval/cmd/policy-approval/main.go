@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net"
 	"os"
@@ -276,6 +277,27 @@ func run() error {
 		)
 
 	serverConfig := grpcx.DefaultServerConfig()
+
+	if strings.EqualFold(
+		runtimeConfig.Environment,
+		"production",
+	) {
+		tlsConfig, err := grpcx.LoadWorkloadServerTLS(
+			grpcx.WorkloadTLSFiles{
+				CertificateFile: runtimeConfig.GRPCTLSCertFile,
+				PrivateKeyFile:  runtimeConfig.GRPCTLSKeyFile,
+				CAFile:          runtimeConfig.GRPCTLSCAFile,
+			},
+		)
+		if err != nil {
+			return fmt.Errorf(
+				"configure Policy Service workload TLS: %w",
+				err,
+			)
+		}
+
+		serverConfig.TLSConfig = tlsConfig
+	}
 
 	serverConfig.UnaryInterceptors = append(
 		serverConfig.UnaryInterceptors,

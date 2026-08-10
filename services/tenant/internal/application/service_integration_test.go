@@ -51,6 +51,33 @@ func applicationIntegrationService(
 	return service, pool
 }
 
+// applicationTestCleanupPool returns a table-owning connection for
+// destructive cleanup, which the runtime app role must not have.
+func applicationTestCleanupPool(t *testing.T) *pgxpool.Pool {
+	t.Helper()
+
+	databaseURL := os.Getenv("TENANT_TEST_ADMIN_DATABASE_URL")
+	if databaseURL == "" {
+		databaseURL = os.Getenv("TENANT_TEST_DATABASE_URL")
+	}
+
+	if databaseURL == "" {
+		t.Skip("TENANT_TEST_ADMIN_DATABASE_URL is not configured")
+	}
+
+	pool, err := pgxpool.New(
+		context.Background(),
+		databaseURL,
+	)
+	if err != nil {
+		t.Fatalf("create test cleanup pool: %v", err)
+	}
+
+	t.Cleanup(pool.Close)
+
+	return pool
+}
+
 func applicationTestActor(t *testing.T) string {
 	t.Helper()
 
@@ -124,38 +151,92 @@ func applicationOutboxCount(
 
 func applicationCleanupTenant(
 	t *testing.T,
-	pool *pgxpool.Pool,
+	cleanupPool *pgxpool.Pool,
 	tenantID string,
 ) {
 	t.Helper()
 
-	_, err := pool.Exec(
-		context.Background(),
+	ctx := context.Background()
+
+	// The test-admin role has BYPASSRLS, so FORCE ROW LEVEL SECURITY does
+	// not hide rows and destructive cleanup is straight-forward.
+	transaction, err := cleanupPool.Begin(ctx)
+	if err != nil {
+		t.Errorf("begin tenant cleanup: %v", err)
+		return
+	}
+
+	defer func() {
+		_ = transaction.Rollback(ctx)
+	}()
+
+	if _, err := transaction.Exec(
+		ctx,
 		`
 			DELETE FROM tenant_outbox
 			WHERE partition_key = $1
 		`,
 		tenantID,
-	)
-	if err != nil {
+	); err != nil {
 		t.Errorf("cleanup outbox rows: %v", err)
+		return
 	}
 
-	_, err = pool.Exec(
-		context.Background(),
+	if _, err := transaction.Exec(
+		ctx,
+		`
+			DELETE FROM tenant_onboarding_operations
+			WHERE tenant_id = $1::uuid
+		`,
+		tenantID,
+	); err != nil {
+		t.Errorf("cleanup onboarding operations: %v", err)
+		return
+	}
+
+	if _, err := transaction.Exec(
+		ctx,
+		`
+			DELETE FROM tenant_entitlements
+			WHERE tenant_id = $1::uuid
+		`,
+		tenantID,
+	); err != nil {
+		t.Errorf("cleanup entitlements: %v", err)
+		return
+	}
+
+	if _, err := transaction.Exec(
+		ctx,
+		`
+			DELETE FROM tenant_memberships
+			WHERE tenant_id = $1::uuid
+		`,
+		tenantID,
+	); err != nil {
+		t.Errorf("cleanup memberships: %v", err)
+		return
+	}
+
+	if _, err := transaction.Exec(
+		ctx,
 		`
 			DELETE FROM tenant_tenants
 			WHERE tenant_id = $1::uuid
 		`,
 		tenantID,
-	)
-	if err != nil {
+	); err != nil {
 		t.Errorf("cleanup tenant: %v", err)
+		return
+	}
+
+	if err := transaction.Commit(ctx); err != nil {
+		t.Errorf("commit tenant cleanup: %v", err)
 	}
 }
 
 func TestOwnerReceivesEveryPermission(t *testing.T) {
-	service, pool := applicationIntegrationService(t)
+	service, _ := applicationIntegrationService(t)
 
 	ctx := context.Background()
 	owner := applicationTestActor(t)
@@ -176,7 +257,7 @@ func TestOwnerReceivesEveryPermission(t *testing.T) {
 	applicationActivateTenant(t, service, created)
 
 	t.Cleanup(func() {
-		applicationCleanupTenant(t, pool, created.Context.Tenant.ID)
+		applicationCleanupTenant(t, applicationTestCleanupPool(t), created.Context.Tenant.ID)
 	})
 
 	permissions := []domain.Permission{
@@ -215,7 +296,7 @@ func TestOwnerReceivesEveryPermission(t *testing.T) {
 }
 
 func TestAdminCannotArchiveTenant(t *testing.T) {
-	service, pool := applicationIntegrationService(t)
+	service, _ := applicationIntegrationService(t)
 
 	ctx := context.Background()
 	owner := applicationTestActor(t)
@@ -237,7 +318,7 @@ func TestAdminCannotArchiveTenant(t *testing.T) {
 	applicationActivateTenant(t, service, created)
 
 	t.Cleanup(func() {
-		applicationCleanupTenant(t, pool, created.Context.Tenant.ID)
+		applicationCleanupTenant(t, applicationTestCleanupPool(t), created.Context.Tenant.ID)
 	})
 
 	_, _, err = service.AddMember(
@@ -269,7 +350,7 @@ func TestAdminCannotArchiveTenant(t *testing.T) {
 }
 
 func TestAdminCannotAssignOwner(t *testing.T) {
-	service, pool := applicationIntegrationService(t)
+	service, _ := applicationIntegrationService(t)
 
 	ctx := context.Background()
 	owner := applicationTestActor(t)
@@ -292,7 +373,7 @@ func TestAdminCannotAssignOwner(t *testing.T) {
 	applicationActivateTenant(t, service, created)
 
 	t.Cleanup(func() {
-		applicationCleanupTenant(t, pool, created.Context.Tenant.ID)
+		applicationCleanupTenant(t, applicationTestCleanupPool(t), created.Context.Tenant.ID)
 	})
 
 	_, _, err = service.AddMember(
@@ -323,7 +404,7 @@ func TestAdminCannotAssignOwner(t *testing.T) {
 }
 
 func TestAdminCannotModifyOrRemoveOwner(t *testing.T) {
-	service, pool := applicationIntegrationService(t)
+	service, _ := applicationIntegrationService(t)
 
 	ctx := context.Background()
 	owner := applicationTestActor(t)
@@ -345,7 +426,7 @@ func TestAdminCannotModifyOrRemoveOwner(t *testing.T) {
 	applicationActivateTenant(t, service, created)
 
 	t.Cleanup(func() {
-		applicationCleanupTenant(t, pool, created.Context.Tenant.ID)
+		applicationCleanupTenant(t, applicationTestCleanupPool(t), created.Context.Tenant.ID)
 	})
 
 	_, _, err = service.AddMember(
@@ -399,7 +480,7 @@ func TestAdminCannotModifyOrRemoveOwner(t *testing.T) {
 }
 
 func TestMemberCanListButCannotMutateMembership(t *testing.T) {
-	service, pool := applicationIntegrationService(t)
+	service, _ := applicationIntegrationService(t)
 
 	ctx := context.Background()
 	owner := applicationTestActor(t)
@@ -421,7 +502,7 @@ func TestMemberCanListButCannotMutateMembership(t *testing.T) {
 	applicationActivateTenant(t, service, created)
 
 	t.Cleanup(func() {
-		applicationCleanupTenant(t, pool, created.Context.Tenant.ID)
+		applicationCleanupTenant(t, applicationTestCleanupPool(t), created.Context.Tenant.ID)
 	})
 
 	_, _, err = service.AddMember(
@@ -477,7 +558,7 @@ func TestMemberCanListButCannotMutateMembership(t *testing.T) {
 }
 
 func TestViewerCannotListMembers(t *testing.T) {
-	service, pool := applicationIntegrationService(t)
+	service, _ := applicationIntegrationService(t)
 
 	ctx := context.Background()
 	owner := applicationTestActor(t)
@@ -499,7 +580,7 @@ func TestViewerCannotListMembers(t *testing.T) {
 	applicationActivateTenant(t, service, created)
 
 	t.Cleanup(func() {
-		applicationCleanupTenant(t, pool, created.Context.Tenant.ID)
+		applicationCleanupTenant(t, applicationTestCleanupPool(t), created.Context.Tenant.ID)
 	})
 
 	_, _, err = service.AddMember(
@@ -542,7 +623,7 @@ func TestViewerCannotListMembers(t *testing.T) {
 }
 
 func TestViewerCanReadTenantAndEntitlements(t *testing.T) {
-	service, pool := applicationIntegrationService(t)
+	service, _ := applicationIntegrationService(t)
 
 	ctx := context.Background()
 	owner := applicationTestActor(t)
@@ -564,7 +645,7 @@ func TestViewerCanReadTenantAndEntitlements(t *testing.T) {
 	applicationActivateTenant(t, service, created)
 
 	t.Cleanup(func() {
-		applicationCleanupTenant(t, pool, created.Context.Tenant.ID)
+		applicationCleanupTenant(t, applicationTestCleanupPool(t), created.Context.Tenant.ID)
 	})
 
 	_, _, err = service.AddMember(
@@ -608,7 +689,7 @@ func TestViewerCanReadTenantAndEntitlements(t *testing.T) {
 }
 
 func TestNonMemberReceivesDeniedDecisionWithoutInternalDetails(t *testing.T) {
-	service, pool := applicationIntegrationService(t)
+	service, _ := applicationIntegrationService(t)
 
 	ctx := context.Background()
 	owner := applicationTestActor(t)
@@ -630,7 +711,7 @@ func TestNonMemberReceivesDeniedDecisionWithoutInternalDetails(t *testing.T) {
 	applicationActivateTenant(t, service, created)
 
 	t.Cleanup(func() {
-		applicationCleanupTenant(t, pool, created.Context.Tenant.ID)
+		applicationCleanupTenant(t, applicationTestCleanupPool(t), created.Context.Tenant.ID)
 	})
 
 	decision, err := service.CheckAuthorization(
@@ -658,7 +739,7 @@ func TestNonMemberReceivesDeniedDecisionWithoutInternalDetails(t *testing.T) {
 }
 
 func TestArchivedTenantRetainsReadAndDeniesMutation(t *testing.T) {
-	service, pool := applicationIntegrationService(t)
+	service, _ := applicationIntegrationService(t)
 
 	ctx := context.Background()
 	owner := applicationTestActor(t)
@@ -679,7 +760,7 @@ func TestArchivedTenantRetainsReadAndDeniesMutation(t *testing.T) {
 	activated := applicationActivateTenant(t, service, created)
 
 	t.Cleanup(func() {
-		applicationCleanupTenant(t, pool, created.Context.Tenant.ID)
+		applicationCleanupTenant(t, applicationTestCleanupPool(t), created.Context.Tenant.ID)
 	})
 
 	archived, err := service.ArchiveTenant(
@@ -730,7 +811,7 @@ func TestArchivedTenantRetainsReadAndDeniesMutation(t *testing.T) {
 }
 
 func TestStaleTenantAndMembershipVersionsFail(t *testing.T) {
-	service, pool := applicationIntegrationService(t)
+	service, _ := applicationIntegrationService(t)
 
 	ctx := context.Background()
 	owner := applicationTestActor(t)
@@ -752,7 +833,7 @@ func TestStaleTenantAndMembershipVersionsFail(t *testing.T) {
 	applicationActivateTenant(t, service, created)
 
 	t.Cleanup(func() {
-		applicationCleanupTenant(t, pool, created.Context.Tenant.ID)
+		applicationCleanupTenant(t, applicationTestCleanupPool(t), created.Context.Tenant.ID)
 	})
 
 	displayName := "Renamed"
@@ -810,7 +891,7 @@ func TestStaleTenantAndMembershipVersionsFail(t *testing.T) {
 }
 
 func TestFinalOwnerCannotRemoveThemself(t *testing.T) {
-	service, pool := applicationIntegrationService(t)
+	service, _ := applicationIntegrationService(t)
 
 	ctx := context.Background()
 	owner := applicationTestActor(t)
@@ -831,7 +912,7 @@ func TestFinalOwnerCannotRemoveThemself(t *testing.T) {
 	applicationActivateTenant(t, service, created)
 
 	t.Cleanup(func() {
-		applicationCleanupTenant(t, pool, created.Context.Tenant.ID)
+		applicationCleanupTenant(t, applicationTestCleanupPool(t), created.Context.Tenant.ID)
 	})
 
 	contextValue, err := service.GetTenantContext(
@@ -880,7 +961,7 @@ func TestMembershipMutationsWriteExactlyOneOutboxEvent(t *testing.T) {
 	applicationActivateTenant(t, service, created)
 
 	t.Cleanup(func() {
-		applicationCleanupTenant(t, pool, created.Context.Tenant.ID)
+		applicationCleanupTenant(t, applicationTestCleanupPool(t), created.Context.Tenant.ID)
 	})
 
 	if count := applicationOutboxCount(t, pool, created.Context.Tenant.ID); count != 3 {
@@ -982,7 +1063,7 @@ func TestFailedAuthorizationWritesNoOutboxEvent(t *testing.T) {
 	applicationActivateTenant(t, service, created)
 
 	t.Cleanup(func() {
-		applicationCleanupTenant(t, pool, created.Context.Tenant.ID)
+		applicationCleanupTenant(t, applicationTestCleanupPool(t), created.Context.Tenant.ID)
 	})
 
 	_, _, err = service.AddMember(

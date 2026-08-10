@@ -57,7 +57,9 @@ func NewClient(
 			),
 		),
 		grpc.WithChainUnaryInterceptor(
-			UnaryClientInterceptors()...,
+			UnaryClientInterceptors(
+				config.DefaultUnaryTimeout,
+			)...,
 		),
 		grpc.WithChainStreamInterceptor(
 			StreamClientInterceptors()...,

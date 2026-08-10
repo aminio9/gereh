@@ -3,7 +3,6 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,6 +15,7 @@ import (
 	"time"
 
 	platformkafka "github.com/aminio9/gereh/platform/go/events/kafka"
+	"github.com/aminio9/gereh/platform/go/grpcx"
 	"github.com/aminio9/gereh/platform/go/observability"
 	organizationadapter "github.com/aminio9/gereh/services/execution-orchestrator/internal/adapters/organization"
 	policyadapter "github.com/aminio9/gereh/services/execution-orchestrator/internal/adapters/policy"
@@ -28,8 +28,6 @@ import (
 	"go.temporal.io/sdk/worker"
 	"go.temporal.io/sdk/workflow"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 var version = "dev"
@@ -116,13 +114,12 @@ func run() (runErr error) {
 	}
 	defer temporalClient.Close()
 
-	tenantConnection, err := grpc.NewClient(
+	tenantConnection, err := newInternalClient(
+		telemetry,
 		runtimeConfig.TenantGRPCTarget,
-		grpc.WithTransportCredentials(
-			transportCredentials(
-				runtimeConfig.Environment,
-			),
-		),
+		runtimeConfig.TenantGRPCInsecure,
+		runtimeConfig.TenantGRPCServerName,
+		runtimeConfig,
 	)
 	if err != nil {
 		return fmt.Errorf(
@@ -139,13 +136,12 @@ func run() (runErr error) {
 		runtimeConfig.InternalDevelopmentToken,
 	)
 
-	organizationConnection, err := grpc.NewClient(
+	organizationConnection, err := newInternalClient(
+		telemetry,
 		runtimeConfig.OrganizationGRPCTarget,
-		grpc.WithTransportCredentials(
-			transportCredentials(
-				runtimeConfig.Environment,
-			),
-		),
+		runtimeConfig.OrganizationGRPCInsecure,
+		runtimeConfig.OrganizationGRPCServerName,
+		runtimeConfig,
 	)
 	if err != nil {
 		return fmt.Errorf(
@@ -162,13 +158,12 @@ func run() (runErr error) {
 		runtimeConfig.InternalDevelopmentToken,
 	)
 
-	policyConnection, err := grpc.NewClient(
+	policyConnection, err := newInternalClient(
+		telemetry,
 		runtimeConfig.PolicyGRPCTarget,
-		grpc.WithTransportCredentials(
-			transportCredentials(
-				runtimeConfig.Environment,
-			),
-		),
+		runtimeConfig.PolicyGRPCInsecure,
+		runtimeConfig.PolicyGRPCServerName,
+		runtimeConfig,
 	)
 	if err != nil {
 		return fmt.Errorf(
@@ -192,13 +187,12 @@ func run() (runErr error) {
 		runtimeProvisioner = runtimeadapter.NoopProvisioner{}
 
 	case "grpc":
-		runtimeConnection, connectionErr := grpc.NewClient(
+		runtimeConnection, connectionErr := newInternalClient(
+			telemetry,
 			runtimeConfig.RuntimeGRPCTarget,
-			grpc.WithTransportCredentials(
-				transportCredentials(
-					runtimeConfig.Environment,
-				),
-			),
+			runtimeConfig.RuntimeGRPCInsecure,
+			runtimeConfig.RuntimeGRPCServerName,
+			runtimeConfig,
 		)
 		if connectionErr != nil {
 			return fmt.Errorf(
@@ -343,20 +337,39 @@ func run() (runErr error) {
 	return nil
 }
 
-func transportCredentials(
-	environment string,
-) credentials.TransportCredentials {
-	if environment == "development" ||
-		environment == "test" {
-		return insecure.NewCredentials()
+func newInternalClient(
+	telemetry *observability.Telemetry,
+	target string,
+	insecureTransport bool,
+	serverName string,
+	runtimeConfig config.Config,
+) (*grpc.ClientConn, error) {
+	clientConfig := grpcx.DefaultClientConfig(
+		target,
+	)
+
+	clientConfig.Insecure = insecureTransport
+
+	if !insecureTransport {
+		tlsConfig, err :=
+			grpcx.LoadWorkloadClientTLS(
+				grpcx.WorkloadTLSFiles{
+					CertificateFile: runtimeConfig.GRPCTLSCertFile,
+					PrivateKeyFile:  runtimeConfig.GRPCTLSKeyFile,
+					CAFile:          runtimeConfig.GRPCTLSCAFile,
+				},
+				serverName,
+			)
+		if err != nil {
+			return nil, err
+		}
+
+		clientConfig.TLSConfig = tlsConfig
 	}
 
-	// Production must present an orchestrator SPIFFE certificate via the
-	// shared platform workload-TLS loader and validate the peer.
-	return credentials.NewTLS(
-		&tls.Config{
-			MinVersion: tls.VersionTLS13,
-		},
+	return grpcx.NewClient(
+		clientConfig,
+		telemetry,
 	)
 }
 

@@ -259,8 +259,8 @@ tasks:
       - |
         if atlas migrate lint --env projection --latest 1; then
           :
-        elif atlas migrate lint --env projection --latest 1 2>&1 | grep -q "available only to Atlas Pro"; then
-          echo "atlas migrate lint skipped: requires Atlas Pro"
+        elif atlas migrate lint --env projection --latest 1 2>&1 | grep -qE "available only to Atlas Pro|dev-url"; then
+          echo "atlas migrate lint skipped: requires Atlas Pro or dev-url"
         else
           exit 1
         fi
@@ -338,8 +338,14 @@ tasks:
       - go vet ./...
       - go tool golangci-lint run
       - go tool buf lint
+      - task: contracts:openapi:lint
       - task: workflow:check
       - pnpm -r --if-present lint
+
+  contracts:openapi:lint:
+    desc: Lint the public OpenAPI contract
+    cmds:
+      - pnpm exec redocly lint contracts/openapi/public-api.yaml
 
   test:
     desc: Run backend and frontend tests
@@ -353,6 +359,8 @@ tasks:
       - sh: test -n "${TENANT_TEST_DATABASE_URL:-}"
         msg: TENANT_TEST_DATABASE_URL is required
     cmds:
+      # Cleanup runs as gereh_tenant_test_admin (BYPASSRLS) so packages
+      # can run in parallel without ACCESS EXCLUSIVE DDL conflicts.
       - go test -count=1 ./services/tenant/...
       - go test -count=1 ./services/execution-orchestrator/...
 

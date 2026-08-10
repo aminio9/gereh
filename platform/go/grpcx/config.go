@@ -12,7 +12,11 @@ import (
 	"google.golang.org/grpc"
 )
 
-const defaultMessageSize = 4 * 1024 * 1024
+const (
+	defaultMessageSize = 4 * 1024 * 1024
+
+	defaultUnaryTimeout = 5 * time.Second
+)
 
 // ServerConfig defines shared gRPC server behavior.
 type ServerConfig struct {
@@ -20,6 +24,11 @@ type ServerConfig struct {
 	MaxSendMessageBytes    int
 	EnableReflection       bool
 	GracefulStopTimeout    time.Duration
+
+	// TLSConfig, when set, enables mTLS on the server. Production
+	// service configuration must provide workload TLS credentials;
+	// development may leave this nil.
+	TLSConfig *tls.Config
 
 	UnaryInterceptors  []grpc.UnaryServerInterceptor
 	StreamInterceptors []grpc.StreamServerInterceptor
@@ -90,8 +99,14 @@ type ClientConfig struct {
 	TLSConfig              *tls.Config
 	MaxReceiveMessageBytes int
 	MaxSendMessageBytes    int
-	DefaultServiceConfig   string
-	Dialer                 ContextDialer
+
+	// DefaultUnaryTimeout is applied to unary calls that do not
+	// already carry a deadline. Zero resolves to the conservative
+	// five-second fallback for backward compatibility.
+	DefaultUnaryTimeout time.Duration
+
+	DefaultServiceConfig string
+	Dialer               ContextDialer
 }
 
 // DefaultClientConfig returns conservative gRPC client defaults.
@@ -101,6 +116,7 @@ func DefaultClientConfig(target string) ClientConfig {
 		Insecure:               false,
 		MaxReceiveMessageBytes: defaultMessageSize,
 		MaxSendMessageBytes:    defaultMessageSize,
+		DefaultUnaryTimeout:    defaultUnaryTimeout,
 	}
 }
 

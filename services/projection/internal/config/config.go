@@ -29,6 +29,10 @@ type Config struct {
 	TenantGRPCInsecure bool
 	AuthorizerTimeout  time.Duration
 
+	GRPCTLSCertFile string
+	GRPCTLSKeyFile  string
+	GRPCTLSCAFile   string
+
 	Kafka platformkafka.Config
 }
 
@@ -134,6 +138,16 @@ func FromEnv(version string) (Config, error) {
 		TenantGRPCInsecure: tenantInsecure,
 		AuthorizerTimeout:  authorizerTimeout,
 
+		GRPCTLSCertFile: strings.TrimSpace(
+			os.Getenv("GRPC_TLS_CERT_FILE"),
+		),
+		GRPCTLSKeyFile: strings.TrimSpace(
+			os.Getenv("GRPC_TLS_KEY_FILE"),
+		),
+		GRPCTLSCAFile: strings.TrimSpace(
+			os.Getenv("GRPC_TLS_CA_FILE"),
+		),
+
 		Kafka: kafkaConfig,
 	}
 
@@ -155,6 +169,15 @@ func FromEnv(version string) (Config, error) {
 	) && config.TenantGRPCInsecure {
 		return Config{}, fmt.Errorf(
 			"TENANT_GRPC_INSECURE must be false in production",
+		)
+	}
+
+	if strings.EqualFold(config.Environment, "production") &&
+		(strings.TrimSpace(config.GRPCTLSCertFile) == "" ||
+			strings.TrimSpace(config.GRPCTLSKeyFile) == "" ||
+			strings.TrimSpace(config.GRPCTLSCAFile) == "") {
+		return Config{}, fmt.Errorf(
+			"GRPC_TLS_CERT_FILE, GRPC_TLS_KEY_FILE and GRPC_TLS_CA_FILE are required in production",
 		)
 	}
 

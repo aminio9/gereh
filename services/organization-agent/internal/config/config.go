@@ -33,6 +33,10 @@ type Config struct {
 	InternalDevelopmentToken string
 	AllowedInternalSPIFFEIDs []string
 
+	GRPCTLSCertFile string
+	GRPCTLSKeyFile  string
+	GRPCTLSCAFile   string
+
 	OutboxBatchSize    int
 	OutboxPollInterval time.Duration
 	OutboxLease        time.Duration
@@ -166,6 +170,16 @@ func FromEnv(version string) (Config, error) {
 			os.Getenv("ORGANIZATION_INTERNAL_ALLOWED_SPIFFE_IDS"),
 		),
 
+		GRPCTLSCertFile: strings.TrimSpace(
+			os.Getenv("GRPC_TLS_CERT_FILE"),
+		),
+		GRPCTLSKeyFile: strings.TrimSpace(
+			os.Getenv("GRPC_TLS_KEY_FILE"),
+		),
+		GRPCTLSCAFile: strings.TrimSpace(
+			os.Getenv("GRPC_TLS_CA_FILE"),
+		),
+
 		OutboxBatchSize:    batchSize,
 		OutboxPollInterval: pollInterval,
 		OutboxLease:        lease,
@@ -192,6 +206,15 @@ func FromEnv(version string) (Config, error) {
 	) && len(config.AllowedInternalSPIFFEIDs) == 0 {
 		return Config{}, fmt.Errorf(
 			"ORGANIZATION_INTERNAL_ALLOWED_SPIFFE_IDS is required in production",
+		)
+	}
+
+	if strings.EqualFold(config.Environment, "production") &&
+		(strings.TrimSpace(config.GRPCTLSCertFile) == "" ||
+			strings.TrimSpace(config.GRPCTLSKeyFile) == "" ||
+			strings.TrimSpace(config.GRPCTLSCAFile) == "") {
+		return Config{}, fmt.Errorf(
+			"GRPC_TLS_CERT_FILE, GRPC_TLS_KEY_FILE and GRPC_TLS_CA_FILE are required in production",
 		)
 	}
 
