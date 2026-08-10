@@ -1,3 +1,5 @@
+import { environment } from "../../../config/env";
+
 export interface AuthenticatedUser {
   userId: string;
   issuer: string;
@@ -15,7 +17,7 @@ export interface AuthSession {
 }
 
 export async function getSession(signal?: AbortSignal): Promise<AuthSession | null> {
-  const response = await fetch("/v1/auth/session", {
+  const response = await fetch(`${environment.apiBaseUrl}/v1/auth/session`, {
     credentials: "include",
     headers: {
       Accept: "application/json",

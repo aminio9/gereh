@@ -2,6 +2,7 @@ import { useCallback, useMemo, type PropsWithChildren } from "react";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { environment } from "../../../config/env";
 import { getSession } from "../api/getSession";
 import { logout as logoutRequest } from "../api/logout";
 import { AuthContext, authSessionQueryKey, type AuthContextValue } from "./AuthContext";
@@ -18,7 +19,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   });
 
   const login = useCallback((returnTo = "/") => {
-    const target = new URL("/v1/auth/login", window.location.origin);
+    const target = new URL(`${environment.apiBaseUrl}/v1/auth/login`, window.location.origin);
 
     target.searchParams.set("return_to", returnTo);
 

@@ -5,6 +5,7 @@ KUBECTL_VERSION="${KUBECTL_VERSION:-v1.36.3}"
 HELM_VERSION="${HELM_VERSION:-v4.2.3}"
 TERRAFORM_VERSION="${TERRAFORM_VERSION:-1.15.8}"
 GH_VERSION="${GH_VERSION:-2.96.0}"
+TRIVY_VERSION="${TRIVY_VERSION:-0.73.0}"
 
 case "$(uname -m)" in
   x86_64)
@@ -12,12 +13,14 @@ case "$(uname -m)" in
     helm_arch="amd64"
     terraform_arch="amd64"
     gh_arch="amd64"
+    trivy_arch="64bit"
     ;;
   aarch64 | arm64)
     kubectl_arch="arm64"
     helm_arch="arm64"
     terraform_arch="arm64"
     gh_arch="arm64"
+    trivy_arch="ARM64"
     ;;
   *)
     echo "Unsupported architecture: $(uname -m)" >&2
@@ -245,6 +248,39 @@ install_gh() {
   echo "Installed GitHub CLI ${version}"
 }
 
+install_trivy() {
+  local archive_name="trivy_${TRIVY_VERSION}_Linux-${trivy_arch}.tar.gz"
+  local archive="$workdir/$archive_name"
+  local checksums="$workdir/trivy_${TRIVY_VERSION}_checksums.txt"
+  local extract_dir="$workdir/trivy"
+  local base="https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}"
+
+  mkdir -p "$extract_dir"
+
+  github-download \
+    "$base/$archive_name" \
+    "$archive"
+
+  github-download \
+    "$base/trivy_${TRIVY_VERSION}_checksums.txt" \
+    "$checksums"
+
+  verify_checksum_manifest "$archive" "$checksums"
+
+  tar \
+    --extract \
+    --gzip \
+    --file "$archive" \
+    --directory "$extract_dir"
+
+  sudo install \
+    -m 0755 \
+    "$extract_dir/trivy" \
+    /usr/local/bin/trivy
+
+  echo "Installed Trivy ${TRIVY_VERSION}"
+}
+
 verify_installations() {
   echo
   echo "Installed infrastructure tools:"
@@ -253,6 +289,7 @@ verify_installations() {
   helm version --short
   terraform version
   gh version
+  trivy --version
 }
 
 require_command curl
@@ -266,6 +303,7 @@ install_kubectl
 install_helm
 install_terraform
 install_gh
+install_trivy
 
 verify_installations
 

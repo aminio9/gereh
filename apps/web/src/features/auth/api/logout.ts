@@ -1,3 +1,5 @@
+import { environment } from "../../../config/env";
+
 function readCookie(name: string): string | null {
   const prefix = `${encodeURIComponent(name)}=`;
 
@@ -19,7 +21,7 @@ export async function logout(): Promise<void> {
     throw new Error("CSRF token is unavailable");
   }
 
-  const response = await fetch("/v1/auth/logout", {
+  const response = await fetch(`${environment.apiBaseUrl}/v1/auth/logout`, {
     method: "POST",
     credentials: "include",
     headers: {
