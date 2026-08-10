@@ -3,11 +3,17 @@ openapi: 3.1.0
 info:
   title: Gereh Public API
   version: 0.1.0
+  license:
+    name: Proprietary
+    identifier: LicenseRef-Proprietary
   description: |
     Public REST API exposed by the Gereh API BFF.
 
 servers:
   - url: /
+
+security:
+  - SessionCookie: []
 
 tags:
   - name: System
@@ -27,6 +33,7 @@ paths:
       description: Returns API BFF health and version information.
       tags:
         - System
+      security: []
       responses:
         "200":
           description: The API is available.
@@ -37,6 +44,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SystemStatus"
+        "404":
+          description: The status endpoint is not mounted.
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -1517,6 +1526,15 @@ paths:
           $ref: "#/components/responses/ServiceUnavailable"
 
 components:
+  securitySchemes:
+    SessionCookie:
+      type: apiKey
+      in: cookie
+      name: gereh_session
+      description: |
+        Browser session issued by the Identity Service. All authenticated
+        endpoints require this HttpOnly cookie; mutations additionally
+        require the gereh_csrf cookie sent as the X-CSRF-Token header.
   parameters:
     Pagination:
       name: pageToken

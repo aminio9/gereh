@@ -70,7 +70,7 @@ func TestOnboardingLifecycle(t *testing.T) {
 	t.Cleanup(func() {
 		cleanupTenants(
 			t,
-			repository,
+			testCleanupPool(t),
 			[]string{created.Context.Tenant.ID},
 			actorID,
 		)
@@ -171,7 +171,7 @@ func TestCompleteOnboardingIsIdempotent(t *testing.T) {
 	t.Cleanup(func() {
 		cleanupTenants(
 			t,
-			repository,
+			testCleanupPool(t),
 			[]string{created.Context.Tenant.ID},
 			actorID,
 		)
@@ -252,7 +252,7 @@ func TestFailOnboardingIsTerminal(t *testing.T) {
 	t.Cleanup(func() {
 		cleanupTenants(
 			t,
-			repository,
+			testCleanupPool(t),
 			[]string{created.Context.Tenant.ID},
 			actorID,
 		)
@@ -346,7 +346,7 @@ func TestOperationReadRequiresActor(t *testing.T) {
 	t.Cleanup(func() {
 		cleanupTenants(
 			t,
-			repository,
+			testCleanupPool(t),
 			[]string{created.Context.Tenant.ID},
 			actorID,
 		)

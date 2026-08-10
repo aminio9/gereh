@@ -1,4 +1,7 @@
-h1:DTLHWwf+Okza6XMaGwGpuK39X3vcFYI34zOJiRqqyRs=
-000001_work_management.up.sql h1:FVibzxwLpb44eC3iio2nnkrxhY61MrDJtjWicwPK/Fo=
-000002_work_outbox_cleanup.up.sql h1:i14CNz7Knil54yGVZPNTFTEi3drQxXEh12VQ9dSMmBg=
-000003_work_outbox_least_privilege.up.sql h1:xL0eQGqF4QhUAEu6/h3FfISoOLJ5KlsTPkL1Q9hyP+E=
+h1:MPVONP2raV5SQ8uT+oq+lyXVzy8LCPT5gwP92nLspuA=
+000001_work_management.down.sql h1:t4cx2filE9VDY9FHBav5bPoEK2fgLQmBOZDohqc7p/M=
+000001_work_management.up.sql h1:cRoO+/7FGLZ9q7TPZ6/A4hB1UravqYtE68wwBQqvlwM=
+000002_work_outbox_cleanup.down.sql h1:vfAaCe6KNkWYIvIIg9zd54xvpR68NukyWqxW3NYpk3M=
+000002_work_outbox_cleanup.up.sql h1:Fm2A4tTO3c5Cd8cOxOGj6TVeDIQhJylko09FtzPVKxM=
+000003_work_outbox_least_privilege.down.sql h1:NeCLCT2Zf05q49/yYQwsPbr12Viyx+uyybNu492y5LQ=
+000003_work_outbox_least_privilege.up.sql h1:RuQ3tY6il9e+sU2DF2HgtTYklMZAHm9+rJ7AjFlC1iQ=

@@ -1,4 +1,9 @@
-h1:n9NiOFn4xLBKRibk5iqgapmneCus0y+nUdy3GFMr4p4=
-000001_tenants.up.sql h1:DJWlDBV8XOA4ly0Xz2zLwxb1VIxkjfqRkhHcOtRklog=
-000002_tenant_rls.up.sql h1:dFH6TIEFoPn+HbzVOdRCuGy9D+JrTdKkv2u59PZ7a78=
-000003_onboarding.up.sql h1:2+HENoyDvuLlLrpiywyzX8TIH4K8ANRXn2uUemc9EEA=
+h1:WzXEiPaCqrBP+NsoFJxOhBi84LKCz422hyaRpslDD38=
+000001_tenants.down.sql h1:TLdyOJ00wHfiAT5wjmvqQJ/pOPlx+qdsRJt6pjsvtCc=
+000001_tenants.up.sql h1:b65DbQYfwpMjwWgL8T0prTOpGNzDr2rIuDjS5vTXmkk=
+000002_tenant_rls.down.sql h1:S5pfnRH3ficV4VrK2gDE8B2sjK4BpJ+WTce7rEHLP7A=
+000002_tenant_rls.up.sql h1:VlMN6niZte4xTBtSsojZK17XOBFA8qU1gI9p5yadil0=
+000003_onboarding.down.sql h1:x7+JfKZc9ugNy3K/TdXhaGCjquiIVkIlYPqUwgsNrew=
+000003_onboarding.up.sql h1:JTwl4awXwiKzkkOQWB/Q0KSLzm3QmwtiKm8EL45Jhr8=
+000004_runtime_least_privilege.down.sql h1:SwWUVsV9v7HSsjxJz+dyBhHPzyIOE7yDv8YZlTjfedY=
+000004_runtime_least_privilege.up.sql h1:SvHsXMKTvKjfL38rgODW4NRc6X9LpEzitj1z8HN4CMo=

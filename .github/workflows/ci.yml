@@ -145,6 +145,15 @@ jobs:
             --diff \
             --exit-code
 
+      - name: Check Protobuf compatibility
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          buf breaking \
+            --against "${{ github.event.repository.clone_url }}#branch=${{ github.event.pull_request.base.ref }}"
+
       - name: Verify generated contracts
         shell: bash
         run: |
@@ -186,6 +195,9 @@ jobs:
 
       - name: Lint
         run: pnpm lint
+
+      - name: Lint public OpenAPI contract
+        run: pnpm exec redocly lint contracts/openapi/public-api.yaml
 
       - name: Test
         run: pnpm test

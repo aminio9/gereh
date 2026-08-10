@@ -136,8 +136,13 @@ install_go_tool golangci-lint \
 install_go_tool grpcurl \
   github.com/fullstorydev/grpcurl/cmd/grpcurl@v1.9.3
 
-install_go_tool atlas \
-  ariga.io/atlas/cmd/atlas@v1.3.0
+# Atlas CLI. Note: the ariga.io/atlas/cmd/atlas module is versioned separately
+# from the main ariga.io/atlas module (v0.13.x tags), and it pins an ancient
+# golang.org/x/tools that no longer compiles with Go 1.26+. Build it with an
+# older toolchain via GOTOOLCHAIN (auto-downloaded once, cached thereafter).
+# GOSUMDB is forced on because GOTOOLCHAIN downloads require sumdb verification.
+GOTOOLCHAIN=go1.24.5 GOSUMDB=sum.golang.org install_go_tool atlas \
+  ariga.io/atlas/cmd/atlas@v0.13.1
 
 install_go_tool protoc-gen-go \
   google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.10

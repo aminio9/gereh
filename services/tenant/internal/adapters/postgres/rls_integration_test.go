@@ -75,9 +75,8 @@ func seedRLSTenant(
 	t.Cleanup(func() {
 		cleanupTenant(
 			t,
-			repository,
+			testCleanupPool(t),
 			result.Context.Tenant.ID,
-			actorUserID,
 		)
 	})
 

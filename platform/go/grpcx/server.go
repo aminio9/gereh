@@ -9,6 +9,7 @@ import (
 	"github.com/aminio9/gereh/platform/go/observability"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/health"
 	grpc_health_v1 "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
@@ -71,6 +72,17 @@ func NewServer(
 		grpc.ChainStreamInterceptor(
 			streamInterceptors...,
 		),
+	}
+
+	if config.TLSConfig != nil {
+		serverOptions = append(
+			serverOptions,
+			grpc.Creds(
+				credentials.NewTLS(
+					config.TLSConfig.Clone(),
+				),
+			),
+		)
 	}
 
 	serverOptions = append(
