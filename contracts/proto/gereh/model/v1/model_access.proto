@@ -1,0 +1,172 @@
+syntax = "proto3";
+
+package gereh.model.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aminio9/gereh/gen/go/gereh/model/v1;modelv1";
+
+// ModelAccessService owns provider metadata and tenant-scoped
+// model-connection business identities.
+//
+// Secret material is intentionally absent from this contract.
+// Credential submission and provider verification are introduced
+// by later phases.
+service ModelAccessService {
+  rpc ListProviders(ListProvidersRequest) returns (ListProvidersResponse);
+
+  rpc CreateConnection(CreateConnectionRequest) returns (CreateConnectionResponse);
+
+  rpc GetConnection(GetConnectionRequest) returns (GetConnectionResponse);
+
+  rpc ListConnections(ListConnectionsRequest) returns (ListConnectionsResponse);
+
+  rpc UpdateConnection(UpdateConnectionRequest) returns (UpdateConnectionResponse);
+
+  rpc ArchiveConnection(ArchiveConnectionRequest) returns (ArchiveConnectionResponse);
+}
+
+enum ModelConnectionType {
+  MODEL_CONNECTION_TYPE_UNSPECIFIED = 0;
+
+  // Credential and billing relationship is managed by Gereh.
+  MODEL_CONNECTION_TYPE_PLATFORM_MANAGED = 1;
+
+  // Customer supplies a provider credential.
+  MODEL_CONNECTION_TYPE_BYOK = 2;
+
+  // Enterprise/customer-owned OpenAI-compatible or provider endpoint.
+  MODEL_CONNECTION_TYPE_PRIVATE_ENDPOINT = 3;
+}
+
+enum ModelConnectionStatus {
+  MODEL_CONNECTION_STATUS_UNSPECIFIED = 0;
+
+  // Metadata exists but no usable credential/endpoint has been attached.
+  MODEL_CONNECTION_STATUS_DRAFT = 1;
+
+  // Credential or endpoint is awaiting verification.
+  MODEL_CONNECTION_STATUS_PENDING_VERIFICATION = 2;
+
+  MODEL_CONNECTION_STATUS_ACTIVE = 3;
+
+  MODEL_CONNECTION_STATUS_VERIFICATION_FAILED = 4;
+
+  MODEL_CONNECTION_STATUS_DISABLED = 5;
+
+  MODEL_CONNECTION_STATUS_ARCHIVED = 6;
+}
+
+// Provider metadata contains product/catalog information only.
+// It never contains provider credentials.
+message ModelProvider {
+  string provider_key = 1;
+  string display_name = 2;
+  string description = 3;
+
+  repeated ModelConnectionType supported_connection_types = 4;
+
+  bool enabled = 5;
+}
+
+message ModelConnection {
+  string tenant_id = 1;
+  string connection_id = 2;
+
+  string provider_key = 3;
+  ModelConnectionType connection_type = 4;
+
+  string display_name = 5;
+
+  ModelConnectionStatus status = 6;
+
+  int64 version = 7;
+
+  string created_by_user_id = 8;
+
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+  google.protobuf.Timestamp archived_at = 11;
+}
+
+message ListProvidersRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+}
+
+message ListProvidersResponse {
+  repeated ModelProvider providers = 1;
+}
+
+message CreateConnectionRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+
+  // Browser/API callers supply this through Idempotency-Key.
+  string idempotency_key = 3;
+
+  string provider_key = 4;
+
+  ModelConnectionType connection_type = 5;
+
+  string display_name = 6;
+}
+
+message CreateConnectionResponse {
+  ModelConnection connection = 1;
+}
+
+message GetConnectionRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string connection_id = 3;
+}
+
+message GetConnectionResponse {
+  ModelConnection connection = 1;
+}
+
+message ListConnectionsRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+
+  int32 page_size = 3;
+  string page_token = 4;
+
+  bool include_archived = 5;
+}
+
+message ListConnectionsResponse {
+  repeated ModelConnection connections = 1;
+  string next_page_token = 2;
+}
+
+message UpdateConnectionRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string connection_id = 3;
+
+  string idempotency_key = 4;
+
+  int64 expected_version = 5;
+
+  optional string display_name = 6;
+}
+
+message UpdateConnectionResponse {
+  ModelConnection connection = 1;
+}
+
+message ArchiveConnectionRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string connection_id = 3;
+
+  string idempotency_key = 4;
+
+  int64 expected_version = 5;
+}
+
+message ArchiveConnectionResponse {
+  ModelConnection connection = 1;
+}

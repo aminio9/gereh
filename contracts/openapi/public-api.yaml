@@ -1525,6 +1525,248 @@ paths:
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
 
+  /v1/tenants/{tenantId}/model-providers:
+    get:
+      operationId: listModelProviders
+      tags: [Model Access]
+      summary: List available model providers
+      description: |
+        Returns the enabled provider catalog. Provider rows are platform
+        metadata and never contain credentials.
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Provider catalog
+          content:
+            application/json:
+              schema:
+                type: object
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /v1/tenants/{tenantId}/model-connections:
+    get:
+      operationId: listModelConnections
+      tags: [Model Access]
+      summary: List tenant model connections
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/Pagination"
+        - name: page_size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: include_archived
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Model connections
+          content:
+            application/json:
+              schema:
+                type: object
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+    post:
+      operationId: createModelConnection
+      tags: [Model Access]
+      summary: Create a model connection
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateModelConnectionRequest"
+      responses:
+        "201":
+          description: Model connection created
+          content:
+            application/json:
+              schema:
+                type: object
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /v1/tenants/{tenantId}/model-connections/{connectionId}:
+    get:
+      operationId: getModelConnection
+      tags: [Model Access]
+      summary: Get a model connection
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: connectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Model connection
+          content:
+            application/json:
+              schema:
+                type: object
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+    patch:
+      operationId: updateModelConnection
+      tags: [Model Access]
+      summary: Update a model connection
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: connectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateModelConnectionRequest"
+      responses:
+        "200":
+          description: Model connection updated
+          content:
+            application/json:
+              schema:
+                type: object
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /v1/tenants/{tenantId}/model-connections/{connectionId}/archive:
+    post:
+      operationId: archiveModelConnection
+      tags: [Model Access]
+      summary: Archive a model connection
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: connectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ArchiveModelConnectionRequest"
+      responses:
+        "200":
+          description: Model connection archived
+          content:
+            application/json:
+              schema:
+                type: object
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
 components:
   securitySchemes:
     SessionCookie:
@@ -3082,6 +3324,59 @@ components:
             - number
             - boolean
             - "null"
+
+    CreateModelConnectionRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - providerKey
+        - connectionType
+        - displayName
+      properties:
+        providerKey:
+          type: string
+          minLength: 1
+          maxLength: 64
+
+        connectionType:
+          type: string
+          enum:
+            - MODEL_CONNECTION_TYPE_PLATFORM_MANAGED
+            - MODEL_CONNECTION_TYPE_BYOK
+            - MODEL_CONNECTION_TYPE_PRIVATE_ENDPOINT
+
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 120
+
+    UpdateModelConnectionRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - expectedVersion
+        - displayName
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 1
+
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 120
+
+    ArchiveModelConnectionRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - expectedVersion
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 1
 
   responses:
     BadRequest:

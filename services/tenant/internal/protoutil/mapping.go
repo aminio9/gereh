@@ -208,6 +208,21 @@ func Permission(
 	case domain.PermissionPolicyDecisionRead:
 		return tenantv1.Permission_PERMISSION_POLICY_DECISION_READ
 
+	case domain.PermissionModelProviderRead:
+		return tenantv1.Permission_PERMISSION_MODEL_PROVIDER_READ
+
+	case domain.PermissionModelConnectionRead:
+		return tenantv1.Permission_PERMISSION_MODEL_CONNECTION_READ
+
+	case domain.PermissionModelConnectionCreate:
+		return tenantv1.Permission_PERMISSION_MODEL_CONNECTION_CREATE
+
+	case domain.PermissionModelConnectionUpdate:
+		return tenantv1.Permission_PERMISSION_MODEL_CONNECTION_UPDATE
+
+	case domain.PermissionModelConnectionArchive:
+		return tenantv1.Permission_PERMISSION_MODEL_CONNECTION_ARCHIVE
+
 	default:
 		return tenantv1.Permission_PERMISSION_UNSPECIFIED
 	}
@@ -334,6 +349,21 @@ func DomainPermission(
 
 	case tenantv1.Permission_PERMISSION_POLICY_DECISION_READ:
 		return domain.PermissionPolicyDecisionRead
+
+	case tenantv1.Permission_PERMISSION_MODEL_PROVIDER_READ:
+		return domain.PermissionModelProviderRead
+
+	case tenantv1.Permission_PERMISSION_MODEL_CONNECTION_READ:
+		return domain.PermissionModelConnectionRead
+
+	case tenantv1.Permission_PERMISSION_MODEL_CONNECTION_CREATE:
+		return domain.PermissionModelConnectionCreate
+
+	case tenantv1.Permission_PERMISSION_MODEL_CONNECTION_UPDATE:
+		return domain.PermissionModelConnectionUpdate
+
+	case tenantv1.Permission_PERMISSION_MODEL_CONNECTION_ARCHIVE:
+		return domain.PermissionModelConnectionArchive
 
 	default:
 		return ""

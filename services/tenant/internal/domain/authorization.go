@@ -61,6 +61,16 @@ const (
 	PermissionPolicyArchive Permission = "policy.archive"
 
 	PermissionPolicyDecisionRead Permission = "policy.decision_read"
+
+	PermissionModelProviderRead Permission = "model.provider_read"
+
+	PermissionModelConnectionRead Permission = "model.connection_read"
+
+	PermissionModelConnectionCreate Permission = "model.connection_create"
+
+	PermissionModelConnectionUpdate Permission = "model.connection_update"
+
+	PermissionModelConnectionArchive Permission = "model.connection_archive"
 )
 
 // DenialReason identifies why authorization was denied.
@@ -135,6 +145,12 @@ var knownPermissions = []Permission{
 	PermissionPolicyActivate,
 	PermissionPolicyArchive,
 	PermissionPolicyDecisionRead,
+
+	PermissionModelProviderRead,
+	PermissionModelConnectionRead,
+	PermissionModelConnectionCreate,
+	PermissionModelConnectionUpdate,
+	PermissionModelConnectionArchive,
 }
 
 var ownerPermissions = append(
@@ -191,6 +207,12 @@ var adminPermissions = []Permission{
 	PermissionPolicyActivate,
 	PermissionPolicyArchive,
 	PermissionPolicyDecisionRead,
+
+	PermissionModelProviderRead,
+	PermissionModelConnectionRead,
+	PermissionModelConnectionCreate,
+	PermissionModelConnectionUpdate,
+	PermissionModelConnectionArchive,
 }
 
 var memberPermissions = []Permission{
@@ -209,6 +231,7 @@ var memberPermissions = []Permission{
 	PermissionTaskArtifactManage,
 	PermissionTaskChecklistManage,
 	PermissionTaskScheduleManage,
+	PermissionModelProviderRead,
 }
 
 var viewerPermissions = []Permission{
@@ -217,6 +240,7 @@ var viewerPermissions = []Permission{
 	PermissionCompanyRead,
 	PermissionAgentRead,
 	PermissionWorkRead,
+	PermissionModelProviderRead,
 }
 
 // IsKnownPermission reports whether a permission is supported.
@@ -303,7 +327,10 @@ func IsMutationPermission(
 		PermissionPolicyCreate,
 		PermissionPolicyUpdate,
 		PermissionPolicyActivate,
-		PermissionPolicyArchive:
+		PermissionPolicyArchive,
+		PermissionModelConnectionCreate,
+		PermissionModelConnectionUpdate,
+		PermissionModelConnectionArchive:
 		return true
 
 	default:
