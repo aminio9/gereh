@@ -2,7 +2,9 @@ package domain
 
 import "errors"
 
+// Domain sentinel errors for Model Access operations.
 var (
+	// ErrInvalidArgument indicates a malformed or invalid request parameter.
 	ErrInvalidArgument = errors.New("invalid model access argument")
 
 	ErrNotFound = errors.New("model connection not found")
@@ -18,6 +20,14 @@ var (
 	ErrForbidden = errors.New("model access operation forbidden")
 
 	ErrTenantNotActive = errors.New("tenant is not active")
+
+	ErrPlatformManagedEntitlementRequired = errors.New(
+		"platform-managed model access is not enabled for this tenant",
+	)
+
+	ErrPlatformManagedPoolUnavailable = errors.New(
+		"no platform-managed provider pool is available",
+	)
 
 	ErrConflict = errors.New("model access resource conflict")
 

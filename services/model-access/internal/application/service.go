@@ -32,19 +32,19 @@ func New(
 	config Config,
 ) (*Service, error) {
 	if repository == nil {
-		return nil, fmt.Errorf("Model Access repository is required")
+		return nil, fmt.Errorf("model access repository is required")
 	}
 
 	if authorizer == nil {
-		return nil, fmt.Errorf("Model Access authorizer is required")
+		return nil, fmt.Errorf("model access authorizer is required")
 	}
 
 	if config.EventTopic == "" {
-		return nil, fmt.Errorf("Model Access event topic is required")
+		return nil, fmt.Errorf("model access event topic is required")
 	}
 
 	if config.IdempotencyTTL <= 0 {
-		return nil, fmt.Errorf("Model Access idempotency TTL must be positive")
+		return nil, fmt.Errorf("model access idempotency TTL must be positive")
 	}
 
 	return &Service{

@@ -232,7 +232,8 @@ func (service *Service) CreateTenant(
 			TenantID: tenantID.String(),
 			PlanKey:  "free",
 			Features: map[string]bool{
-				"agent_coordination": true,
+				"agent_coordination":      true,
+				"platform_managed_models": false,
 			},
 			Limits: map[string]int64{
 				"members":  5,

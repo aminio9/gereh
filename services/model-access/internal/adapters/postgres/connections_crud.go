@@ -71,6 +71,22 @@ func (repository *Repository) CreateConnection(
 		return domain.Connection{}, err
 	}
 
+	connection := params.Connection
+
+	if connection.ConnectionType == domain.ConnectionTypePlatformManaged {
+		poolKey, err := selectPlatformManagedPool(
+			ctx,
+			transaction,
+			connection.ProviderKey,
+			params.PlatformManagedRegion,
+		)
+		if err != nil {
+			return domain.Connection{}, err
+		}
+
+		connection.ProviderPoolKey = &poolKey
+	}
+
 	result, err := scanConnection(
 		transaction.QueryRow(
 			ctx,
@@ -79,6 +95,7 @@ func (repository *Repository) CreateConnection(
 					tenant_id,
 					connection_id,
 					provider_key,
+					provider_pool_key,
 					connection_type,
 					display_name,
 					status,
@@ -95,14 +112,16 @@ func (repository *Repository) CreateConnection(
 					$5,
 					$6,
 					$7,
-					$8::uuid,
-					$9,
-					$10
+					$8,
+					$9::uuid,
+					$10,
+					$11
 				)
 				RETURNING
 					tenant_id::text,
 					connection_id::text,
 					provider_key,
+					provider_pool_key,
 					connection_type,
 					display_name,
 					status,
@@ -112,16 +131,17 @@ func (repository *Repository) CreateConnection(
 					updated_at,
 					archived_at
 			`,
-			params.Connection.TenantID,
-			params.Connection.ID,
-			params.Connection.ProviderKey,
-			string(params.Connection.ConnectionType),
-			params.Connection.DisplayName,
-			string(params.Connection.Status),
-			params.Connection.Version,
-			params.Connection.CreatedByUserID,
-			params.Connection.CreatedAt,
-			params.Connection.UpdatedAt,
+			connection.TenantID,
+			connection.ID,
+			connection.ProviderKey,
+			connection.ProviderPoolKey,
+			string(connection.ConnectionType),
+			connection.DisplayName,
+			string(connection.Status),
+			connection.Version,
+			connection.CreatedByUserID,
+			connection.CreatedAt,
+			connection.UpdatedAt,
 		),
 	)
 	if err != nil {
@@ -200,6 +220,7 @@ func (repository *Repository) GetConnection(
 					tenant_id::text,
 					connection_id::text,
 					provider_key,
+					provider_pool_key,
 					connection_type,
 					display_name,
 					status,
@@ -261,6 +282,7 @@ func (repository *Repository) ListConnections(
 				tenant_id::text,
 				connection_id::text,
 				provider_key,
+				provider_pool_key,
 				connection_type,
 				display_name,
 				status,

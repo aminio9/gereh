@@ -28,6 +28,22 @@ func (allowAllAuthorizer) Require(
 	return nil
 }
 
+func (allowAllAuthorizer) RequireWithContext(
+	_ context.Context,
+	_ string,
+	_ string,
+	_ tenantv1.Permission,
+) (ports.TenantAccessContext, error) {
+	return ports.TenantAccessContext{
+		Region:  "global",
+		PlanKey: "test",
+		Features: map[string]bool{
+			"platform_managed_models": true,
+		},
+		Limits: map[string]int64{},
+	}, nil
+}
+
 // modelAccessIntegrationTest wires a repository-backed application service
 // against the local model_access_db runtime role.
 type modelAccessIntegrationTest struct {
@@ -621,4 +637,166 @@ func TestEventEnvelopeCarriesNoSecretFields(t *testing.T) {
 	require.NotContains(t, string(envelope), "credential")
 	require.NotContains(t, string(envelope), "secret")
 	require.NotContains(t, string(envelope), "bearer")
+}
+
+func TestCreatePlatformManagedConnectionBecomesActive(t *testing.T) {
+	test := newModelAccessIntegrationTest(t)
+
+	ctx := context.Background()
+
+	connection, err := test.service.CreateConnection(
+		ctx,
+		application.CreateConnectionInput{
+			ActorUserID:    test.userA,
+			TenantID:       test.tenantA,
+			IdempotencyKey: uuid.NewString(),
+			ProviderKey:    "openai",
+			ConnectionType: domain.ConnectionTypePlatformManaged,
+			DisplayName:    "Gereh OpenAI",
+		},
+	)
+	require.NoError(t, err)
+
+	require.Equal(t, domain.ConnectionStatusActive, connection.Status)
+	require.NotNil(t, connection.ProviderPoolKey)
+	require.Equal(t, "gereh-openai-global", *connection.ProviderPoolKey)
+	require.EqualValues(t, 1, connection.Version)
+	require.EqualValues(t, 1, test.connectionCount(ctx, t, test.tenantA))
+	require.EqualValues(t, 1, test.revisionCount(ctx, t, test.tenantA, connection.ID))
+	require.EqualValues(t, 1, test.outboxCountForAggregate(ctx, t, connection.ID))
+}
+
+func TestPlatformManagedRejectsUnsupportedProvider(t *testing.T) {
+	test := newModelAccessIntegrationTest(t)
+
+	_, err := test.service.CreateConnection(
+		context.Background(),
+		application.CreateConnectionInput{
+			ActorUserID:    test.userA,
+			TenantID:       test.tenantA,
+			IdempotencyKey: uuid.NewString(),
+			ProviderKey:    "nous",
+			ConnectionType: domain.ConnectionTypePlatformManaged,
+			DisplayName:    "Gereh Nous",
+		},
+	)
+	require.ErrorIs(t, err, domain.ErrUnsupportedConnectionType)
+}
+
+func TestPlatformManagedFailsClosedWithoutPool(t *testing.T) {
+	test := newModelAccessIntegrationTest(t)
+
+	ctx := context.Background()
+
+	_, err := test.repository.(*Repository).database.Pool().Exec(
+		ctx,
+		`
+			UPDATE model_access_provider_pools
+			SET enabled = FALSE
+			WHERE provider_key = 'openai'
+		`,
+	)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		_, _ = test.repository.(*Repository).database.Pool().Exec(
+			context.Background(),
+			`
+				UPDATE model_access_provider_pools
+				SET enabled = TRUE
+				WHERE provider_key = 'openai'
+			`,
+		)
+	})
+
+	_, err = test.service.CreateConnection(
+		ctx,
+		application.CreateConnectionInput{
+			ActorUserID:    test.userA,
+			TenantID:       test.tenantA,
+			IdempotencyKey: uuid.NewString(),
+			ProviderKey:    "openai",
+			ConnectionType: domain.ConnectionTypePlatformManaged,
+			DisplayName:    "No Pool OpenAI",
+		},
+	)
+	require.ErrorIs(t, err, domain.ErrPlatformManagedPoolUnavailable)
+}
+
+func TestPlatformManagedCreateIsIdempotent(t *testing.T) {
+	test := newModelAccessIntegrationTest(t)
+
+	ctx := context.Background()
+
+	key := uuid.NewString()
+
+	input := application.CreateConnectionInput{
+		ActorUserID:    test.userA,
+		TenantID:       test.tenantA,
+		IdempotencyKey: key,
+		ProviderKey:    "openai",
+		ConnectionType: domain.ConnectionTypePlatformManaged,
+		DisplayName:    "Gereh OpenAI",
+	}
+
+	first, err := test.service.CreateConnection(ctx, input)
+	require.NoError(t, err)
+
+	second, err := test.service.CreateConnection(ctx, input)
+	require.NoError(t, err)
+
+	require.Equal(t, first.ID, second.ID)
+	require.Equal(t, first.ProviderPoolKey, second.ProviderPoolKey)
+	require.Equal(t, domain.ConnectionStatusActive, second.Status)
+	require.EqualValues(t, 1, test.outboxCountForAggregate(ctx, t, first.ID))
+}
+
+func TestPlatformManagedRevisionContainsPoolKey(t *testing.T) {
+	test := newModelAccessIntegrationTest(t)
+
+	ctx := context.Background()
+
+	connection, err := test.service.CreateConnection(
+		ctx,
+		application.CreateConnectionInput{
+			ActorUserID:    test.userA,
+			TenantID:       test.tenantA,
+			IdempotencyKey: uuid.NewString(),
+			ProviderKey:    "openai",
+			ConnectionType: domain.ConnectionTypePlatformManaged,
+			DisplayName:    "Revision Pool Check",
+		},
+	)
+	require.NoError(t, err)
+
+	var poolKey *string
+
+	err = test.repository.(*Repository).database.Pool().QueryRow(
+		ctx,
+		`
+			SELECT provider_pool_key
+			FROM model_access_connection_revisions
+			WHERE connection_id = $1::uuid
+			ORDER BY revision
+			LIMIT 1
+		`,
+		connection.ID,
+	).Scan(&poolKey)
+	require.NoError(t, err)
+	require.NotNil(t, poolKey)
+	require.Equal(t, "gereh-openai-global", *poolKey)
+}
+
+func TestBYOKConnectionHasNoPoolKey(t *testing.T) {
+	test := newModelAccessIntegrationTest(t)
+
+	connection := test.createConnection(
+		t,
+		test.tenantA,
+		test.userA,
+		"BYOK No Pool",
+	)
+
+	require.Nil(t, connection.ProviderPoolKey)
+	require.Equal(t, domain.ConnectionStatusDraft, connection.Status)
 }

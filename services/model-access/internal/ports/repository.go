@@ -23,6 +23,14 @@ type CreateConnectionParams struct {
 
 	Connection domain.Connection
 
+	// PlatformManagedRegion is populated only for
+	// ConnectionTypePlatformManaged.
+	//
+	// Repository pool selection occurs inside the same transaction as
+	// connection creation so an operator cannot disable/change pool
+	// eligibility between selection and persistence.
+	PlatformManagedRegion string
+
 	IdempotencyKey string
 	RequestHash    []byte
 
