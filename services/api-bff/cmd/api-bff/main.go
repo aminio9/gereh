@@ -9,6 +9,7 @@ import (
 	"time"
 
 	identityv1 "github.com/aminio9/gereh/gen/go/gereh/identity/v1"
+	modelv1 "github.com/aminio9/gereh/gen/go/gereh/model/v1"
 	organizationv1 "github.com/aminio9/gereh/gen/go/gereh/organization/v1"
 	policyv1 "github.com/aminio9/gereh/gen/go/gereh/policy/v1"
 	projectionv1 "github.com/aminio9/gereh/gen/go/gereh/projection/v1"
@@ -18,6 +19,7 @@ import (
 	"github.com/aminio9/gereh/platform/go/service"
 	bffconfig "github.com/aminio9/gereh/services/api-bff/internal/config"
 	authhttp "github.com/aminio9/gereh/services/api-bff/internal/http/auth"
+	modelaccesshttp "github.com/aminio9/gereh/services/api-bff/internal/http/modelaccess"
 	organizationhttp "github.com/aminio9/gereh/services/api-bff/internal/http/organization"
 	policyhttp "github.com/aminio9/gereh/services/api-bff/internal/http/policy"
 	projectionhttp "github.com/aminio9/gereh/services/api-bff/internal/http/projection"
@@ -319,6 +321,71 @@ func run() error {
 		slog.Default(),
 	)
 
+	modelAccessConfig, err := bffconfig.ModelAccessConfigFromEnv()
+	if err != nil {
+		return fmt.Errorf(
+			"load Model Access Service configuration: %w",
+			err,
+		)
+	}
+
+	modelAccessClientConfig := grpcx.DefaultClientConfig(
+		modelAccessConfig.Target,
+	)
+
+	modelAccessClientConfig.Insecure =
+		modelAccessConfig.Insecure
+
+	if !modelAccessClientConfig.Insecure {
+		tlsConfig, err := grpcx.LoadWorkloadClientTLS(
+			grpcx.WorkloadTLSFiles{
+				CertificateFile: modelAccessConfig.TLSCertFile,
+				PrivateKeyFile:  modelAccessConfig.TLSKeyFile,
+				CAFile:          modelAccessConfig.TLSCAFile,
+			},
+			modelAccessConfig.ServerName,
+		)
+		if err != nil {
+			return fmt.Errorf(
+				"configure Model Access gRPC TLS: %w",
+				err,
+			)
+		}
+
+		modelAccessClientConfig.TLSConfig = tlsConfig
+	}
+
+	modelAccessConnection, err := grpcx.NewClient(
+		modelAccessClientConfig,
+		nil,
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"create Model Access Service gRPC client: %w",
+			err,
+		)
+	}
+
+	defer func() {
+		if err := modelAccessConnection.Close(); err != nil {
+			slog.Warn(
+				"close Model Access gRPC client",
+				"error",
+				err,
+			)
+		}
+	}()
+
+	modelAccessClient := modelv1.NewModelAccessServiceClient(
+		modelAccessConnection,
+	)
+
+	modelAccessHandler := modelaccesshttp.New(
+		modelAccessClient,
+		tenantClient,
+		slog.Default(),
+	)
+
 	service.Run(
 		service.Config{
 			Name:           "api-bff",
@@ -347,6 +414,10 @@ func run() error {
 				authHandler,
 			)
 			projectionHandler.Register(
+				router,
+				authHandler,
+			)
+			modelAccessHandler.Register(
 				router,
 				authHandler,
 			)

@@ -56,6 +56,11 @@ func TestPermissionsForRole(t *testing.T) {
 				PermissionPolicyActivate,
 				PermissionPolicyArchive,
 				PermissionPolicyDecisionRead,
+				PermissionModelProviderRead,
+				PermissionModelConnectionRead,
+				PermissionModelConnectionCreate,
+				PermissionModelConnectionUpdate,
+				PermissionModelConnectionArchive,
 			},
 		},
 		{
@@ -100,6 +105,11 @@ func TestPermissionsForRole(t *testing.T) {
 				PermissionPolicyActivate,
 				PermissionPolicyArchive,
 				PermissionPolicyDecisionRead,
+				PermissionModelProviderRead,
+				PermissionModelConnectionRead,
+				PermissionModelConnectionCreate,
+				PermissionModelConnectionUpdate,
+				PermissionModelConnectionArchive,
 			},
 		},
 		{
@@ -121,6 +131,7 @@ func TestPermissionsForRole(t *testing.T) {
 				PermissionTaskArtifactManage,
 				PermissionTaskChecklistManage,
 				PermissionTaskScheduleManage,
+				PermissionModelProviderRead,
 			},
 		},
 		{
@@ -132,6 +143,7 @@ func TestPermissionsForRole(t *testing.T) {
 				PermissionCompanyRead,
 				PermissionAgentRead,
 				PermissionWorkRead,
+				PermissionModelProviderRead,
 			},
 		},
 	}

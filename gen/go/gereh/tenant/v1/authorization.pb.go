@@ -28,46 +28,51 @@ const (
 type Permission int32
 
 const (
-	Permission_PERMISSION_UNSPECIFIED            Permission = 0
-	Permission_PERMISSION_TENANT_READ            Permission = 1
-	Permission_PERMISSION_TENANT_UPDATE          Permission = 2
-	Permission_PERMISSION_TENANT_ARCHIVE         Permission = 3
-	Permission_PERMISSION_MEMBER_LIST            Permission = 10
-	Permission_PERMISSION_MEMBER_ADD             Permission = 11
-	Permission_PERMISSION_MEMBER_UPDATE_ROLE     Permission = 12
-	Permission_PERMISSION_MEMBER_REMOVE          Permission = 13
-	Permission_PERMISSION_ENTITLEMENT_READ       Permission = 20
-	Permission_PERMISSION_COMPANY_READ           Permission = 30
-	Permission_PERMISSION_COMPANY_CREATE         Permission = 31
-	Permission_PERMISSION_COMPANY_UPDATE         Permission = 32
-	Permission_PERMISSION_COMPANY_ARCHIVE        Permission = 33
-	Permission_PERMISSION_AGENT_READ             Permission = 40
-	Permission_PERMISSION_AGENT_CREATE           Permission = 41
-	Permission_PERMISSION_AGENT_UPDATE           Permission = 42
-	Permission_PERMISSION_AGENT_DELETE           Permission = 43
-	Permission_PERMISSION_AGENT_HIERARCHY_MANAGE Permission = 44
-	Permission_PERMISSION_AGENT_LIFECYCLE_MANAGE Permission = 45
-	Permission_PERMISSION_WORK_READ              Permission = 50
-	Permission_PERMISSION_GOAL_CREATE            Permission = 51
-	Permission_PERMISSION_GOAL_UPDATE            Permission = 52
-	Permission_PERMISSION_PROJECT_CREATE         Permission = 53
-	Permission_PERMISSION_PROJECT_UPDATE         Permission = 54
-	Permission_PERMISSION_TASK_CREATE            Permission = 55
-	Permission_PERMISSION_TASK_UPDATE            Permission = 56
-	Permission_PERMISSION_TASK_STATUS_UPDATE     Permission = 57
-	Permission_PERMISSION_TASK_ASSIGN            Permission = 58
-	Permission_PERMISSION_TASK_DEPENDENCY_MANAGE Permission = 59
-	Permission_PERMISSION_TASK_COMMENT_CREATE    Permission = 60
-	Permission_PERMISSION_TASK_COMMENT_MODERATE  Permission = 61
-	Permission_PERMISSION_TASK_ARTIFACT_MANAGE   Permission = 62
-	Permission_PERMISSION_TASK_CHECKLIST_MANAGE  Permission = 63
-	Permission_PERMISSION_TASK_SCHEDULE_MANAGE   Permission = 64
-	Permission_PERMISSION_POLICY_READ            Permission = 70
-	Permission_PERMISSION_POLICY_CREATE          Permission = 71
-	Permission_PERMISSION_POLICY_UPDATE          Permission = 72
-	Permission_PERMISSION_POLICY_ACTIVATE        Permission = 73
-	Permission_PERMISSION_POLICY_ARCHIVE         Permission = 74
-	Permission_PERMISSION_POLICY_DECISION_READ   Permission = 75
+	Permission_PERMISSION_UNSPECIFIED              Permission = 0
+	Permission_PERMISSION_TENANT_READ              Permission = 1
+	Permission_PERMISSION_TENANT_UPDATE            Permission = 2
+	Permission_PERMISSION_TENANT_ARCHIVE           Permission = 3
+	Permission_PERMISSION_MEMBER_LIST              Permission = 10
+	Permission_PERMISSION_MEMBER_ADD               Permission = 11
+	Permission_PERMISSION_MEMBER_UPDATE_ROLE       Permission = 12
+	Permission_PERMISSION_MEMBER_REMOVE            Permission = 13
+	Permission_PERMISSION_ENTITLEMENT_READ         Permission = 20
+	Permission_PERMISSION_COMPANY_READ             Permission = 30
+	Permission_PERMISSION_COMPANY_CREATE           Permission = 31
+	Permission_PERMISSION_COMPANY_UPDATE           Permission = 32
+	Permission_PERMISSION_COMPANY_ARCHIVE          Permission = 33
+	Permission_PERMISSION_AGENT_READ               Permission = 40
+	Permission_PERMISSION_AGENT_CREATE             Permission = 41
+	Permission_PERMISSION_AGENT_UPDATE             Permission = 42
+	Permission_PERMISSION_AGENT_DELETE             Permission = 43
+	Permission_PERMISSION_AGENT_HIERARCHY_MANAGE   Permission = 44
+	Permission_PERMISSION_AGENT_LIFECYCLE_MANAGE   Permission = 45
+	Permission_PERMISSION_WORK_READ                Permission = 50
+	Permission_PERMISSION_GOAL_CREATE              Permission = 51
+	Permission_PERMISSION_GOAL_UPDATE              Permission = 52
+	Permission_PERMISSION_PROJECT_CREATE           Permission = 53
+	Permission_PERMISSION_PROJECT_UPDATE           Permission = 54
+	Permission_PERMISSION_TASK_CREATE              Permission = 55
+	Permission_PERMISSION_TASK_UPDATE              Permission = 56
+	Permission_PERMISSION_TASK_STATUS_UPDATE       Permission = 57
+	Permission_PERMISSION_TASK_ASSIGN              Permission = 58
+	Permission_PERMISSION_TASK_DEPENDENCY_MANAGE   Permission = 59
+	Permission_PERMISSION_TASK_COMMENT_CREATE      Permission = 60
+	Permission_PERMISSION_TASK_COMMENT_MODERATE    Permission = 61
+	Permission_PERMISSION_TASK_ARTIFACT_MANAGE     Permission = 62
+	Permission_PERMISSION_TASK_CHECKLIST_MANAGE    Permission = 63
+	Permission_PERMISSION_TASK_SCHEDULE_MANAGE     Permission = 64
+	Permission_PERMISSION_POLICY_READ              Permission = 70
+	Permission_PERMISSION_POLICY_CREATE            Permission = 71
+	Permission_PERMISSION_POLICY_UPDATE            Permission = 72
+	Permission_PERMISSION_POLICY_ACTIVATE          Permission = 73
+	Permission_PERMISSION_POLICY_ARCHIVE           Permission = 74
+	Permission_PERMISSION_POLICY_DECISION_READ     Permission = 75
+	Permission_PERMISSION_MODEL_PROVIDER_READ      Permission = 80
+	Permission_PERMISSION_MODEL_CONNECTION_READ    Permission = 81
+	Permission_PERMISSION_MODEL_CONNECTION_CREATE  Permission = 82
+	Permission_PERMISSION_MODEL_CONNECTION_UPDATE  Permission = 83
+	Permission_PERMISSION_MODEL_CONNECTION_ARCHIVE Permission = 84
 )
 
 // Enum value maps for Permission.
@@ -113,48 +118,58 @@ var (
 		73: "PERMISSION_POLICY_ACTIVATE",
 		74: "PERMISSION_POLICY_ARCHIVE",
 		75: "PERMISSION_POLICY_DECISION_READ",
+		80: "PERMISSION_MODEL_PROVIDER_READ",
+		81: "PERMISSION_MODEL_CONNECTION_READ",
+		82: "PERMISSION_MODEL_CONNECTION_CREATE",
+		83: "PERMISSION_MODEL_CONNECTION_UPDATE",
+		84: "PERMISSION_MODEL_CONNECTION_ARCHIVE",
 	}
 	Permission_value = map[string]int32{
-		"PERMISSION_UNSPECIFIED":            0,
-		"PERMISSION_TENANT_READ":            1,
-		"PERMISSION_TENANT_UPDATE":          2,
-		"PERMISSION_TENANT_ARCHIVE":         3,
-		"PERMISSION_MEMBER_LIST":            10,
-		"PERMISSION_MEMBER_ADD":             11,
-		"PERMISSION_MEMBER_UPDATE_ROLE":     12,
-		"PERMISSION_MEMBER_REMOVE":          13,
-		"PERMISSION_ENTITLEMENT_READ":       20,
-		"PERMISSION_COMPANY_READ":           30,
-		"PERMISSION_COMPANY_CREATE":         31,
-		"PERMISSION_COMPANY_UPDATE":         32,
-		"PERMISSION_COMPANY_ARCHIVE":        33,
-		"PERMISSION_AGENT_READ":             40,
-		"PERMISSION_AGENT_CREATE":           41,
-		"PERMISSION_AGENT_UPDATE":           42,
-		"PERMISSION_AGENT_DELETE":           43,
-		"PERMISSION_AGENT_HIERARCHY_MANAGE": 44,
-		"PERMISSION_AGENT_LIFECYCLE_MANAGE": 45,
-		"PERMISSION_WORK_READ":              50,
-		"PERMISSION_GOAL_CREATE":            51,
-		"PERMISSION_GOAL_UPDATE":            52,
-		"PERMISSION_PROJECT_CREATE":         53,
-		"PERMISSION_PROJECT_UPDATE":         54,
-		"PERMISSION_TASK_CREATE":            55,
-		"PERMISSION_TASK_UPDATE":            56,
-		"PERMISSION_TASK_STATUS_UPDATE":     57,
-		"PERMISSION_TASK_ASSIGN":            58,
-		"PERMISSION_TASK_DEPENDENCY_MANAGE": 59,
-		"PERMISSION_TASK_COMMENT_CREATE":    60,
-		"PERMISSION_TASK_COMMENT_MODERATE":  61,
-		"PERMISSION_TASK_ARTIFACT_MANAGE":   62,
-		"PERMISSION_TASK_CHECKLIST_MANAGE":  63,
-		"PERMISSION_TASK_SCHEDULE_MANAGE":   64,
-		"PERMISSION_POLICY_READ":            70,
-		"PERMISSION_POLICY_CREATE":          71,
-		"PERMISSION_POLICY_UPDATE":          72,
-		"PERMISSION_POLICY_ACTIVATE":        73,
-		"PERMISSION_POLICY_ARCHIVE":         74,
-		"PERMISSION_POLICY_DECISION_READ":   75,
+		"PERMISSION_UNSPECIFIED":              0,
+		"PERMISSION_TENANT_READ":              1,
+		"PERMISSION_TENANT_UPDATE":            2,
+		"PERMISSION_TENANT_ARCHIVE":           3,
+		"PERMISSION_MEMBER_LIST":              10,
+		"PERMISSION_MEMBER_ADD":               11,
+		"PERMISSION_MEMBER_UPDATE_ROLE":       12,
+		"PERMISSION_MEMBER_REMOVE":            13,
+		"PERMISSION_ENTITLEMENT_READ":         20,
+		"PERMISSION_COMPANY_READ":             30,
+		"PERMISSION_COMPANY_CREATE":           31,
+		"PERMISSION_COMPANY_UPDATE":           32,
+		"PERMISSION_COMPANY_ARCHIVE":          33,
+		"PERMISSION_AGENT_READ":               40,
+		"PERMISSION_AGENT_CREATE":             41,
+		"PERMISSION_AGENT_UPDATE":             42,
+		"PERMISSION_AGENT_DELETE":             43,
+		"PERMISSION_AGENT_HIERARCHY_MANAGE":   44,
+		"PERMISSION_AGENT_LIFECYCLE_MANAGE":   45,
+		"PERMISSION_WORK_READ":                50,
+		"PERMISSION_GOAL_CREATE":              51,
+		"PERMISSION_GOAL_UPDATE":              52,
+		"PERMISSION_PROJECT_CREATE":           53,
+		"PERMISSION_PROJECT_UPDATE":           54,
+		"PERMISSION_TASK_CREATE":              55,
+		"PERMISSION_TASK_UPDATE":              56,
+		"PERMISSION_TASK_STATUS_UPDATE":       57,
+		"PERMISSION_TASK_ASSIGN":              58,
+		"PERMISSION_TASK_DEPENDENCY_MANAGE":   59,
+		"PERMISSION_TASK_COMMENT_CREATE":      60,
+		"PERMISSION_TASK_COMMENT_MODERATE":    61,
+		"PERMISSION_TASK_ARTIFACT_MANAGE":     62,
+		"PERMISSION_TASK_CHECKLIST_MANAGE":    63,
+		"PERMISSION_TASK_SCHEDULE_MANAGE":     64,
+		"PERMISSION_POLICY_READ":              70,
+		"PERMISSION_POLICY_CREATE":            71,
+		"PERMISSION_POLICY_UPDATE":            72,
+		"PERMISSION_POLICY_ACTIVATE":          73,
+		"PERMISSION_POLICY_ARCHIVE":           74,
+		"PERMISSION_POLICY_DECISION_READ":     75,
+		"PERMISSION_MODEL_PROVIDER_READ":      80,
+		"PERMISSION_MODEL_CONNECTION_READ":    81,
+		"PERMISSION_MODEL_CONNECTION_CREATE":  82,
+		"PERMISSION_MODEL_CONNECTION_UPDATE":  83,
+		"PERMISSION_MODEL_CONNECTION_ARCHIVE": 84,
 	}
 )
 
@@ -640,7 +655,7 @@ const file_gereh_tenant_v1_authorization_proto_rawDesc = "" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12=\n" +
 	"\vpermissions\x18\x03 \x03(\x0e2\x1b.gereh.tenant.v1.PermissionR\vpermissions\"g\n" +
 	"\x1fBatchCheckAuthorizationResponse\x12D\n" +
-	"\tdecisions\x18\x01 \x03(\v2&.gereh.tenant.v1.AuthorizationDecisionR\tdecisions*\xf9\t\n" +
+	"\tdecisions\x18\x01 \x03(\v2&.gereh.tenant.v1.AuthorizationDecisionR\tdecisions*\xbc\v\n" +
 	"\n" +
 	"Permission\x12\x1a\n" +
 	"\x16PERMISSION_UNSPECIFIED\x10\x00\x12\x1a\n" +
@@ -683,7 +698,12 @@ const file_gereh_tenant_v1_authorization_proto_rawDesc = "" +
 	"\x18PERMISSION_POLICY_UPDATE\x10H\x12\x1e\n" +
 	"\x1aPERMISSION_POLICY_ACTIVATE\x10I\x12\x1d\n" +
 	"\x19PERMISSION_POLICY_ARCHIVE\x10J\x12#\n" +
-	"\x1fPERMISSION_POLICY_DECISION_READ\x10K*\x87\x01\n" +
+	"\x1fPERMISSION_POLICY_DECISION_READ\x10K\x12\"\n" +
+	"\x1ePERMISSION_MODEL_PROVIDER_READ\x10P\x12$\n" +
+	" PERMISSION_MODEL_CONNECTION_READ\x10Q\x12&\n" +
+	"\"PERMISSION_MODEL_CONNECTION_CREATE\x10R\x12&\n" +
+	"\"PERMISSION_MODEL_CONNECTION_UPDATE\x10S\x12'\n" +
+	"#PERMISSION_MODEL_CONNECTION_ARCHIVE\x10T*\x87\x01\n" +
 	"\n" +
 	"TenantRole\x12\x1b\n" +
 	"\x17TENANT_ROLE_UNSPECIFIED\x10\x00\x12\x15\n" +

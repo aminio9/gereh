@@ -69,3 +69,17 @@ env "projection" {
     format = golang-migrate
   }
 }
+
+variable "model_access_database_url" {
+  type    = string
+  default = getenv("MODEL_ACCESS_MIGRATION_DATABASE_URL")
+}
+
+env "model_access" {
+  url = var.model_access_database_url
+
+  migration {
+    dir    = "file://services/model-access/migrations"
+    format = golang-migrate
+  }
+}

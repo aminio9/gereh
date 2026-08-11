@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package gereh.model.v1;
+
+import "gereh/model/v1/model_access.proto";
+
+option go_package = "github.com/aminio9/gereh/gen/go/gereh/model/v1;modelv1";
+
+message ModelConnectionCreated {
+  ModelConnection connection = 1;
+}
+
+message ModelConnectionUpdated {
+  ModelConnection connection = 1;
+
+  string updated_by_user_id = 2;
+}
+
+message ModelConnectionArchived {
+  ModelConnection connection = 1;
+
+  string archived_by_user_id = 2;
+}
