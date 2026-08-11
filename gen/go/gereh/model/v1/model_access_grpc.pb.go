@@ -19,12 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ModelAccessService_ListProviders_FullMethodName     = "/gereh.model.v1.ModelAccessService/ListProviders"
-	ModelAccessService_CreateConnection_FullMethodName  = "/gereh.model.v1.ModelAccessService/CreateConnection"
-	ModelAccessService_GetConnection_FullMethodName     = "/gereh.model.v1.ModelAccessService/GetConnection"
-	ModelAccessService_ListConnections_FullMethodName   = "/gereh.model.v1.ModelAccessService/ListConnections"
-	ModelAccessService_UpdateConnection_FullMethodName  = "/gereh.model.v1.ModelAccessService/UpdateConnection"
-	ModelAccessService_ArchiveConnection_FullMethodName = "/gereh.model.v1.ModelAccessService/ArchiveConnection"
+	ModelAccessService_ListProviders_FullMethodName        = "/gereh.model.v1.ModelAccessService/ListProviders"
+	ModelAccessService_CreateConnection_FullMethodName     = "/gereh.model.v1.ModelAccessService/CreateConnection"
+	ModelAccessService_CreateBYOKConnection_FullMethodName = "/gereh.model.v1.ModelAccessService/CreateBYOKConnection"
+	ModelAccessService_GetConnection_FullMethodName        = "/gereh.model.v1.ModelAccessService/GetConnection"
+	ModelAccessService_ListConnections_FullMethodName      = "/gereh.model.v1.ModelAccessService/ListConnections"
+	ModelAccessService_UpdateConnection_FullMethodName     = "/gereh.model.v1.ModelAccessService/UpdateConnection"
+	ModelAccessService_RotateBYOKCredential_FullMethodName = "/gereh.model.v1.ModelAccessService/RotateBYOKCredential"
+	ModelAccessService_ArchiveConnection_FullMethodName    = "/gereh.model.v1.ModelAccessService/ArchiveConnection"
 )
 
 // ModelAccessServiceClient is the client API for ModelAccessService service.
@@ -40,9 +42,16 @@ const (
 type ModelAccessServiceClient interface {
 	ListProviders(ctx context.Context, in *ListProvidersRequest, opts ...grpc.CallOption) (*ListProvidersResponse, error)
 	CreateConnection(ctx context.Context, in *CreateConnectionRequest, opts ...grpc.CallOption) (*CreateConnectionResponse, error)
+	// Creates a customer BYOK connection.
+	//
+	// api_key is write-only secret material. Implementations must never log it,
+	// persist it in PostgreSQL, return it, or include it in telemetry/events.
+	CreateBYOKConnection(ctx context.Context, in *CreateBYOKConnectionRequest, opts ...grpc.CallOption) (*CreateBYOKConnectionResponse, error)
 	GetConnection(ctx context.Context, in *GetConnectionRequest, opts ...grpc.CallOption) (*GetConnectionResponse, error)
 	ListConnections(ctx context.Context, in *ListConnectionsRequest, opts ...grpc.CallOption) (*ListConnectionsResponse, error)
 	UpdateConnection(ctx context.Context, in *UpdateConnectionRequest, opts ...grpc.CallOption) (*UpdateConnectionResponse, error)
+	// Rotates a BYOK secret without changing the ModelConnection identity.
+	RotateBYOKCredential(ctx context.Context, in *RotateBYOKCredentialRequest, opts ...grpc.CallOption) (*RotateBYOKCredentialResponse, error)
 	ArchiveConnection(ctx context.Context, in *ArchiveConnectionRequest, opts ...grpc.CallOption) (*ArchiveConnectionResponse, error)
 }
 
@@ -68,6 +77,16 @@ func (c *modelAccessServiceClient) CreateConnection(ctx context.Context, in *Cre
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateConnectionResponse)
 	err := c.cc.Invoke(ctx, ModelAccessService_CreateConnection_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *modelAccessServiceClient) CreateBYOKConnection(ctx context.Context, in *CreateBYOKConnectionRequest, opts ...grpc.CallOption) (*CreateBYOKConnectionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateBYOKConnectionResponse)
+	err := c.cc.Invoke(ctx, ModelAccessService_CreateBYOKConnection_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -104,6 +123,16 @@ func (c *modelAccessServiceClient) UpdateConnection(ctx context.Context, in *Upd
 	return out, nil
 }
 
+func (c *modelAccessServiceClient) RotateBYOKCredential(ctx context.Context, in *RotateBYOKCredentialRequest, opts ...grpc.CallOption) (*RotateBYOKCredentialResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RotateBYOKCredentialResponse)
+	err := c.cc.Invoke(ctx, ModelAccessService_RotateBYOKCredential_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *modelAccessServiceClient) ArchiveConnection(ctx context.Context, in *ArchiveConnectionRequest, opts ...grpc.CallOption) (*ArchiveConnectionResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ArchiveConnectionResponse)
@@ -127,9 +156,16 @@ func (c *modelAccessServiceClient) ArchiveConnection(ctx context.Context, in *Ar
 type ModelAccessServiceServer interface {
 	ListProviders(context.Context, *ListProvidersRequest) (*ListProvidersResponse, error)
 	CreateConnection(context.Context, *CreateConnectionRequest) (*CreateConnectionResponse, error)
+	// Creates a customer BYOK connection.
+	//
+	// api_key is write-only secret material. Implementations must never log it,
+	// persist it in PostgreSQL, return it, or include it in telemetry/events.
+	CreateBYOKConnection(context.Context, *CreateBYOKConnectionRequest) (*CreateBYOKConnectionResponse, error)
 	GetConnection(context.Context, *GetConnectionRequest) (*GetConnectionResponse, error)
 	ListConnections(context.Context, *ListConnectionsRequest) (*ListConnectionsResponse, error)
 	UpdateConnection(context.Context, *UpdateConnectionRequest) (*UpdateConnectionResponse, error)
+	// Rotates a BYOK secret without changing the ModelConnection identity.
+	RotateBYOKCredential(context.Context, *RotateBYOKCredentialRequest) (*RotateBYOKCredentialResponse, error)
 	ArchiveConnection(context.Context, *ArchiveConnectionRequest) (*ArchiveConnectionResponse, error)
 	mustEmbedUnimplementedModelAccessServiceServer()
 }
@@ -147,6 +183,9 @@ func (UnimplementedModelAccessServiceServer) ListProviders(context.Context, *Lis
 func (UnimplementedModelAccessServiceServer) CreateConnection(context.Context, *CreateConnectionRequest) (*CreateConnectionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateConnection not implemented")
 }
+func (UnimplementedModelAccessServiceServer) CreateBYOKConnection(context.Context, *CreateBYOKConnectionRequest) (*CreateBYOKConnectionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateBYOKConnection not implemented")
+}
 func (UnimplementedModelAccessServiceServer) GetConnection(context.Context, *GetConnectionRequest) (*GetConnectionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetConnection not implemented")
 }
@@ -155,6 +194,9 @@ func (UnimplementedModelAccessServiceServer) ListConnections(context.Context, *L
 }
 func (UnimplementedModelAccessServiceServer) UpdateConnection(context.Context, *UpdateConnectionRequest) (*UpdateConnectionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateConnection not implemented")
+}
+func (UnimplementedModelAccessServiceServer) RotateBYOKCredential(context.Context, *RotateBYOKCredentialRequest) (*RotateBYOKCredentialResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RotateBYOKCredential not implemented")
 }
 func (UnimplementedModelAccessServiceServer) ArchiveConnection(context.Context, *ArchiveConnectionRequest) (*ArchiveConnectionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ArchiveConnection not implemented")
@@ -216,6 +258,24 @@ func _ModelAccessService_CreateConnection_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ModelAccessService_CreateBYOKConnection_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateBYOKConnectionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ModelAccessServiceServer).CreateBYOKConnection(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ModelAccessService_CreateBYOKConnection_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ModelAccessServiceServer).CreateBYOKConnection(ctx, req.(*CreateBYOKConnectionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ModelAccessService_GetConnection_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetConnectionRequest)
 	if err := dec(in); err != nil {
@@ -270,6 +330,24 @@ func _ModelAccessService_UpdateConnection_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ModelAccessService_RotateBYOKCredential_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RotateBYOKCredentialRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ModelAccessServiceServer).RotateBYOKCredential(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ModelAccessService_RotateBYOKCredential_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ModelAccessServiceServer).RotateBYOKCredential(ctx, req.(*RotateBYOKCredentialRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ModelAccessService_ArchiveConnection_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ArchiveConnectionRequest)
 	if err := dec(in); err != nil {
@@ -304,6 +382,10 @@ var ModelAccessService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ModelAccessService_CreateConnection_Handler,
 		},
 		{
+			MethodName: "CreateBYOKConnection",
+			Handler:    _ModelAccessService_CreateBYOKConnection_Handler,
+		},
+		{
 			MethodName: "GetConnection",
 			Handler:    _ModelAccessService_GetConnection_Handler,
 		},
@@ -314,6 +396,10 @@ var ModelAccessService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateConnection",
 			Handler:    _ModelAccessService_UpdateConnection_Handler,
+		},
+		{
+			MethodName: "RotateBYOKCredential",
+			Handler:    _ModelAccessService_RotateBYOKCredential_Handler,
 		},
 		{
 			MethodName: "ArchiveConnection",

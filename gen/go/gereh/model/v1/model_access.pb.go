@@ -231,8 +231,14 @@ type ModelConnection struct {
 	CreatedAt       *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt       *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	ArchivedAt      *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=archived_at,json=archivedAt,proto3" json:"archived_at,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// Safe identifier for the currently active BYOK credential.
+	//
+	// This is a keyed fingerprint, not part of the provider API key.
+	// Empty for non-BYOK connections and BYOK connections without an
+	// successfully verified credential.
+	CredentialFingerprint string `protobuf:"bytes,12,opt,name=credential_fingerprint,json=credentialFingerprint,proto3" json:"credential_fingerprint,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
 }
 
 func (x *ModelConnection) Reset() {
@@ -340,6 +346,13 @@ func (x *ModelConnection) GetArchivedAt() *timestamppb.Timestamp {
 		return x.ArchivedAt
 	}
 	return nil
+}
+
+func (x *ModelConnection) GetCredentialFingerprint() string {
+	if x != nil {
+		return x.CredentialFingerprint
+	}
+	return ""
 }
 
 type ListProvidersRequest struct {
@@ -567,6 +580,266 @@ func (x *CreateConnectionResponse) GetConnection() *ModelConnection {
 	return nil
 }
 
+type CreateBYOKConnectionRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	ActorUserId    string                 `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	TenantId       string                 `protobuf:"bytes,2,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	IdempotencyKey string                 `protobuf:"bytes,3,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	ProviderKey    string                 `protobuf:"bytes,4,opt,name=provider_key,json=providerKey,proto3" json:"provider_key,omitempty"`
+	DisplayName    string                 `protobuf:"bytes,5,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	// WRITE ONLY.
+	//
+	// Never log, persist in PostgreSQL, return, or add to events/traces.
+	ApiKey        string `protobuf:"bytes,6,opt,name=api_key,json=apiKey,proto3" json:"api_key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateBYOKConnectionRequest) Reset() {
+	*x = CreateBYOKConnectionRequest{}
+	mi := &file_gereh_model_v1_model_access_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateBYOKConnectionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateBYOKConnectionRequest) ProtoMessage() {}
+
+func (x *CreateBYOKConnectionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gereh_model_v1_model_access_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateBYOKConnectionRequest.ProtoReflect.Descriptor instead.
+func (*CreateBYOKConnectionRequest) Descriptor() ([]byte, []int) {
+	return file_gereh_model_v1_model_access_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *CreateBYOKConnectionRequest) GetActorUserId() string {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return ""
+}
+
+func (x *CreateBYOKConnectionRequest) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+func (x *CreateBYOKConnectionRequest) GetIdempotencyKey() string {
+	if x != nil {
+		return x.IdempotencyKey
+	}
+	return ""
+}
+
+func (x *CreateBYOKConnectionRequest) GetProviderKey() string {
+	if x != nil {
+		return x.ProviderKey
+	}
+	return ""
+}
+
+func (x *CreateBYOKConnectionRequest) GetDisplayName() string {
+	if x != nil {
+		return x.DisplayName
+	}
+	return ""
+}
+
+func (x *CreateBYOKConnectionRequest) GetApiKey() string {
+	if x != nil {
+		return x.ApiKey
+	}
+	return ""
+}
+
+type CreateBYOKConnectionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Connection    *ModelConnection       `protobuf:"bytes,1,opt,name=connection,proto3" json:"connection,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateBYOKConnectionResponse) Reset() {
+	*x = CreateBYOKConnectionResponse{}
+	mi := &file_gereh_model_v1_model_access_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateBYOKConnectionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateBYOKConnectionResponse) ProtoMessage() {}
+
+func (x *CreateBYOKConnectionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_gereh_model_v1_model_access_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateBYOKConnectionResponse.ProtoReflect.Descriptor instead.
+func (*CreateBYOKConnectionResponse) Descriptor() ([]byte, []int) {
+	return file_gereh_model_v1_model_access_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *CreateBYOKConnectionResponse) GetConnection() *ModelConnection {
+	if x != nil {
+		return x.Connection
+	}
+	return nil
+}
+
+type RotateBYOKCredentialRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	ActorUserId     string                 `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	TenantId        string                 `protobuf:"bytes,2,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	ConnectionId    string                 `protobuf:"bytes,3,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
+	IdempotencyKey  string                 `protobuf:"bytes,4,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	ExpectedVersion int64                  `protobuf:"varint,5,opt,name=expected_version,json=expectedVersion,proto3" json:"expected_version,omitempty"`
+	// WRITE ONLY.
+	ApiKey        string `protobuf:"bytes,6,opt,name=api_key,json=apiKey,proto3" json:"api_key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RotateBYOKCredentialRequest) Reset() {
+	*x = RotateBYOKCredentialRequest{}
+	mi := &file_gereh_model_v1_model_access_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RotateBYOKCredentialRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RotateBYOKCredentialRequest) ProtoMessage() {}
+
+func (x *RotateBYOKCredentialRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gereh_model_v1_model_access_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RotateBYOKCredentialRequest.ProtoReflect.Descriptor instead.
+func (*RotateBYOKCredentialRequest) Descriptor() ([]byte, []int) {
+	return file_gereh_model_v1_model_access_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *RotateBYOKCredentialRequest) GetActorUserId() string {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return ""
+}
+
+func (x *RotateBYOKCredentialRequest) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+func (x *RotateBYOKCredentialRequest) GetConnectionId() string {
+	if x != nil {
+		return x.ConnectionId
+	}
+	return ""
+}
+
+func (x *RotateBYOKCredentialRequest) GetIdempotencyKey() string {
+	if x != nil {
+		return x.IdempotencyKey
+	}
+	return ""
+}
+
+func (x *RotateBYOKCredentialRequest) GetExpectedVersion() int64 {
+	if x != nil {
+		return x.ExpectedVersion
+	}
+	return 0
+}
+
+func (x *RotateBYOKCredentialRequest) GetApiKey() string {
+	if x != nil {
+		return x.ApiKey
+	}
+	return ""
+}
+
+type RotateBYOKCredentialResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Connection    *ModelConnection       `protobuf:"bytes,1,opt,name=connection,proto3" json:"connection,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RotateBYOKCredentialResponse) Reset() {
+	*x = RotateBYOKCredentialResponse{}
+	mi := &file_gereh_model_v1_model_access_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RotateBYOKCredentialResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RotateBYOKCredentialResponse) ProtoMessage() {}
+
+func (x *RotateBYOKCredentialResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_gereh_model_v1_model_access_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RotateBYOKCredentialResponse.ProtoReflect.Descriptor instead.
+func (*RotateBYOKCredentialResponse) Descriptor() ([]byte, []int) {
+	return file_gereh_model_v1_model_access_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *RotateBYOKCredentialResponse) GetConnection() *ModelConnection {
+	if x != nil {
+		return x.Connection
+	}
+	return nil
+}
+
 type GetConnectionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ActorUserId   string                 `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
@@ -578,7 +851,7 @@ type GetConnectionRequest struct {
 
 func (x *GetConnectionRequest) Reset() {
 	*x = GetConnectionRequest{}
-	mi := &file_gereh_model_v1_model_access_proto_msgTypes[6]
+	mi := &file_gereh_model_v1_model_access_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -590,7 +863,7 @@ func (x *GetConnectionRequest) String() string {
 func (*GetConnectionRequest) ProtoMessage() {}
 
 func (x *GetConnectionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gereh_model_v1_model_access_proto_msgTypes[6]
+	mi := &file_gereh_model_v1_model_access_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -603,7 +876,7 @@ func (x *GetConnectionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetConnectionRequest.ProtoReflect.Descriptor instead.
 func (*GetConnectionRequest) Descriptor() ([]byte, []int) {
-	return file_gereh_model_v1_model_access_proto_rawDescGZIP(), []int{6}
+	return file_gereh_model_v1_model_access_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *GetConnectionRequest) GetActorUserId() string {
@@ -636,7 +909,7 @@ type GetConnectionResponse struct {
 
 func (x *GetConnectionResponse) Reset() {
 	*x = GetConnectionResponse{}
-	mi := &file_gereh_model_v1_model_access_proto_msgTypes[7]
+	mi := &file_gereh_model_v1_model_access_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -648,7 +921,7 @@ func (x *GetConnectionResponse) String() string {
 func (*GetConnectionResponse) ProtoMessage() {}
 
 func (x *GetConnectionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gereh_model_v1_model_access_proto_msgTypes[7]
+	mi := &file_gereh_model_v1_model_access_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -661,7 +934,7 @@ func (x *GetConnectionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetConnectionResponse.ProtoReflect.Descriptor instead.
 func (*GetConnectionResponse) Descriptor() ([]byte, []int) {
-	return file_gereh_model_v1_model_access_proto_rawDescGZIP(), []int{7}
+	return file_gereh_model_v1_model_access_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *GetConnectionResponse) GetConnection() *ModelConnection {
@@ -684,7 +957,7 @@ type ListConnectionsRequest struct {
 
 func (x *ListConnectionsRequest) Reset() {
 	*x = ListConnectionsRequest{}
-	mi := &file_gereh_model_v1_model_access_proto_msgTypes[8]
+	mi := &file_gereh_model_v1_model_access_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -696,7 +969,7 @@ func (x *ListConnectionsRequest) String() string {
 func (*ListConnectionsRequest) ProtoMessage() {}
 
 func (x *ListConnectionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gereh_model_v1_model_access_proto_msgTypes[8]
+	mi := &file_gereh_model_v1_model_access_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -709,7 +982,7 @@ func (x *ListConnectionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListConnectionsRequest.ProtoReflect.Descriptor instead.
 func (*ListConnectionsRequest) Descriptor() ([]byte, []int) {
-	return file_gereh_model_v1_model_access_proto_rawDescGZIP(), []int{8}
+	return file_gereh_model_v1_model_access_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *ListConnectionsRequest) GetActorUserId() string {
@@ -757,7 +1030,7 @@ type ListConnectionsResponse struct {
 
 func (x *ListConnectionsResponse) Reset() {
 	*x = ListConnectionsResponse{}
-	mi := &file_gereh_model_v1_model_access_proto_msgTypes[9]
+	mi := &file_gereh_model_v1_model_access_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -769,7 +1042,7 @@ func (x *ListConnectionsResponse) String() string {
 func (*ListConnectionsResponse) ProtoMessage() {}
 
 func (x *ListConnectionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gereh_model_v1_model_access_proto_msgTypes[9]
+	mi := &file_gereh_model_v1_model_access_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -782,7 +1055,7 @@ func (x *ListConnectionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListConnectionsResponse.ProtoReflect.Descriptor instead.
 func (*ListConnectionsResponse) Descriptor() ([]byte, []int) {
-	return file_gereh_model_v1_model_access_proto_rawDescGZIP(), []int{9}
+	return file_gereh_model_v1_model_access_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ListConnectionsResponse) GetConnections() []*ModelConnection {
@@ -813,7 +1086,7 @@ type UpdateConnectionRequest struct {
 
 func (x *UpdateConnectionRequest) Reset() {
 	*x = UpdateConnectionRequest{}
-	mi := &file_gereh_model_v1_model_access_proto_msgTypes[10]
+	mi := &file_gereh_model_v1_model_access_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -825,7 +1098,7 @@ func (x *UpdateConnectionRequest) String() string {
 func (*UpdateConnectionRequest) ProtoMessage() {}
 
 func (x *UpdateConnectionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gereh_model_v1_model_access_proto_msgTypes[10]
+	mi := &file_gereh_model_v1_model_access_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -838,7 +1111,7 @@ func (x *UpdateConnectionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateConnectionRequest.ProtoReflect.Descriptor instead.
 func (*UpdateConnectionRequest) Descriptor() ([]byte, []int) {
-	return file_gereh_model_v1_model_access_proto_rawDescGZIP(), []int{10}
+	return file_gereh_model_v1_model_access_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *UpdateConnectionRequest) GetActorUserId() string {
@@ -892,7 +1165,7 @@ type UpdateConnectionResponse struct {
 
 func (x *UpdateConnectionResponse) Reset() {
 	*x = UpdateConnectionResponse{}
-	mi := &file_gereh_model_v1_model_access_proto_msgTypes[11]
+	mi := &file_gereh_model_v1_model_access_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -904,7 +1177,7 @@ func (x *UpdateConnectionResponse) String() string {
 func (*UpdateConnectionResponse) ProtoMessage() {}
 
 func (x *UpdateConnectionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gereh_model_v1_model_access_proto_msgTypes[11]
+	mi := &file_gereh_model_v1_model_access_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -917,7 +1190,7 @@ func (x *UpdateConnectionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateConnectionResponse.ProtoReflect.Descriptor instead.
 func (*UpdateConnectionResponse) Descriptor() ([]byte, []int) {
-	return file_gereh_model_v1_model_access_proto_rawDescGZIP(), []int{11}
+	return file_gereh_model_v1_model_access_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *UpdateConnectionResponse) GetConnection() *ModelConnection {
@@ -940,7 +1213,7 @@ type ArchiveConnectionRequest struct {
 
 func (x *ArchiveConnectionRequest) Reset() {
 	*x = ArchiveConnectionRequest{}
-	mi := &file_gereh_model_v1_model_access_proto_msgTypes[12]
+	mi := &file_gereh_model_v1_model_access_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -952,7 +1225,7 @@ func (x *ArchiveConnectionRequest) String() string {
 func (*ArchiveConnectionRequest) ProtoMessage() {}
 
 func (x *ArchiveConnectionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gereh_model_v1_model_access_proto_msgTypes[12]
+	mi := &file_gereh_model_v1_model_access_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -965,7 +1238,7 @@ func (x *ArchiveConnectionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ArchiveConnectionRequest.ProtoReflect.Descriptor instead.
 func (*ArchiveConnectionRequest) Descriptor() ([]byte, []int) {
-	return file_gereh_model_v1_model_access_proto_rawDescGZIP(), []int{12}
+	return file_gereh_model_v1_model_access_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ArchiveConnectionRequest) GetActorUserId() string {
@@ -1012,7 +1285,7 @@ type ArchiveConnectionResponse struct {
 
 func (x *ArchiveConnectionResponse) Reset() {
 	*x = ArchiveConnectionResponse{}
-	mi := &file_gereh_model_v1_model_access_proto_msgTypes[13]
+	mi := &file_gereh_model_v1_model_access_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1024,7 +1297,7 @@ func (x *ArchiveConnectionResponse) String() string {
 func (*ArchiveConnectionResponse) ProtoMessage() {}
 
 func (x *ArchiveConnectionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gereh_model_v1_model_access_proto_msgTypes[13]
+	mi := &file_gereh_model_v1_model_access_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1037,7 +1310,7 @@ func (x *ArchiveConnectionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ArchiveConnectionResponse.ProtoReflect.Descriptor instead.
 func (*ArchiveConnectionResponse) Descriptor() ([]byte, []int) {
-	return file_gereh_model_v1_model_access_proto_rawDescGZIP(), []int{13}
+	return file_gereh_model_v1_model_access_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ArchiveConnectionResponse) GetConnection() *ModelConnection {
@@ -1057,7 +1330,7 @@ const file_gereh_model_v1_model_access_proto_rawDesc = "" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x12a\n" +
 	"\x1asupported_connection_types\x18\x04 \x03(\x0e2#.gereh.model.v1.ModelConnectionTypeR\x18supportedConnectionTypes\x12\x18\n" +
-	"\aenabled\x18\x05 \x01(\bR\aenabled\"\xa0\x04\n" +
+	"\aenabled\x18\x05 \x01(\bR\aenabled\"\xd7\x04\n" +
 	"\x0fModelConnection\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12#\n" +
 	"\rconnection_id\x18\x02 \x01(\tR\fconnectionId\x12!\n" +
@@ -1073,7 +1346,8 @@ const file_gereh_model_v1_model_access_proto_rawDesc = "" +
 	"updated_at\x18\n" +
 	" \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12;\n" +
 	"\varchived_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"archivedAt\"W\n" +
+	"archivedAt\x125\n" +
+	"\x16credential_fingerprint\x18\f \x01(\tR\x15credentialFingerprint\"W\n" +
 	"\x14ListProvidersRequest\x12\"\n" +
 	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\"T\n" +
@@ -1087,6 +1361,28 @@ const file_gereh_model_v1_model_access_proto_rawDesc = "" +
 	"\x0fconnection_type\x18\x05 \x01(\x0e2#.gereh.model.v1.ModelConnectionTypeR\x0econnectionType\x12!\n" +
 	"\fdisplay_name\x18\x06 \x01(\tR\vdisplayName\"[\n" +
 	"\x18CreateConnectionResponse\x12?\n" +
+	"\n" +
+	"connection\x18\x01 \x01(\v2\x1f.gereh.model.v1.ModelConnectionR\n" +
+	"connection\"\xe6\x01\n" +
+	"\x1bCreateBYOKConnectionRequest\x12\"\n" +
+	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\x12\x1b\n" +
+	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12'\n" +
+	"\x0fidempotency_key\x18\x03 \x01(\tR\x0eidempotencyKey\x12!\n" +
+	"\fprovider_key\x18\x04 \x01(\tR\vproviderKey\x12!\n" +
+	"\fdisplay_name\x18\x05 \x01(\tR\vdisplayName\x12\x17\n" +
+	"\aapi_key\x18\x06 \x01(\tR\x06apiKey\"_\n" +
+	"\x1cCreateBYOKConnectionResponse\x12?\n" +
+	"\n" +
+	"connection\x18\x01 \x01(\v2\x1f.gereh.model.v1.ModelConnectionR\n" +
+	"connection\"\xf0\x01\n" +
+	"\x1bRotateBYOKCredentialRequest\x12\"\n" +
+	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\x12\x1b\n" +
+	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12#\n" +
+	"\rconnection_id\x18\x03 \x01(\tR\fconnectionId\x12'\n" +
+	"\x0fidempotency_key\x18\x04 \x01(\tR\x0eidempotencyKey\x12)\n" +
+	"\x10expected_version\x18\x05 \x01(\x03R\x0fexpectedVersion\x12\x17\n" +
+	"\aapi_key\x18\x06 \x01(\tR\x06apiKey\"_\n" +
+	"\x1cRotateBYOKCredentialResponse\x12?\n" +
 	"\n" +
 	"connection\x18\x01 \x01(\v2\x1f.gereh.model.v1.ModelConnectionR\n" +
 	"connection\"|\n" +
@@ -1142,13 +1438,15 @@ const file_gereh_model_v1_model_access_proto_rawDesc = "" +
 	"\x1eMODEL_CONNECTION_STATUS_ACTIVE\x10\x03\x12/\n" +
 	"+MODEL_CONNECTION_STATUS_VERIFICATION_FAILED\x10\x04\x12$\n" +
 	" MODEL_CONNECTION_STATUS_DISABLED\x10\x05\x12$\n" +
-	" MODEL_CONNECTION_STATUS_ARCHIVED\x10\x062\xec\x04\n" +
+	" MODEL_CONNECTION_STATUS_ARCHIVED\x10\x062\xd2\x06\n" +
 	"\x12ModelAccessService\x12\\\n" +
 	"\rListProviders\x12$.gereh.model.v1.ListProvidersRequest\x1a%.gereh.model.v1.ListProvidersResponse\x12e\n" +
-	"\x10CreateConnection\x12'.gereh.model.v1.CreateConnectionRequest\x1a(.gereh.model.v1.CreateConnectionResponse\x12\\\n" +
+	"\x10CreateConnection\x12'.gereh.model.v1.CreateConnectionRequest\x1a(.gereh.model.v1.CreateConnectionResponse\x12q\n" +
+	"\x14CreateBYOKConnection\x12+.gereh.model.v1.CreateBYOKConnectionRequest\x1a,.gereh.model.v1.CreateBYOKConnectionResponse\x12\\\n" +
 	"\rGetConnection\x12$.gereh.model.v1.GetConnectionRequest\x1a%.gereh.model.v1.GetConnectionResponse\x12b\n" +
 	"\x0fListConnections\x12&.gereh.model.v1.ListConnectionsRequest\x1a'.gereh.model.v1.ListConnectionsResponse\x12e\n" +
-	"\x10UpdateConnection\x12'.gereh.model.v1.UpdateConnectionRequest\x1a(.gereh.model.v1.UpdateConnectionResponse\x12h\n" +
+	"\x10UpdateConnection\x12'.gereh.model.v1.UpdateConnectionRequest\x1a(.gereh.model.v1.UpdateConnectionResponse\x12q\n" +
+	"\x14RotateBYOKCredential\x12+.gereh.model.v1.RotateBYOKCredentialRequest\x1a,.gereh.model.v1.RotateBYOKCredentialResponse\x12h\n" +
 	"\x11ArchiveConnection\x12(.gereh.model.v1.ArchiveConnectionRequest\x1a).gereh.model.v1.ArchiveConnectionResponseB\xb8\x01\n" +
 	"\x12com.gereh.model.v1B\x10ModelAccessProtoP\x01Z6github.com/aminio9/gereh/gen/go/gereh/model/v1;modelv1\xa2\x02\x03GMX\xaa\x02\x0eGereh.Model.V1\xca\x02\x0eGereh\\Model\\V1\xe2\x02\x1aGereh\\Model\\V1\\GPBMetadata\xea\x02\x10Gereh::Model::V1b\x06proto3"
 
@@ -1165,57 +1463,67 @@ func file_gereh_model_v1_model_access_proto_rawDescGZIP() []byte {
 }
 
 var file_gereh_model_v1_model_access_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_gereh_model_v1_model_access_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_gereh_model_v1_model_access_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_gereh_model_v1_model_access_proto_goTypes = []any{
-	(ModelConnectionType)(0),          // 0: gereh.model.v1.ModelConnectionType
-	(ModelConnectionStatus)(0),        // 1: gereh.model.v1.ModelConnectionStatus
-	(*ModelProvider)(nil),             // 2: gereh.model.v1.ModelProvider
-	(*ModelConnection)(nil),           // 3: gereh.model.v1.ModelConnection
-	(*ListProvidersRequest)(nil),      // 4: gereh.model.v1.ListProvidersRequest
-	(*ListProvidersResponse)(nil),     // 5: gereh.model.v1.ListProvidersResponse
-	(*CreateConnectionRequest)(nil),   // 6: gereh.model.v1.CreateConnectionRequest
-	(*CreateConnectionResponse)(nil),  // 7: gereh.model.v1.CreateConnectionResponse
-	(*GetConnectionRequest)(nil),      // 8: gereh.model.v1.GetConnectionRequest
-	(*GetConnectionResponse)(nil),     // 9: gereh.model.v1.GetConnectionResponse
-	(*ListConnectionsRequest)(nil),    // 10: gereh.model.v1.ListConnectionsRequest
-	(*ListConnectionsResponse)(nil),   // 11: gereh.model.v1.ListConnectionsResponse
-	(*UpdateConnectionRequest)(nil),   // 12: gereh.model.v1.UpdateConnectionRequest
-	(*UpdateConnectionResponse)(nil),  // 13: gereh.model.v1.UpdateConnectionResponse
-	(*ArchiveConnectionRequest)(nil),  // 14: gereh.model.v1.ArchiveConnectionRequest
-	(*ArchiveConnectionResponse)(nil), // 15: gereh.model.v1.ArchiveConnectionResponse
-	(*timestamppb.Timestamp)(nil),     // 16: google.protobuf.Timestamp
+	(ModelConnectionType)(0),             // 0: gereh.model.v1.ModelConnectionType
+	(ModelConnectionStatus)(0),           // 1: gereh.model.v1.ModelConnectionStatus
+	(*ModelProvider)(nil),                // 2: gereh.model.v1.ModelProvider
+	(*ModelConnection)(nil),              // 3: gereh.model.v1.ModelConnection
+	(*ListProvidersRequest)(nil),         // 4: gereh.model.v1.ListProvidersRequest
+	(*ListProvidersResponse)(nil),        // 5: gereh.model.v1.ListProvidersResponse
+	(*CreateConnectionRequest)(nil),      // 6: gereh.model.v1.CreateConnectionRequest
+	(*CreateConnectionResponse)(nil),     // 7: gereh.model.v1.CreateConnectionResponse
+	(*CreateBYOKConnectionRequest)(nil),  // 8: gereh.model.v1.CreateBYOKConnectionRequest
+	(*CreateBYOKConnectionResponse)(nil), // 9: gereh.model.v1.CreateBYOKConnectionResponse
+	(*RotateBYOKCredentialRequest)(nil),  // 10: gereh.model.v1.RotateBYOKCredentialRequest
+	(*RotateBYOKCredentialResponse)(nil), // 11: gereh.model.v1.RotateBYOKCredentialResponse
+	(*GetConnectionRequest)(nil),         // 12: gereh.model.v1.GetConnectionRequest
+	(*GetConnectionResponse)(nil),        // 13: gereh.model.v1.GetConnectionResponse
+	(*ListConnectionsRequest)(nil),       // 14: gereh.model.v1.ListConnectionsRequest
+	(*ListConnectionsResponse)(nil),      // 15: gereh.model.v1.ListConnectionsResponse
+	(*UpdateConnectionRequest)(nil),      // 16: gereh.model.v1.UpdateConnectionRequest
+	(*UpdateConnectionResponse)(nil),     // 17: gereh.model.v1.UpdateConnectionResponse
+	(*ArchiveConnectionRequest)(nil),     // 18: gereh.model.v1.ArchiveConnectionRequest
+	(*ArchiveConnectionResponse)(nil),    // 19: gereh.model.v1.ArchiveConnectionResponse
+	(*timestamppb.Timestamp)(nil),        // 20: google.protobuf.Timestamp
 }
 var file_gereh_model_v1_model_access_proto_depIdxs = []int32{
 	0,  // 0: gereh.model.v1.ModelProvider.supported_connection_types:type_name -> gereh.model.v1.ModelConnectionType
 	0,  // 1: gereh.model.v1.ModelConnection.connection_type:type_name -> gereh.model.v1.ModelConnectionType
 	1,  // 2: gereh.model.v1.ModelConnection.status:type_name -> gereh.model.v1.ModelConnectionStatus
-	16, // 3: gereh.model.v1.ModelConnection.created_at:type_name -> google.protobuf.Timestamp
-	16, // 4: gereh.model.v1.ModelConnection.updated_at:type_name -> google.protobuf.Timestamp
-	16, // 5: gereh.model.v1.ModelConnection.archived_at:type_name -> google.protobuf.Timestamp
+	20, // 3: gereh.model.v1.ModelConnection.created_at:type_name -> google.protobuf.Timestamp
+	20, // 4: gereh.model.v1.ModelConnection.updated_at:type_name -> google.protobuf.Timestamp
+	20, // 5: gereh.model.v1.ModelConnection.archived_at:type_name -> google.protobuf.Timestamp
 	2,  // 6: gereh.model.v1.ListProvidersResponse.providers:type_name -> gereh.model.v1.ModelProvider
 	0,  // 7: gereh.model.v1.CreateConnectionRequest.connection_type:type_name -> gereh.model.v1.ModelConnectionType
 	3,  // 8: gereh.model.v1.CreateConnectionResponse.connection:type_name -> gereh.model.v1.ModelConnection
-	3,  // 9: gereh.model.v1.GetConnectionResponse.connection:type_name -> gereh.model.v1.ModelConnection
-	3,  // 10: gereh.model.v1.ListConnectionsResponse.connections:type_name -> gereh.model.v1.ModelConnection
-	3,  // 11: gereh.model.v1.UpdateConnectionResponse.connection:type_name -> gereh.model.v1.ModelConnection
-	3,  // 12: gereh.model.v1.ArchiveConnectionResponse.connection:type_name -> gereh.model.v1.ModelConnection
-	4,  // 13: gereh.model.v1.ModelAccessService.ListProviders:input_type -> gereh.model.v1.ListProvidersRequest
-	6,  // 14: gereh.model.v1.ModelAccessService.CreateConnection:input_type -> gereh.model.v1.CreateConnectionRequest
-	8,  // 15: gereh.model.v1.ModelAccessService.GetConnection:input_type -> gereh.model.v1.GetConnectionRequest
-	10, // 16: gereh.model.v1.ModelAccessService.ListConnections:input_type -> gereh.model.v1.ListConnectionsRequest
-	12, // 17: gereh.model.v1.ModelAccessService.UpdateConnection:input_type -> gereh.model.v1.UpdateConnectionRequest
-	14, // 18: gereh.model.v1.ModelAccessService.ArchiveConnection:input_type -> gereh.model.v1.ArchiveConnectionRequest
-	5,  // 19: gereh.model.v1.ModelAccessService.ListProviders:output_type -> gereh.model.v1.ListProvidersResponse
-	7,  // 20: gereh.model.v1.ModelAccessService.CreateConnection:output_type -> gereh.model.v1.CreateConnectionResponse
-	9,  // 21: gereh.model.v1.ModelAccessService.GetConnection:output_type -> gereh.model.v1.GetConnectionResponse
-	11, // 22: gereh.model.v1.ModelAccessService.ListConnections:output_type -> gereh.model.v1.ListConnectionsResponse
-	13, // 23: gereh.model.v1.ModelAccessService.UpdateConnection:output_type -> gereh.model.v1.UpdateConnectionResponse
-	15, // 24: gereh.model.v1.ModelAccessService.ArchiveConnection:output_type -> gereh.model.v1.ArchiveConnectionResponse
-	19, // [19:25] is the sub-list for method output_type
-	13, // [13:19] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	3,  // 9: gereh.model.v1.CreateBYOKConnectionResponse.connection:type_name -> gereh.model.v1.ModelConnection
+	3,  // 10: gereh.model.v1.RotateBYOKCredentialResponse.connection:type_name -> gereh.model.v1.ModelConnection
+	3,  // 11: gereh.model.v1.GetConnectionResponse.connection:type_name -> gereh.model.v1.ModelConnection
+	3,  // 12: gereh.model.v1.ListConnectionsResponse.connections:type_name -> gereh.model.v1.ModelConnection
+	3,  // 13: gereh.model.v1.UpdateConnectionResponse.connection:type_name -> gereh.model.v1.ModelConnection
+	3,  // 14: gereh.model.v1.ArchiveConnectionResponse.connection:type_name -> gereh.model.v1.ModelConnection
+	4,  // 15: gereh.model.v1.ModelAccessService.ListProviders:input_type -> gereh.model.v1.ListProvidersRequest
+	6,  // 16: gereh.model.v1.ModelAccessService.CreateConnection:input_type -> gereh.model.v1.CreateConnectionRequest
+	8,  // 17: gereh.model.v1.ModelAccessService.CreateBYOKConnection:input_type -> gereh.model.v1.CreateBYOKConnectionRequest
+	12, // 18: gereh.model.v1.ModelAccessService.GetConnection:input_type -> gereh.model.v1.GetConnectionRequest
+	14, // 19: gereh.model.v1.ModelAccessService.ListConnections:input_type -> gereh.model.v1.ListConnectionsRequest
+	16, // 20: gereh.model.v1.ModelAccessService.UpdateConnection:input_type -> gereh.model.v1.UpdateConnectionRequest
+	10, // 21: gereh.model.v1.ModelAccessService.RotateBYOKCredential:input_type -> gereh.model.v1.RotateBYOKCredentialRequest
+	18, // 22: gereh.model.v1.ModelAccessService.ArchiveConnection:input_type -> gereh.model.v1.ArchiveConnectionRequest
+	5,  // 23: gereh.model.v1.ModelAccessService.ListProviders:output_type -> gereh.model.v1.ListProvidersResponse
+	7,  // 24: gereh.model.v1.ModelAccessService.CreateConnection:output_type -> gereh.model.v1.CreateConnectionResponse
+	9,  // 25: gereh.model.v1.ModelAccessService.CreateBYOKConnection:output_type -> gereh.model.v1.CreateBYOKConnectionResponse
+	13, // 26: gereh.model.v1.ModelAccessService.GetConnection:output_type -> gereh.model.v1.GetConnectionResponse
+	15, // 27: gereh.model.v1.ModelAccessService.ListConnections:output_type -> gereh.model.v1.ListConnectionsResponse
+	17, // 28: gereh.model.v1.ModelAccessService.UpdateConnection:output_type -> gereh.model.v1.UpdateConnectionResponse
+	11, // 29: gereh.model.v1.ModelAccessService.RotateBYOKCredential:output_type -> gereh.model.v1.RotateBYOKCredentialResponse
+	19, // 30: gereh.model.v1.ModelAccessService.ArchiveConnection:output_type -> gereh.model.v1.ArchiveConnectionResponse
+	23, // [23:31] is the sub-list for method output_type
+	15, // [15:23] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_gereh_model_v1_model_access_proto_init() }
@@ -1223,14 +1531,14 @@ func file_gereh_model_v1_model_access_proto_init() {
 	if File_gereh_model_v1_model_access_proto != nil {
 		return
 	}
-	file_gereh_model_v1_model_access_proto_msgTypes[10].OneofWrappers = []any{}
+	file_gereh_model_v1_model_access_proto_msgTypes[14].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_gereh_model_v1_model_access_proto_rawDesc), len(file_gereh_model_v1_model_access_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   14,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

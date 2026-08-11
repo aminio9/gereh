@@ -115,19 +115,7 @@ func (repository *Repository) UpdateConnection(
 				  AND version = $3
 				  AND status <> 'archived'
 				RETURNING
-						tenant_id::text,
-						connection_id::text,
-						provider_key,
-						provider_pool_key,
-						connection_type,
-						display_name,
-						status,
-						version,
-						created_by_user_id::text,
-						created_at,
-						updated_at,
-						archived_at
-				`,
+						`+connectionColumns,
 			params.TenantID,
 			params.ConnectionID,
 			params.ExpectedVersion,
@@ -260,19 +248,7 @@ func (repository *Repository) ArchiveConnection(
 				  AND version = $3
 				  AND status <> 'archived'
 				RETURNING
-						tenant_id::text,
-						connection_id::text,
-						provider_key,
-						provider_pool_key,
-						connection_type,
-						display_name,
-						status,
-						version,
-						created_by_user_id::text,
-						created_at,
-						updated_at,
-						archived_at
-				`,
+						`+connectionColumns,
 			params.TenantID,
 			params.ConnectionID,
 			params.ExpectedVersion,
@@ -290,6 +266,18 @@ func (repository *Repository) ArchiveConnection(
 
 	if err != nil {
 		return domain.Connection{}, err
+	}
+
+	if result.ConnectionType == domain.ConnectionTypeBYOK {
+		if err := purgeArchivedBYOKSecret(
+			ctx,
+			transaction,
+			result.TenantID,
+			result.ID,
+			params.ArchivedAt,
+		); err != nil {
+			return domain.Connection{}, err
+		}
 	}
 
 	if err := insertRevision(

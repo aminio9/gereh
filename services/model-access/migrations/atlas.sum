@@ -1,3 +1,4 @@
-h1:LaxSkOkfrhXA2xZr/yN4x7cMu4iUFATUTEiZYHDCEvE=
+h1:GgfJIlBHtwpBG5hV3kxzzG9G1uhfeeQIOdBL5xUpIYw=
 000001_model_access.up.sql h1:loXYQHbZxLLT4bfluT9veV2+aaWRFnmM+MaDKAMgTBI=
 000002_platform_managed.up.sql h1:Kq+NDMWKWCC/uH0A6L+GQdp3lcWqFJXSLBI1lxb0Br4=
+000003_byok_encrypted.up.sql h1:EzLU6I7qVuDX4znpcKbEjHcl0iXNCb/XgCw16thQ82Y=

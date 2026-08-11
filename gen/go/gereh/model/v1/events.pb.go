@@ -169,6 +169,171 @@ func (x *ModelConnectionArchived) GetArchivedByUserId() string {
 	return ""
 }
 
+type ModelConnectionActivated struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Connection        *ModelConnection       `protobuf:"bytes,1,opt,name=connection,proto3" json:"connection,omitempty"`
+	ActivatedByUserId string                 `protobuf:"bytes,2,opt,name=activated_by_user_id,json=activatedByUserId,proto3" json:"activated_by_user_id,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *ModelConnectionActivated) Reset() {
+	*x = ModelConnectionActivated{}
+	mi := &file_gereh_model_v1_events_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ModelConnectionActivated) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ModelConnectionActivated) ProtoMessage() {}
+
+func (x *ModelConnectionActivated) ProtoReflect() protoreflect.Message {
+	mi := &file_gereh_model_v1_events_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ModelConnectionActivated.ProtoReflect.Descriptor instead.
+func (*ModelConnectionActivated) Descriptor() ([]byte, []int) {
+	return file_gereh_model_v1_events_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ModelConnectionActivated) GetConnection() *ModelConnection {
+	if x != nil {
+		return x.Connection
+	}
+	return nil
+}
+
+func (x *ModelConnectionActivated) GetActivatedByUserId() string {
+	if x != nil {
+		return x.ActivatedByUserId
+	}
+	return ""
+}
+
+type ModelConnectionVerificationFailed struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Connection       *ModelConnection       `protobuf:"bytes,1,opt,name=connection,proto3" json:"connection,omitempty"`
+	VerifiedByUserId string                 `protobuf:"bytes,2,opt,name=verified_by_user_id,json=verifiedByUserId,proto3" json:"verified_by_user_id,omitempty"`
+	// Sanitized machine-readable category only.
+	ReasonCode    string `protobuf:"bytes,3,opt,name=reason_code,json=reasonCode,proto3" json:"reason_code,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ModelConnectionVerificationFailed) Reset() {
+	*x = ModelConnectionVerificationFailed{}
+	mi := &file_gereh_model_v1_events_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ModelConnectionVerificationFailed) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ModelConnectionVerificationFailed) ProtoMessage() {}
+
+func (x *ModelConnectionVerificationFailed) ProtoReflect() protoreflect.Message {
+	mi := &file_gereh_model_v1_events_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ModelConnectionVerificationFailed.ProtoReflect.Descriptor instead.
+func (*ModelConnectionVerificationFailed) Descriptor() ([]byte, []int) {
+	return file_gereh_model_v1_events_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ModelConnectionVerificationFailed) GetConnection() *ModelConnection {
+	if x != nil {
+		return x.Connection
+	}
+	return nil
+}
+
+func (x *ModelConnectionVerificationFailed) GetVerifiedByUserId() string {
+	if x != nil {
+		return x.VerifiedByUserId
+	}
+	return ""
+}
+
+func (x *ModelConnectionVerificationFailed) GetReasonCode() string {
+	if x != nil {
+		return x.ReasonCode
+	}
+	return ""
+}
+
+type ModelConnectionCredentialRotated struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Connection      *ModelConnection       `protobuf:"bytes,1,opt,name=connection,proto3" json:"connection,omitempty"`
+	RotatedByUserId string                 `protobuf:"bytes,2,opt,name=rotated_by_user_id,json=rotatedByUserId,proto3" json:"rotated_by_user_id,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *ModelConnectionCredentialRotated) Reset() {
+	*x = ModelConnectionCredentialRotated{}
+	mi := &file_gereh_model_v1_events_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ModelConnectionCredentialRotated) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ModelConnectionCredentialRotated) ProtoMessage() {}
+
+func (x *ModelConnectionCredentialRotated) ProtoReflect() protoreflect.Message {
+	mi := &file_gereh_model_v1_events_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ModelConnectionCredentialRotated.ProtoReflect.Descriptor instead.
+func (*ModelConnectionCredentialRotated) Descriptor() ([]byte, []int) {
+	return file_gereh_model_v1_events_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *ModelConnectionCredentialRotated) GetConnection() *ModelConnection {
+	if x != nil {
+		return x.Connection
+	}
+	return nil
+}
+
+func (x *ModelConnectionCredentialRotated) GetRotatedByUserId() string {
+	if x != nil {
+		return x.RotatedByUserId
+	}
+	return ""
+}
+
 var File_gereh_model_v1_events_proto protoreflect.FileDescriptor
 
 const file_gereh_model_v1_events_proto_rawDesc = "" +
@@ -187,7 +352,24 @@ const file_gereh_model_v1_events_proto_rawDesc = "" +
 	"\n" +
 	"connection\x18\x01 \x01(\v2\x1f.gereh.model.v1.ModelConnectionR\n" +
 	"connection\x12-\n" +
-	"\x13archived_by_user_id\x18\x02 \x01(\tR\x10archivedByUserIdB\xb3\x01\n" +
+	"\x13archived_by_user_id\x18\x02 \x01(\tR\x10archivedByUserId\"\x8c\x01\n" +
+	"\x18ModelConnectionActivated\x12?\n" +
+	"\n" +
+	"connection\x18\x01 \x01(\v2\x1f.gereh.model.v1.ModelConnectionR\n" +
+	"connection\x12/\n" +
+	"\x14activated_by_user_id\x18\x02 \x01(\tR\x11activatedByUserId\"\xb4\x01\n" +
+	"!ModelConnectionVerificationFailed\x12?\n" +
+	"\n" +
+	"connection\x18\x01 \x01(\v2\x1f.gereh.model.v1.ModelConnectionR\n" +
+	"connection\x12-\n" +
+	"\x13verified_by_user_id\x18\x02 \x01(\tR\x10verifiedByUserId\x12\x1f\n" +
+	"\vreason_code\x18\x03 \x01(\tR\n" +
+	"reasonCode\"\x90\x01\n" +
+	" ModelConnectionCredentialRotated\x12?\n" +
+	"\n" +
+	"connection\x18\x01 \x01(\v2\x1f.gereh.model.v1.ModelConnectionR\n" +
+	"connection\x12+\n" +
+	"\x12rotated_by_user_id\x18\x02 \x01(\tR\x0frotatedByUserIdB\xb3\x01\n" +
 	"\x12com.gereh.model.v1B\vEventsProtoP\x01Z6github.com/aminio9/gereh/gen/go/gereh/model/v1;modelv1\xa2\x02\x03GMX\xaa\x02\x0eGereh.Model.V1\xca\x02\x0eGereh\\Model\\V1\xe2\x02\x1aGereh\\Model\\V1\\GPBMetadata\xea\x02\x10Gereh::Model::V1b\x06proto3"
 
 var (
@@ -202,22 +384,28 @@ func file_gereh_model_v1_events_proto_rawDescGZIP() []byte {
 	return file_gereh_model_v1_events_proto_rawDescData
 }
 
-var file_gereh_model_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_gereh_model_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_gereh_model_v1_events_proto_goTypes = []any{
-	(*ModelConnectionCreated)(nil),  // 0: gereh.model.v1.ModelConnectionCreated
-	(*ModelConnectionUpdated)(nil),  // 1: gereh.model.v1.ModelConnectionUpdated
-	(*ModelConnectionArchived)(nil), // 2: gereh.model.v1.ModelConnectionArchived
-	(*ModelConnection)(nil),         // 3: gereh.model.v1.ModelConnection
+	(*ModelConnectionCreated)(nil),            // 0: gereh.model.v1.ModelConnectionCreated
+	(*ModelConnectionUpdated)(nil),            // 1: gereh.model.v1.ModelConnectionUpdated
+	(*ModelConnectionArchived)(nil),           // 2: gereh.model.v1.ModelConnectionArchived
+	(*ModelConnectionActivated)(nil),          // 3: gereh.model.v1.ModelConnectionActivated
+	(*ModelConnectionVerificationFailed)(nil), // 4: gereh.model.v1.ModelConnectionVerificationFailed
+	(*ModelConnectionCredentialRotated)(nil),  // 5: gereh.model.v1.ModelConnectionCredentialRotated
+	(*ModelConnection)(nil),                   // 6: gereh.model.v1.ModelConnection
 }
 var file_gereh_model_v1_events_proto_depIdxs = []int32{
-	3, // 0: gereh.model.v1.ModelConnectionCreated.connection:type_name -> gereh.model.v1.ModelConnection
-	3, // 1: gereh.model.v1.ModelConnectionUpdated.connection:type_name -> gereh.model.v1.ModelConnection
-	3, // 2: gereh.model.v1.ModelConnectionArchived.connection:type_name -> gereh.model.v1.ModelConnection
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	6, // 0: gereh.model.v1.ModelConnectionCreated.connection:type_name -> gereh.model.v1.ModelConnection
+	6, // 1: gereh.model.v1.ModelConnectionUpdated.connection:type_name -> gereh.model.v1.ModelConnection
+	6, // 2: gereh.model.v1.ModelConnectionArchived.connection:type_name -> gereh.model.v1.ModelConnection
+	6, // 3: gereh.model.v1.ModelConnectionActivated.connection:type_name -> gereh.model.v1.ModelConnection
+	6, // 4: gereh.model.v1.ModelConnectionVerificationFailed.connection:type_name -> gereh.model.v1.ModelConnection
+	6, // 5: gereh.model.v1.ModelConnectionCredentialRotated.connection:type_name -> gereh.model.v1.ModelConnection
+	6, // [6:6] is the sub-list for method output_type
+	6, // [6:6] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_gereh_model_v1_events_proto_init() }
@@ -232,7 +420,7 @@ func file_gereh_model_v1_events_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_gereh_model_v1_events_proto_rawDesc), len(file_gereh_model_v1_events_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

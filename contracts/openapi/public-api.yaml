@@ -1767,6 +1767,59 @@ paths:
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
 
+  /v1/tenants/{tenantId}/model-connections/{connectionId}/credential/rotate:
+    post:
+      operationId: rotateBYOKCredential
+      tags: [Model Access]
+      summary: Rotate a BYOK credential without changing the connection identity
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: connectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RotateBYOKCredentialRequest"
+      responses:
+        "200":
+          description: Credential rotated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+        "400":
+          description: Provider rejected the credential
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Connection/version/idempotency conflict
+          $ref: "#/components/responses/Conflict"
+        "503":
+          description: Vault or provider verification unavailable
+          $ref: "#/components/responses/ServiceUnavailable"
+
 components:
   securitySchemes:
     SessionCookie:
@@ -3349,6 +3402,81 @@ components:
           type: string
           minLength: 1
           maxLength: 120
+
+        apiKey:
+          type: string
+          minLength: 8
+          maxLength: 8192
+          writeOnly: true
+          description: |
+            Required only for MODEL_CONNECTION_TYPE_BYOK.
+            Write-only secret. The value is never returned.
+
+    RotateBYOKCredentialRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - expectedVersion
+        - apiKey
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 1
+
+        apiKey:
+          type: string
+          minLength: 8
+          maxLength: 8192
+          writeOnly: true
+          description: |
+            Write-only secret. The value is never returned.
+
+    ModelConnection:
+      type: object
+      additionalProperties: false
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+
+        connectionId:
+          type: string
+          format: uuid
+
+        providerKey:
+          type: string
+
+        connectionType:
+          type: string
+
+        displayName:
+          type: string
+
+        status:
+          type: string
+
+        credentialFingerprint:
+          type: string
+          readOnly: true
+          description: |
+            Keyed non-secret fingerprint for the currently active BYOK credential.
+
+        version:
+          type: string
+          format: int64
+
+        createdByUserId:
+          type: string
+          format: uuid
+
+        createdAt:
+          type: string
+          format: date-time
+
+        updatedAt:
+          type: string
+          format: date-time
 
     UpdateModelConnectionRequest:
       type: object

@@ -135,6 +135,14 @@ func (service *Service) CreateConnection(
 		)
 	}
 
+	// BYOK is deliberately forced through CreateBYOKConnection so a
+	// metadata-only BYOK connection can never bypass credential storage
+	// and verification.
+	if input.ConnectionType == domain.ConnectionTypeBYOK {
+		return domain.Connection{},
+			domain.ErrCredentialRequired
+	}
+
 	displayName, err := normalizeDisplayName(input.DisplayName)
 	if err != nil {
 		return domain.Connection{}, err

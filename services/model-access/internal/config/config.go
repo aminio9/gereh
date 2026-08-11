@@ -3,6 +3,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -45,6 +46,27 @@ type Config struct {
 	GRPCTLSCertFile string
 	GRPCTLSKeyFile  string
 	GRPCTLSCAFile   string
+
+	VaultAddress     string
+	VaultMount       string
+	VaultNamespace   string
+	VaultTokenFile   string
+	VaultStaticToken string
+	VaultCAFile      string
+
+	VaultAllowInsecureHTTP bool
+
+	VaultTimeout time.Duration
+
+	FingerprintKeyFile string
+	FingerprintKeyID   string
+
+	ProviderVerifyTimeout time.Duration
+
+	SecretCleanupBatchSize    int
+	SecretCleanupPollInterval time.Duration
+	SecretCleanupLease        time.Duration
+	SecretCleanupMaxBackoff   time.Duration
 
 	Kafka platformkafka.Config
 }
@@ -133,6 +155,62 @@ func FromEnv(version string) (Config, error) {
 		return Config{}, err
 	}
 
+	vaultTimeout, err := durationEnvironment(
+		"MODEL_ACCESS_VAULT_TIMEOUT",
+		5*time.Second,
+	)
+	if err != nil {
+		return Config{}, err
+	}
+
+	providerVerifyTimeout, err := durationEnvironment(
+		"MODEL_ACCESS_PROVIDER_VERIFY_TIMEOUT",
+		8*time.Second,
+	)
+	if err != nil {
+		return Config{}, err
+	}
+
+	cleanupBatchSize, err := integerEnvironment(
+		"MODEL_ACCESS_SECRET_CLEANUP_BATCH_SIZE",
+		50,
+	)
+	if err != nil {
+		return Config{}, err
+	}
+
+	cleanupPollInterval, err := durationEnvironment(
+		"MODEL_ACCESS_SECRET_CLEANUP_POLL_INTERVAL",
+		time.Second,
+	)
+	if err != nil {
+		return Config{}, err
+	}
+
+	cleanupLease, err := durationEnvironment(
+		"MODEL_ACCESS_SECRET_CLEANUP_LEASE",
+		30*time.Second,
+	)
+	if err != nil {
+		return Config{}, err
+	}
+
+	cleanupMaxBackoff, err := durationEnvironment(
+		"MODEL_ACCESS_SECRET_CLEANUP_MAX_BACKOFF",
+		5*time.Minute,
+	)
+	if err != nil {
+		return Config{}, err
+	}
+
+	vaultAllowInsecureHTTP, err := boolEnvironment(
+		"MODEL_ACCESS_VAULT_ALLOW_INSECURE_HTTP",
+		true,
+	)
+	if err != nil {
+		return Config{}, err
+	}
+
 	config := Config{
 		ServiceName:    "model-access",
 		ServiceVersion: version,
@@ -173,6 +251,52 @@ func FromEnv(version string) (Config, error) {
 		GRPCTLSKeyFile:  strings.TrimSpace(os.Getenv("GRPC_TLS_KEY_FILE")),
 		GRPCTLSCAFile:   strings.TrimSpace(os.Getenv("GRPC_TLS_CA_FILE")),
 
+		VaultAddress: envOrDefault(
+			"MODEL_ACCESS_VAULT_ADDRESS",
+			"http://127.0.0.1:8200",
+		),
+
+		VaultMount: envOrDefault(
+			"MODEL_ACCESS_VAULT_MOUNT",
+			"model-byok",
+		),
+
+		VaultNamespace: strings.TrimSpace(
+			os.Getenv("MODEL_ACCESS_VAULT_NAMESPACE"),
+		),
+
+		VaultTokenFile: strings.TrimSpace(
+			os.Getenv("MODEL_ACCESS_VAULT_TOKEN_FILE"),
+		),
+
+		VaultStaticToken: strings.TrimSpace(
+			os.Getenv("MODEL_ACCESS_VAULT_TOKEN"),
+		),
+
+		VaultCAFile: strings.TrimSpace(
+			os.Getenv("MODEL_ACCESS_VAULT_CA_FILE"),
+		),
+
+		VaultAllowInsecureHTTP: vaultAllowInsecureHTTP,
+
+		VaultTimeout: vaultTimeout,
+
+		FingerprintKeyFile: strings.TrimSpace(
+			os.Getenv("MODEL_ACCESS_FINGERPRINT_KEY_FILE"),
+		),
+
+		FingerprintKeyID: envOrDefault(
+			"MODEL_ACCESS_FINGERPRINT_KEY_ID",
+			"v1",
+		),
+
+		ProviderVerifyTimeout: providerVerifyTimeout,
+
+		SecretCleanupBatchSize:    cleanupBatchSize,
+		SecretCleanupPollInterval: cleanupPollInterval,
+		SecretCleanupLease:        cleanupLease,
+		SecretCleanupMaxBackoff:   cleanupMaxBackoff,
+
 		Kafka: kafkaConfig,
 	}
 
@@ -210,6 +334,37 @@ func FromEnv(version string) (Config, error) {
 			config.GRPCTLSCAFile == "" {
 			return Config{}, fmt.Errorf(
 				"GRPC_TLS_CERT_FILE, GRPC_TLS_KEY_FILE and GRPC_TLS_CA_FILE are required in production",
+			)
+		}
+
+		vaultURL, err := url.Parse(config.VaultAddress)
+		if err != nil || vaultURL.Scheme != "https" {
+			return Config{}, fmt.Errorf(
+				"MODEL_ACCESS_VAULT_ADDRESS must use HTTPS in production",
+			)
+		}
+
+		if config.VaultTokenFile == "" {
+			return Config{}, fmt.Errorf(
+				"MODEL_ACCESS_VAULT_TOKEN_FILE is required in production",
+			)
+		}
+
+		if config.VaultStaticToken != "" {
+			return Config{}, fmt.Errorf(
+				"MODEL_ACCESS_VAULT_TOKEN is forbidden in production",
+			)
+		}
+
+		if config.FingerprintKeyFile == "" {
+			return Config{}, fmt.Errorf(
+				"MODEL_ACCESS_FINGERPRINT_KEY_FILE is required in production",
+			)
+		}
+
+		if config.VaultAllowInsecureHTTP {
+			return Config{}, fmt.Errorf(
+				"vault insecure HTTP is forbidden in production",
 			)
 		}
 	}

@@ -83,16 +83,17 @@ func Connection(
 	value domain.Connection,
 ) *modelv1.ModelConnection {
 	result := &modelv1.ModelConnection{
-		TenantId:        value.TenantID,
-		ConnectionId:    value.ID,
-		ProviderKey:     value.ProviderKey,
-		ConnectionType:  ConnectionType(value.ConnectionType),
-		DisplayName:     value.DisplayName,
-		Status:          ConnectionStatus(value.Status),
-		Version:         value.Version,
-		CreatedByUserId: value.CreatedByUserID,
-		CreatedAt:       timestamppb.New(value.CreatedAt),
-		UpdatedAt:       timestamppb.New(value.UpdatedAt),
+		TenantId:              value.TenantID,
+		ConnectionId:          value.ID,
+		ProviderKey:           value.ProviderKey,
+		ConnectionType:        ConnectionType(value.ConnectionType),
+		DisplayName:           value.DisplayName,
+		Status:                ConnectionStatus(value.Status),
+		CredentialFingerprint: value.CredentialFingerprint,
+		Version:               value.Version,
+		CreatedByUserId:       value.CreatedByUserID,
+		CreatedAt:             timestamppb.New(value.CreatedAt),
+		UpdatedAt:             timestamppb.New(value.UpdatedAt),
 	}
 
 	if value.ArchivedAt != nil {

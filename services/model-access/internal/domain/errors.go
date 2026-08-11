@@ -38,4 +38,36 @@ var (
 	ErrIdempotencyConflict = errors.New(
 		"idempotency key was reused with different input",
 	)
+
+	// ErrCredentialRequired indicates a BYOK creation without a credential.
+	ErrCredentialRequired = errors.New("BYOK credential is required")
+
+	// ErrCredentialRejected indicates the provider rejected the credential.
+	ErrCredentialRejected = errors.New(
+		"provider rejected the credential",
+	)
+
+	// ErrCredentialVerificationUnsupported indicates the provider has no
+	// supported verification contract.
+	ErrCredentialVerificationUnsupported = errors.New(
+		"credential verification is not supported for this provider",
+	)
+
+	// ErrCredentialVerificationUnavailable indicates a transient verification
+	// failure such as provider outage or rate limit.
+	ErrCredentialVerificationUnavailable = errors.New(
+		"provider credential verification is temporarily unavailable",
+	)
+
+	// ErrCredentialStateConflict indicates credential state changed.
+	ErrCredentialStateConflict = errors.New("credential state changed")
+
+	// ErrSecretStoreUnavailable indicates the secret store is unreachable.
+	ErrSecretStoreUnavailable = errors.New("secret store is unavailable")
+
+	// ErrSecretStoreConflict indicates a secret-store version conflict.
+	ErrSecretStoreConflict = errors.New("secret store version conflict")
+
+	// ErrSecretNotFound indicates a secret or version does not exist.
+	ErrSecretNotFound = errors.New("secret not found")
 )

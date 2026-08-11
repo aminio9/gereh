@@ -120,6 +120,117 @@ func (fake *repositoryFake) ReleaseOutbox(
 	panic("unexpected repository call")
 }
 
+func (fake *repositoryFake) EnsureBYOKCredential(
+	context.Context,
+	ports.EnsureBYOKCredentialParams,
+) (domain.BYOKCredential, error) {
+	panic("unexpected repository call")
+}
+
+func (fake *repositoryFake) GetBYOKCredential(
+	context.Context,
+	string,
+	string,
+	string,
+) (domain.BYOKCredential, error) {
+	panic("unexpected repository call")
+}
+
+func (fake *repositoryFake) MarkBYOKSecretStored(
+	context.Context,
+	string,
+	string,
+	string,
+	int64,
+	time.Time,
+) (domain.BYOKCredential, error) {
+	panic("unexpected repository call")
+}
+
+func (fake *repositoryFake) ActivateBYOK(
+	context.Context,
+	ports.ActivateBYOKParams,
+) (domain.Connection, error) {
+	panic("unexpected repository call")
+}
+
+func (fake *repositoryFake) FailInitialBYOKVerification(
+	context.Context,
+	ports.FailInitialBYOKParams,
+) (domain.Connection, error) {
+	panic("unexpected repository call")
+}
+
+func (fake *repositoryFake) RecordTransientVerification(
+	context.Context,
+	domain.CredentialVerification,
+) error {
+	panic("unexpected repository call")
+}
+
+func (fake *repositoryFake) PrepareBYOKRotation(
+	context.Context,
+	ports.PrepareRotationParams,
+) (ports.RotationPreparation, error) {
+	panic("unexpected repository call")
+}
+
+func (fake *repositoryFake) MarkBYOKRotationSecretStored(
+	context.Context,
+	string,
+	string,
+	string,
+	string,
+	int64,
+	time.Time,
+) error {
+	panic("unexpected repository call")
+}
+
+func (fake *repositoryFake) CompleteBYOKRotation(
+	context.Context,
+	ports.CompleteRotationParams,
+) (domain.Connection, error) {
+	panic("unexpected repository call")
+}
+
+func (fake *repositoryFake) RejectBYOKRotation(
+	context.Context,
+	string,
+	string,
+	string,
+	string,
+	int64,
+	domain.CredentialVerification,
+	time.Time,
+) error {
+	panic("unexpected repository call")
+}
+
+func (fake *repositoryFake) ClaimSecretCleanup(
+	context.Context,
+	int,
+	time.Duration,
+) ([]domain.SecretCleanup, error) {
+	panic("unexpected repository call")
+}
+
+func (fake *repositoryFake) CompleteSecretCleanup(
+	context.Context,
+	int64,
+) error {
+	panic("unexpected repository call")
+}
+
+func (fake *repositoryFake) ReleaseSecretCleanup(
+	context.Context,
+	int64,
+	time.Time,
+	string,
+) error {
+	panic("unexpected repository call")
+}
+
 func TestPlatformManagedRequiresEntitlement(t *testing.T) {
 	t.Parallel()
 
@@ -128,6 +239,9 @@ func TestPlatformManagedRequiresEntitlement(t *testing.T) {
 	service, err := New(
 		repository,
 		platformManagedAuthorizer{enabled: false},
+		newFakeSecretStore(),
+		stubVerifier{},
+		newTestFingerprinter(t),
 		Config{
 			EventTopic:     "gereh.model.events.v1",
 			IdempotencyTTL: 24 * time.Hour,

@@ -17,11 +17,20 @@ service ModelAccessService {
 
   rpc CreateConnection(CreateConnectionRequest) returns (CreateConnectionResponse);
 
+  // Creates a customer BYOK connection.
+  //
+  // api_key is write-only secret material. Implementations must never log it,
+  // persist it in PostgreSQL, return it, or include it in telemetry/events.
+  rpc CreateBYOKConnection(CreateBYOKConnectionRequest) returns (CreateBYOKConnectionResponse);
+
   rpc GetConnection(GetConnectionRequest) returns (GetConnectionResponse);
 
   rpc ListConnections(ListConnectionsRequest) returns (ListConnectionsResponse);
 
   rpc UpdateConnection(UpdateConnectionRequest) returns (UpdateConnectionResponse);
+
+  // Rotates a BYOK secret without changing the ModelConnection identity.
+  rpc RotateBYOKCredential(RotateBYOKCredentialRequest) returns (RotateBYOKCredentialResponse);
 
   rpc ArchiveConnection(ArchiveConnectionRequest) returns (ArchiveConnectionResponse);
 }
@@ -87,6 +96,13 @@ message ModelConnection {
   google.protobuf.Timestamp created_at = 9;
   google.protobuf.Timestamp updated_at = 10;
   google.protobuf.Timestamp archived_at = 11;
+
+  // Safe identifier for the currently active BYOK credential.
+  //
+  // This is a keyed fingerprint, not part of the provider API key.
+  // Empty for non-BYOK connections and BYOK connections without an
+  // successfully verified credential.
+  string credential_fingerprint = 12;
 }
 
 message ListProvidersRequest {
@@ -113,6 +129,42 @@ message CreateConnectionRequest {
 }
 
 message CreateConnectionResponse {
+  ModelConnection connection = 1;
+}
+
+message CreateBYOKConnectionRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+
+  string idempotency_key = 3;
+
+  string provider_key = 4;
+  string display_name = 5;
+
+  // WRITE ONLY.
+  //
+  // Never log, persist in PostgreSQL, return, or add to events/traces.
+  string api_key = 6;
+}
+
+message CreateBYOKConnectionResponse {
+  ModelConnection connection = 1;
+}
+
+message RotateBYOKCredentialRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string connection_id = 3;
+
+  string idempotency_key = 4;
+
+  int64 expected_version = 5;
+
+  // WRITE ONLY.
+  string api_key = 6;
+}
+
+message RotateBYOKCredentialResponse {
   ModelConnection connection = 1;
 }
 

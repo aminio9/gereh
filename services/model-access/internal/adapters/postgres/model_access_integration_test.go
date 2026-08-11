@@ -7,10 +7,12 @@ import (
 	"time"
 
 	tenantv1 "github.com/aminio9/gereh/gen/go/gereh/tenant/v1"
+	platformpostgres "github.com/aminio9/gereh/platform/go/postgres"
 	"github.com/aminio9/gereh/services/model-access/internal/application"
 	"github.com/aminio9/gereh/services/model-access/internal/domain"
 	"github.com/aminio9/gereh/services/model-access/internal/ports"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/require"
 )
@@ -50,6 +52,10 @@ type modelAccessIntegrationTest struct {
 	repository ports.Repository
 	service    *application.Service
 
+	secretStore *integrationSecretStore
+
+	adminPool *pgxpool.Pool
+
 	tenantA string
 	userA   string
 
@@ -72,11 +78,26 @@ func newModelAccessIntegrationTest(t *testing.T) *modelAccessIntegrationTest {
 
 	t.Cleanup(pool.Close)
 
+	adminURL := os.Getenv("MODEL_ACCESS_TEST_ADMIN_DATABASE_URL")
+	if adminURL == "" {
+		adminURL = databaseURL
+	}
+
+	adminPool, err := pgxpool.New(ctx, adminURL)
+	require.NoError(t, err)
+
+	t.Cleanup(adminPool.Close)
+
 	repository := New(pool)
+
+	store := newIntegrationSecretStore()
 
 	service, err := application.New(
 		repository,
 		allowAllAuthorizer{},
+		store,
+		integrationVerifier,
+		integrationFingerprinter(t),
 		application.Config{
 			EventTopic:     "gereh.model.events.v1",
 			IdempotencyTTL: 24 * time.Hour,
@@ -85,8 +106,10 @@ func newModelAccessIntegrationTest(t *testing.T) *modelAccessIntegrationTest {
 	require.NoError(t, err)
 
 	return &modelAccessIntegrationTest{
-		repository: repository,
-		service:    service,
+		repository:  repository,
+		service:     service,
+		secretStore: store,
+		adminPool:   adminPool,
 
 		tenantA: uuid.NewString(),
 		userA:   uuid.NewString(),
@@ -94,6 +117,56 @@ func newModelAccessIntegrationTest(t *testing.T) *modelAccessIntegrationTest {
 		tenantB: uuid.NewString(),
 		userB:   uuid.NewString(),
 	}
+}
+
+func (test *modelAccessIntegrationTest) createBYOK(
+	t *testing.T,
+	apiKey string,
+) domain.Connection {
+	t.Helper()
+
+	value, err := test.service.CreateBYOKConnection(
+		context.Background(),
+		application.CreateBYOKConnectionInput{
+			ActorUserID:    test.userA,
+			TenantID:       test.tenantA,
+			IdempotencyKey: uuid.NewString(),
+			ProviderKey:    "openai",
+			DisplayName:    "Customer OpenAI",
+			APIKey:         apiKey,
+		},
+	)
+	require.NoError(t, err)
+
+	return value
+}
+
+// newModelAccessServiceWithVerifier wires a service with a specific verifier
+// against the same repository and database, reusing the test's secret store.
+func newModelAccessServiceWithVerifier(
+	t *testing.T,
+	pool *pgxpool.Pool,
+	store *integrationSecretStore,
+	verifier ports.CredentialVerifier,
+) *application.Service {
+	t.Helper()
+
+	repository := New(pool)
+
+	service, err := application.New(
+		repository,
+		allowAllAuthorizer{},
+		store,
+		verifier,
+		integrationFingerprinter(t),
+		application.Config{
+			EventTopic:     "gereh.model.events.v1",
+			IdempotencyTTL: 24 * time.Hour,
+		},
+	)
+	require.NoError(t, err)
+
+	return service
 }
 
 func (test *modelAccessIntegrationTest) createConnection(
@@ -110,8 +183,8 @@ func (test *modelAccessIntegrationTest) createConnection(
 			ActorUserID:    userID,
 			TenantID:       tenantID,
 			IdempotencyKey: uuid.NewString(),
-			ProviderKey:    "openai",
-			ConnectionType: domain.ConnectionTypeBYOK,
+			ProviderKey:    "custom",
+			ConnectionType: domain.ConnectionTypePrivateEndpoint,
 			DisplayName:    displayName,
 		},
 	)
@@ -127,20 +200,83 @@ func (test *modelAccessIntegrationTest) connectionCount(
 ) int {
 	t.Helper()
 
-	var count int
-
-	err := test.repository.(*Repository).database.Pool().QueryRow(
+	return test.scopedCount(
 		ctx,
+		t,
+		tenantID,
 		`
 			SELECT count(*)
 			FROM model_access_connections
 			WHERE tenant_id = $1::uuid
 		`,
 		tenantID,
-	).Scan(&count)
+	)
+}
+
+// scopedCount runs a count query inside a tenant-scoped read-only
+// transaction so FORCE RLS sees the selected tenant.
+func (test *modelAccessIntegrationTest) scopedCount(
+	ctx context.Context,
+	t *testing.T,
+	tenantID string,
+	query string,
+	args ...any,
+) int {
+	t.Helper()
+
+	database := test.repository.(*Repository).database
+
+	transaction, err := database.Begin(
+		ctx,
+		platformpostgres.TenantScope(
+			tenantID,
+			test.userA,
+			"",
+			"",
+		),
+		pgx.TxOptions{AccessMode: pgx.ReadOnly},
+	)
+	require.NoError(t, err)
+
+	defer func() { _ = transaction.Rollback(ctx) }()
+
+	var count int
+
+	err = transaction.QueryRow(ctx, query, args...).Scan(&count)
 	require.NoError(t, err)
 
 	return count
+}
+
+// scopedLookup scans a single value inside a tenant-scoped transaction.
+func (test *modelAccessIntegrationTest) scopedLookup(
+	ctx context.Context,
+	t *testing.T,
+	tenantID string,
+	dest any,
+	query string,
+	args ...any,
+) {
+	t.Helper()
+
+	database := test.repository.(*Repository).database
+
+	transaction, err := database.Begin(
+		ctx,
+		platformpostgres.TenantScope(
+			tenantID,
+			test.userA,
+			"",
+			"",
+		),
+		pgx.TxOptions{AccessMode: pgx.ReadOnly},
+	)
+	require.NoError(t, err)
+
+	defer func() { _ = transaction.Rollback(ctx) }()
+
+	err = transaction.QueryRow(ctx, query, args...).Scan(dest)
+	require.NoError(t, err)
 }
 
 func (test *modelAccessIntegrationTest) revisionCount(
@@ -151,10 +287,10 @@ func (test *modelAccessIntegrationTest) revisionCount(
 ) int {
 	t.Helper()
 
-	var count int
-
-	err := test.repository.(*Repository).database.Pool().QueryRow(
+	return test.scopedCount(
 		ctx,
+		t,
+		tenantID,
 		`
 			SELECT count(*)
 			FROM model_access_connection_revisions
@@ -163,10 +299,7 @@ func (test *modelAccessIntegrationTest) revisionCount(
 		`,
 		tenantID,
 		connectionID,
-	).Scan(&count)
-	require.NoError(t, err)
-
-	return count
+	)
 }
 
 func (test *modelAccessIntegrationTest) outboxCountForAggregate(
@@ -203,9 +336,9 @@ func TestCreateConnectionIsIdempotent(t *testing.T) {
 		ActorUserID:    test.userA,
 		TenantID:       test.tenantA,
 		IdempotencyKey: idempotencyKey,
-		ProviderKey:    "openai",
-		ConnectionType: domain.ConnectionTypeBYOK,
-		DisplayName:    "Production OpenAI",
+		ProviderKey:    "custom",
+		ConnectionType: domain.ConnectionTypePrivateEndpoint,
+		DisplayName:    "Production endpoint",
 	}
 
 	first, err := test.service.CreateConnection(ctx, input)
@@ -231,9 +364,9 @@ func TestIdempotencyKeyCannotChangeRequest(t *testing.T) {
 		ActorUserID:    test.userA,
 		TenantID:       test.tenantA,
 		IdempotencyKey: key,
-		ProviderKey:    "openai",
-		ConnectionType: domain.ConnectionTypeBYOK,
-		DisplayName:    "OpenAI",
+		ProviderKey:    "custom",
+		ConnectionType: domain.ConnectionTypePrivateEndpoint,
+		DisplayName:    "Endpoint",
 	}
 
 	_, err := test.service.CreateConnection(ctx, input)
@@ -303,13 +436,15 @@ func TestUnscopedConnectionQueryReturnsZeroRows(t *testing.T) {
 
 	defer func() { _ = transaction.Rollback(context.Background()) }()
 
-	_, err = transaction.Exec(
+	err = platformpostgres.ApplyScope(
 		context.Background(),
-		`
-			SELECT set_config('app.scope_kind', 'tenant', TRUE);
-			SELECT set_config('app.tenant_id', $1, TRUE);
-		`,
-		test.tenantB,
+		transaction,
+		platformpostgres.TenantScope(
+			test.tenantB,
+			test.userB,
+			"",
+			"",
+		),
 	)
 	require.NoError(t, err)
 
@@ -365,9 +500,9 @@ func TestUnsupportedConnectionTypeRejected(t *testing.T) {
 			ActorUserID:    test.userA,
 			TenantID:       test.tenantA,
 			IdempotencyKey: uuid.NewString(),
-			ProviderKey:    "nous",
+			ProviderKey:    "openai",
 			ConnectionType: domain.ConnectionTypePrivateEndpoint,
-			DisplayName:    "Nous private endpoint",
+			DisplayName:    "OpenAI private endpoint",
 		},
 	)
 	require.ErrorIs(t, err, domain.ErrUnsupportedConnectionType)
@@ -383,7 +518,7 @@ func TestUnknownProviderRejected(t *testing.T) {
 			TenantID:       test.tenantA,
 			IdempotencyKey: uuid.NewString(),
 			ProviderKey:    "not-a-provider",
-			ConnectionType: domain.ConnectionTypeBYOK,
+			ConnectionType: domain.ConnectionTypePrivateEndpoint,
 			DisplayName:    "Bogus",
 		},
 	)
@@ -517,8 +652,8 @@ func TestSameDisplayNameCannotBeReusedWhileActive(t *testing.T) {
 			ActorUserID:    test.userA,
 			TenantID:       test.tenantA,
 			IdempotencyKey: uuid.NewString(),
-			ProviderKey:    "openai",
-			ConnectionType: domain.ConnectionTypeBYOK,
+			ProviderKey:    "custom",
+			ConnectionType: domain.ConnectionTypePrivateEndpoint,
 			DisplayName:    "Unique name",
 		},
 	)
@@ -536,8 +671,8 @@ func TestDifferentTenantCanReuseDisplayName(t *testing.T) {
 			ActorUserID:    test.userB,
 			TenantID:       test.tenantB,
 			IdempotencyKey: uuid.NewString(),
-			ProviderKey:    "openai",
-			ConnectionType: domain.ConnectionTypeBYOK,
+			ProviderKey:    "custom",
+			ConnectionType: domain.ConnectionTypePrivateEndpoint,
 			DisplayName:    "Shared name",
 		},
 	)
@@ -570,6 +705,11 @@ func TestRuntimeRoleHasNoBypassRLS(t *testing.T) {
 func TestSchemaContainsNoCredentialColumns(t *testing.T) {
 	test := newModelAccessIntegrationTest(t)
 
+	// The phase-18 schema intentionally contains internal metadata such as
+	// secret_ref and credential_fingerprint. These are references and keyed
+	// HMAC digests, never the raw credential. This test asserts that no
+	// column can hold a raw provider secret: no api_key/secret/token/bearer
+	// value columns and no provider_credential storage.
 	rows, err := test.repository.(*Repository).database.Pool().Query(
 		context.Background(),
 		`
@@ -579,11 +719,35 @@ func TestSchemaContainsNoCredentialColumns(t *testing.T) {
 			FROM information_schema.columns
 			WHERE table_schema = 'public'
 			  AND (
-				column_name ILIKE '%credential%'
-				OR column_name ILIKE '%secret%'
-				OR column_name ILIKE '%api_key%'
-				OR column_name ILIKE '%token%'
-				OR column_name ILIKE '%key%'
+				column_name ILIKE '%api_key%'
+				OR column_name ILIKE '%bearer%'
+				OR column_name ILIKE '%credential_value%'
+				OR column_name ILIKE '%raw_key%'
+				OR column_name ILIKE '%provider_secret%'
+				OR (
+					column_name ILIKE '%secret%'
+					AND column_name NOT IN (
+						'secret_ref',
+						'secret_version',
+						'secret_cleanup'
+					)
+				)
+				OR (
+					column_name ILIKE '%token%'
+					AND column_name NOT ILIKE '%bucket%'
+				)
+				OR (
+					column_name ILIKE '%key%'
+					AND column_name NOT IN (
+						'provider_key',
+						'pool_key',
+						'fingerprint_key_id',
+						'partition_key',
+						'actor_user_id'
+					)
+					AND column_name NOT ILIKE '%provider_pool_key%'
+					AND column_name NOT ILIKE '%idempotency_key%'
+				)
 			  )
 			ORDER BY table_name, column_name
 		`,
@@ -605,7 +769,7 @@ func TestSchemaContainsNoCredentialColumns(t *testing.T) {
 		)
 	}
 
-	require.Empty(t, offenders, "schema must contain no credential columns")
+	require.Empty(t, offenders, "schema must contain no raw credential columns")
 }
 
 func TestEventEnvelopeCarriesNoSecretFields(t *testing.T) {
@@ -675,9 +839,9 @@ func TestPlatformManagedRejectsUnsupportedProvider(t *testing.T) {
 			ActorUserID:    test.userA,
 			TenantID:       test.tenantA,
 			IdempotencyKey: uuid.NewString(),
-			ProviderKey:    "nous",
+			ProviderKey:    "custom",
 			ConnectionType: domain.ConnectionTypePlatformManaged,
-			DisplayName:    "Gereh Nous",
+			DisplayName:    "Custom managed",
 		},
 	)
 	require.ErrorIs(t, err, domain.ErrUnsupportedConnectionType)
@@ -688,7 +852,7 @@ func TestPlatformManagedFailsClosedWithoutPool(t *testing.T) {
 
 	ctx := context.Background()
 
-	_, err := test.repository.(*Repository).database.Pool().Exec(
+	_, err := test.adminPool.Exec(
 		ctx,
 		`
 			UPDATE model_access_provider_pools
@@ -699,7 +863,7 @@ func TestPlatformManagedFailsClosedWithoutPool(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		_, _ = test.repository.(*Repository).database.Pool().Exec(
+		_, _ = test.adminPool.Exec(
 			context.Background(),
 			`
 				UPDATE model_access_provider_pools
@@ -771,8 +935,11 @@ func TestPlatformManagedRevisionContainsPoolKey(t *testing.T) {
 
 	var poolKey *string
 
-	err = test.repository.(*Repository).database.Pool().QueryRow(
+	test.scopedLookup(
 		ctx,
+		t,
+		test.tenantA,
+		&poolKey,
 		`
 			SELECT provider_pool_key
 			FROM model_access_connection_revisions
@@ -781,20 +948,19 @@ func TestPlatformManagedRevisionContainsPoolKey(t *testing.T) {
 			LIMIT 1
 		`,
 		connection.ID,
-	).Scan(&poolKey)
-	require.NoError(t, err)
+	)
 	require.NotNil(t, poolKey)
 	require.Equal(t, "gereh-openai-global", *poolKey)
 }
 
-func TestBYOKConnectionHasNoPoolKey(t *testing.T) {
+func TestPrivateEndpointConnectionHasNoPoolKey(t *testing.T) {
 	test := newModelAccessIntegrationTest(t)
 
 	connection := test.createConnection(
 		t,
 		test.tenantA,
 		test.userA,
-		"BYOK No Pool",
+		"Private endpoint no pool",
 	)
 
 	require.Nil(t, connection.ProviderPoolKey)

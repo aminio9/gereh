@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/aminio9/gereh/services/model-access/internal/ports"
+	"github.com/aminio9/gereh/services/model-access/internal/security"
 )
 
 // Config configures the Model Access application service.
@@ -20,6 +21,11 @@ type Service struct {
 	repository ports.Repository
 	authorizer ports.Authorizer
 
+	secretStore ports.SecretStore
+	verifier    ports.CredentialVerifier
+
+	fingerprinter *security.Fingerprinter
+
 	config Config
 
 	now func() time.Time
@@ -29,6 +35,9 @@ type Service struct {
 func New(
 	repository ports.Repository,
 	authorizer ports.Authorizer,
+	secretStore ports.SecretStore,
+	verifier ports.CredentialVerifier,
+	fingerprinter *security.Fingerprinter,
 	config Config,
 ) (*Service, error) {
 	if repository == nil {
@@ -37,6 +46,18 @@ func New(
 
 	if authorizer == nil {
 		return nil, fmt.Errorf("model access authorizer is required")
+	}
+
+	if secretStore == nil {
+		return nil, fmt.Errorf("model access secret store is required")
+	}
+
+	if verifier == nil {
+		return nil, fmt.Errorf("model access credential verifier is required")
+	}
+
+	if fingerprinter == nil {
+		return nil, fmt.Errorf("model access credential fingerprinter is required")
 	}
 
 	if config.EventTopic == "" {
@@ -48,9 +69,12 @@ func New(
 	}
 
 	return &Service{
-		repository: repository,
-		authorizer: authorizer,
-		config:     config,
-		now:        time.Now,
+		repository:    repository,
+		authorizer:    authorizer,
+		secretStore:   secretStore,
+		verifier:      verifier,
+		fingerprinter: fingerprinter,
+		config:        config,
+		now:           time.Now,
 	}, nil
 }

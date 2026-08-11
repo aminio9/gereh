@@ -27,6 +27,8 @@ type connectionSnapshot struct {
 
 	Status string `json:"status"`
 
+	CredentialFingerprint string `json:"credentialFingerprint,omitempty"`
+
 	Version int64 `json:"version"`
 
 	CreatedByUserID string `json:"createdByUserId"`
@@ -39,35 +41,37 @@ type connectionSnapshot struct {
 
 func snapshotConnection(value domain.Connection) connectionSnapshot {
 	return connectionSnapshot{
-		TenantID:        value.TenantID,
-		ID:              value.ID,
-		ProviderKey:     value.ProviderKey,
-		ProviderPoolKey: value.ProviderPoolKey,
-		ConnectionType:  string(value.ConnectionType),
-		DisplayName:     value.DisplayName,
-		Status:          string(value.Status),
-		Version:         value.Version,
-		CreatedByUserID: value.CreatedByUserID,
-		CreatedAt:       value.CreatedAt,
-		UpdatedAt:       value.UpdatedAt,
-		ArchivedAt:      value.ArchivedAt,
+		TenantID:              value.TenantID,
+		ID:                    value.ID,
+		ProviderKey:           value.ProviderKey,
+		ProviderPoolKey:       value.ProviderPoolKey,
+		ConnectionType:        string(value.ConnectionType),
+		DisplayName:           value.DisplayName,
+		Status:                string(value.Status),
+		CredentialFingerprint: value.CredentialFingerprint,
+		Version:               value.Version,
+		CreatedByUserID:       value.CreatedByUserID,
+		CreatedAt:             value.CreatedAt,
+		UpdatedAt:             value.UpdatedAt,
+		ArchivedAt:            value.ArchivedAt,
 	}
 }
 
 func domainConnection(value connectionSnapshot) domain.Connection {
 	return domain.Connection{
-		TenantID:        value.TenantID,
-		ID:              value.ID,
-		ProviderKey:     value.ProviderKey,
-		ProviderPoolKey: value.ProviderPoolKey,
-		ConnectionType:  domain.ConnectionType(value.ConnectionType),
-		DisplayName:     value.DisplayName,
-		Status:          domain.ConnectionStatus(value.Status),
-		Version:         value.Version,
-		CreatedByUserID: value.CreatedByUserID,
-		CreatedAt:       value.CreatedAt,
-		UpdatedAt:       value.UpdatedAt,
-		ArchivedAt:      value.ArchivedAt,
+		TenantID:              value.TenantID,
+		ID:                    value.ID,
+		ProviderKey:           value.ProviderKey,
+		ProviderPoolKey:       value.ProviderPoolKey,
+		ConnectionType:        domain.ConnectionType(value.ConnectionType),
+		DisplayName:           value.DisplayName,
+		Status:                domain.ConnectionStatus(value.Status),
+		CredentialFingerprint: value.CredentialFingerprint,
+		Version:               value.Version,
+		CreatedByUserID:       value.CreatedByUserID,
+		CreatedAt:             value.CreatedAt,
+		UpdatedAt:             value.UpdatedAt,
+		ArchivedAt:            value.ArchivedAt,
 	}
 }
 
