@@ -39,22 +39,52 @@ GRANT USAGE
     ON SCHEMA public
     TO gereh_tenant_test_admin;
 
-GRANT SELECT, INSERT, UPDATE, DELETE
-    ON TABLE tenant_tenants
-    TO gereh_tenant_test_admin;
+-- Grant table permissions only if tables exist (migrations may not have run yet).
+DO $block$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'tenant_tenants'
+    ) THEN
+        GRANT SELECT, INSERT, UPDATE, DELETE
+            ON TABLE tenant_tenants
+            TO gereh_tenant_test_admin;
+    END IF;
 
-GRANT SELECT, INSERT, UPDATE, DELETE
-    ON TABLE tenant_memberships
-    TO gereh_tenant_test_admin;
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'tenant_memberships'
+    ) THEN
+        GRANT SELECT, INSERT, UPDATE, DELETE
+            ON TABLE tenant_memberships
+            TO gereh_tenant_test_admin;
+    END IF;
 
-GRANT SELECT, INSERT, UPDATE, DELETE
-    ON TABLE tenant_entitlements
-    TO gereh_tenant_test_admin;
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'tenant_entitlements'
+    ) THEN
+        GRANT SELECT, INSERT, UPDATE, DELETE
+            ON TABLE tenant_entitlements
+            TO gereh_tenant_test_admin;
+    END IF;
 
-GRANT SELECT, INSERT, UPDATE, DELETE
-    ON TABLE tenant_outbox
-    TO gereh_tenant_test_admin;
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'tenant_outbox'
+    ) THEN
+        GRANT SELECT, INSERT, UPDATE, DELETE
+            ON TABLE tenant_outbox
+            TO gereh_tenant_test_admin;
+    END IF;
 
-GRANT SELECT, INSERT, UPDATE, DELETE
-    ON TABLE tenant_onboarding_operations
-    TO gereh_tenant_test_admin;
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'tenant_onboarding_operations'
+    ) THEN
+        GRANT SELECT, INSERT, UPDATE, DELETE
+            ON TABLE tenant_onboarding_operations
+            TO gereh_tenant_test_admin;
+    END IF;
+END
+$block$;

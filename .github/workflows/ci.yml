@@ -230,25 +230,47 @@ jobs:
             config --quiet
 
       - name: Start infrastructure
+        shell: bash
         run: |
-          docker compose \
-            --env-file deployments/local/.env \
-            -f deployments/local/compose.yaml \
-            up \
-              -d \
-              --wait \
-              --wait-timeout 240 \
-              postgres \
-              redis \
-              kafka \
-              temporal
+          set -Eeuo pipefail
 
-          docker compose \
-            --env-file deployments/local/.env \
-            -f deployments/local/compose.yaml \
-            run \
-              --rm \
-              kafka-init
+          COMPOSE=(
+            docker compose
+            --env-file deployments/local/.env
+            -f deployments/local/compose.yaml
+          )
+
+          if ! "${COMPOSE[@]}" up \
+            -d \
+            --wait \
+            --wait-timeout 240 \
+            postgres \
+            redis \
+            kafka \
+            temporal
+          then
+            echo "=== Compose status ==="
+            "${COMPOSE[@]}" ps -a || true
+
+            echo "=== PostgreSQL logs ==="
+            "${COMPOSE[@]}" logs \
+              --no-color \
+              --tail=500 \
+              postgres || true
+
+            echo "=== PostgreSQL health ==="
+            container_id="$("${COMPOSE[@]}" ps -q postgres)"
+
+            if [[ -n "${container_id}" ]]; then
+              docker inspect \
+                --format '{{json .State.Health}}' \
+                "${container_id}" || true
+            fi
+
+            exit 1
+          fi
+
+          "${COMPOSE[@]}" run --rm kafka-init
 
       - name: Smoke-test infrastructure
         env:
