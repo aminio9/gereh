@@ -6,12 +6,17 @@ import "time"
 // ConnectionType identifies who owns the provider relationship.
 type ConnectionType string
 
+// Supported connection types.
 const (
+	// ConnectionTypePlatformManaged indicates a Gereh-managed provider pool.
 	ConnectionTypePlatformManaged ConnectionType = "platform_managed"
-	ConnectionTypeBYOK            ConnectionType = "byok"
+	// ConnectionTypeBYOK indicates tenant-supplied credentials.
+	ConnectionTypeBYOK ConnectionType = "byok"
+	// ConnectionTypePrivateEndpoint indicates a tenant private endpoint.
 	ConnectionTypePrivateEndpoint ConnectionType = "private_endpoint"
 )
 
+// Valid reports whether the connection type is recognized.
 func (value ConnectionType) Valid() bool {
 	switch value {
 	case ConnectionTypePlatformManaged,
@@ -27,8 +32,10 @@ func (value ConnectionType) Valid() bool {
 // ConnectionStatus describes connection control-plane state.
 type ConnectionStatus string
 
+// Supported connection statuses.
 const (
-	ConnectionStatusDraft               ConnectionStatus = "draft"
+	// ConnectionStatusDraft indicates an incomplete connection awaiting verification.
+	ConnectionStatusDraft ConnectionStatus = "draft"
 	ConnectionStatusPendingVerification ConnectionStatus = "pending_verification"
 	ConnectionStatusActive              ConnectionStatus = "active"
 	ConnectionStatusVerificationFailed  ConnectionStatus = "verification_failed"

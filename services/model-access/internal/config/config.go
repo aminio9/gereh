@@ -182,7 +182,7 @@ func FromEnv(version string) (Config, error) {
 
 	if config.PostgresMinConnections > config.PostgresMaxConnections {
 		return Config{}, fmt.Errorf(
-			"Model Access minimum PostgreSQL connections cannot exceed maximum",
+			"model access minimum PostgreSQL connections cannot exceed maximum",
 		)
 	}
 

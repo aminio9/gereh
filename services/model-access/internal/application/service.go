@@ -32,11 +32,11 @@ func New(
 	config Config,
 ) (*Service, error) {
 	if repository == nil {
-		return nil, fmt.Errorf("Model Access repository is required")
+		return nil, fmt.Errorf("model access repository is required")
 	}
 
 	if authorizer == nil {
-		return nil, fmt.Errorf("Model Access authorizer is required")
+		return nil, fmt.Errorf("model access authorizer is required")
 	}
 
 	if config.EventTopic == "" {

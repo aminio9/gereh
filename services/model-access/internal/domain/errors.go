@@ -2,7 +2,9 @@ package domain
 
 import "errors"
 
+// Domain sentinel errors for Model Access operations.
 var (
+	// ErrInvalidArgument indicates a malformed or invalid request parameter.
 	ErrInvalidArgument = errors.New("invalid model access argument")
 
 	ErrNotFound = errors.New("model connection not found")

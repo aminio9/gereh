@@ -6,10 +6,8 @@ import (
 	"time"
 
 	commonv1 "github.com/aminio9/gereh/gen/go/gereh/common/v1"
-	modelv1 "github.com/aminio9/gereh/gen/go/gereh/model/v1"
 	"github.com/aminio9/gereh/platform/go/grpcx"
 	"github.com/aminio9/gereh/services/model-access/internal/domain"
-	"github.com/aminio9/gereh/services/model-access/internal/protoutil"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/protobuf/proto"
@@ -88,14 +86,4 @@ func (service *Service) connectionEvent(
 	}, nil
 }
 
-func connectionTypeProto(
-	value domain.ConnectionType,
-) modelv1.ModelConnectionType {
-	return protoutil.ConnectionType(value)
-}
 
-func connectionStatusProto(
-	value domain.ConnectionStatus,
-) modelv1.ModelConnectionStatus {
-	return protoutil.ConnectionStatus(value)
-}
