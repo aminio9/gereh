@@ -24,8 +24,11 @@ import (
 	modelauthorization "github.com/aminio9/gereh/services/model-access/internal/adapters/authorization"
 	"github.com/aminio9/gereh/services/model-access/internal/adapters/outbox"
 	modelpostgres "github.com/aminio9/gereh/services/model-access/internal/adapters/postgres"
+	modelprovider "github.com/aminio9/gereh/services/model-access/internal/adapters/provider"
+	modelsecrets "github.com/aminio9/gereh/services/model-access/internal/adapters/secrets"
 	modelapplication "github.com/aminio9/gereh/services/model-access/internal/application"
 	"github.com/aminio9/gereh/services/model-access/internal/config"
+	modelsecurity "github.com/aminio9/gereh/services/model-access/internal/security"
 	modelgrpc "github.com/aminio9/gereh/services/model-access/internal/transport/grpc"
 )
 
@@ -179,9 +182,53 @@ func run() error {
 		runtimeConfig.AuthorizerTimeout,
 	)
 
+	fingerprinter, err :=
+		modelsecurity.
+			NewFingerprinterFromFile(
+				runtimeConfig.FingerprintKeyFile,
+				runtimeConfig.FingerprintKeyID,
+			)
+	if err != nil {
+		return fmt.Errorf(
+			"configure credential fingerprinting: %w",
+			err,
+		)
+	}
+
+	vaultStore, err :=
+		modelsecrets.NewVaultStore(
+			modelsecrets.VaultConfig{
+				Address:           runtimeConfig.VaultAddress,
+				Mount:             runtimeConfig.VaultMount,
+				Namespace:         runtimeConfig.VaultNamespace,
+				TokenFile:         runtimeConfig.VaultTokenFile,
+				StaticToken:       runtimeConfig.VaultStaticToken,
+				CAFile:            runtimeConfig.VaultCAFile,
+				AllowInsecureHTTP: runtimeConfig.VaultAllowInsecureHTTP,
+				Timeout:           runtimeConfig.VaultTimeout,
+			},
+		)
+	if err != nil {
+		return fmt.Errorf(
+			"configure Vault secret store: %w",
+			err,
+		)
+	}
+
+	credentialVerifier, err :=
+		modelprovider.NewVerifier(
+			runtimeConfig.ProviderVerifyTimeout,
+		)
+	if err != nil {
+		return err
+	}
+
 	modelService, err := modelapplication.New(
 		repository,
 		authorizer,
+		vaultStore,
+		credentialVerifier,
+		fingerprinter,
 		modelapplication.Config{
 			EventTopic:     runtimeConfig.EventTopic,
 			IdempotencyTTL: runtimeConfig.IdempotencyTTL,
@@ -190,6 +237,24 @@ func run() error {
 	if err != nil {
 		return err
 	}
+
+	cleanupWorker, err :=
+		modelsecrets.NewCleanupWorker(
+			modelsecrets.CleanupConfig{
+				BatchSize:    runtimeConfig.SecretCleanupBatchSize,
+				PollInterval: runtimeConfig.SecretCleanupPollInterval,
+				Lease:        runtimeConfig.SecretCleanupLease,
+				MaxBackoff:   runtimeConfig.SecretCleanupMaxBackoff,
+			},
+			repository,
+			vaultStore,
+			logger,
+		)
+	if err != nil {
+		return err
+	}
+
+	go cleanupWorker.Run(ctx)
 
 	relay, err := outbox.New(
 		outbox.Config{

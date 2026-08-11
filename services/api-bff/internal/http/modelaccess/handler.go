@@ -26,6 +26,18 @@ type Client interface {
 		...grpc.CallOption,
 	) (*modelv1.CreateConnectionResponse, error)
 
+	CreateBYOKConnection(
+		context.Context,
+		*modelv1.CreateBYOKConnectionRequest,
+		...grpc.CallOption,
+	) (*modelv1.CreateBYOKConnectionResponse, error)
+
+	RotateBYOKCredential(
+		context.Context,
+		*modelv1.RotateBYOKCredentialRequest,
+		...grpc.CallOption,
+	) (*modelv1.RotateBYOKCredentialResponse, error)
+
 	GetConnection(
 		context.Context,
 		*modelv1.GetConnectionRequest,
@@ -151,6 +163,16 @@ func (handler *Handler) Register(
 			).Post(
 				"/model-connections/{connectionID}/archive",
 				handler.archiveConnection,
+			)
+
+			resource.With(
+				handler.RequirePermission(
+					tenantv1.Permission_PERMISSION_MODEL_CONNECTION_UPDATE,
+				),
+				authHandler.RequireCSRF,
+			).Post(
+				"/model-connections/{connectionID}/credential/rotate",
+				handler.rotateBYOKCredential,
 			)
 		},
 	)

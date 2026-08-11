@@ -17,6 +17,9 @@ type createConnectionRequest struct {
 	ConnectionType modelv1.ModelConnectionType `json:"connectionType"`
 
 	DisplayName string `json:"displayName"`
+
+	// Write-only. Never log this struct.
+	APIKey string `json:"apiKey,omitempty"`
 }
 
 type updateConnectionRequest struct {
@@ -27,6 +30,13 @@ type updateConnectionRequest struct {
 
 type archiveConnectionRequest struct {
 	ExpectedVersion int64 `json:"expectedVersion"`
+}
+
+type rotateBYOKCredentialRequest struct {
+	ExpectedVersion int64 `json:"expectedVersion"`
+
+	// Write-only.
+	APIKey string `json:"apiKey"`
 }
 
 func principal(
@@ -105,6 +115,48 @@ func (handler *Handler) createConnection(
 			http.StatusBadRequest,
 			"invalid_request",
 			"Invalid model connection request",
+		)
+		return
+	}
+
+	if input.ConnectionType ==
+		modelv1.ModelConnectionType_MODEL_CONNECTION_TYPE_BYOK {
+		if strings.TrimSpace(input.APIKey) == "" {
+			writeProblem(
+				writer,
+				http.StatusBadRequest,
+				"credential_required",
+				"API key is required for a BYOK connection",
+			)
+			return
+		}
+
+		response, err := handler.client.CreateBYOKConnection(
+			request.Context(),
+			&modelv1.CreateBYOKConnectionRequest{
+				ActorUserId:    principal.UserID,
+				TenantId:       tenantID(request),
+				IdempotencyKey: key,
+				ProviderKey:    input.ProviderKey,
+				DisplayName:    input.DisplayName,
+				ApiKey:         input.APIKey,
+			},
+		)
+		if err != nil {
+			handler.writeGRPCError(writer, err)
+			return
+		}
+
+		writeProto(writer, http.StatusCreated, response)
+		return
+	}
+
+	if input.APIKey != "" {
+		writeProblem(
+			writer,
+			http.StatusBadRequest,
+			"unexpected_credential",
+			"API key is only valid for a BYOK connection",
 		)
 		return
 	}
@@ -257,6 +309,58 @@ func (handler *Handler) archiveConnection(
 			ConnectionId:    connectionID(request),
 			IdempotencyKey:  key,
 			ExpectedVersion: input.ExpectedVersion,
+		},
+	)
+	if err != nil {
+		handler.writeGRPCError(writer, err)
+		return
+	}
+
+	writeProto(writer, http.StatusOK, response)
+}
+
+func (handler *Handler) rotateBYOKCredential(
+	writer http.ResponseWriter,
+	request *http.Request,
+) {
+	principal, _ := principal(request)
+
+	key, ok := idempotencyKey(writer, request)
+	if !ok {
+		return
+	}
+
+	var input rotateBYOKCredentialRequest
+
+	if err := decodeJSON(writer, request, &input); err != nil {
+		writeProblem(
+			writer,
+			http.StatusBadRequest,
+			"invalid_request",
+			"Invalid credential rotation request",
+		)
+		return
+	}
+
+	if strings.TrimSpace(input.APIKey) == "" {
+		writeProblem(
+			writer,
+			http.StatusBadRequest,
+			"credential_required",
+			"API key is required",
+		)
+		return
+	}
+
+	response, err := handler.client.RotateBYOKCredential(
+		request.Context(),
+		&modelv1.RotateBYOKCredentialRequest{
+			ActorUserId:     principal.UserID,
+			TenantId:        tenantID(request),
+			ConnectionId:    connectionID(request),
+			IdempotencyKey:  key,
+			ExpectedVersion: input.ExpectedVersion,
+			ApiKey:          input.APIKey,
 		},
 	)
 	if err != nil {

@@ -77,6 +77,56 @@ func (server *Server) CreateConnection(
 	}, nil
 }
 
+// CreateBYOKConnection creates and verifies a BYOK connection.
+func (server *Server) CreateBYOKConnection(
+	ctx context.Context,
+	request *modelv1.CreateBYOKConnectionRequest,
+) (*modelv1.CreateBYOKConnectionResponse, error) {
+	value, err := server.service.CreateBYOKConnection(
+		ctx,
+		application.CreateBYOKConnectionInput{
+			ActorUserID:    request.GetActorUserId(),
+			TenantID:       request.GetTenantId(),
+			IdempotencyKey: request.GetIdempotencyKey(),
+			ProviderKey:    request.GetProviderKey(),
+			DisplayName:    request.GetDisplayName(),
+			APIKey:         request.GetApiKey(),
+		},
+	)
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	return &modelv1.CreateBYOKConnectionResponse{
+		Connection: protoutil.Connection(value),
+	}, nil
+}
+
+// RotateBYOKCredential rotates a BYOK credential.
+func (server *Server) RotateBYOKCredential(
+	ctx context.Context,
+	request *modelv1.RotateBYOKCredentialRequest,
+) (*modelv1.RotateBYOKCredentialResponse, error) {
+	value, err := server.service.RotateBYOKCredential(
+		ctx,
+		application.RotateBYOKCredentialInput{
+			ActorUserID:     request.GetActorUserId(),
+			TenantID:        request.GetTenantId(),
+			ConnectionID:    request.GetConnectionId(),
+			IdempotencyKey:  request.GetIdempotencyKey(),
+			ExpectedVersion: request.GetExpectedVersion(),
+			APIKey:          request.GetApiKey(),
+		},
+	)
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	return &modelv1.RotateBYOKCredentialResponse{
+		Connection: protoutil.Connection(value),
+	}, nil
+}
+
 // GetConnection returns one connection.
 func (server *Server) GetConnection(
 	ctx context.Context,

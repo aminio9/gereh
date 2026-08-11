@@ -41,6 +41,33 @@ func mapError(err error) error {
 			"Model Access operation forbidden",
 		)
 
+	case errors.Is(err, domain.ErrCredentialRequired),
+		errors.Is(err, domain.ErrCredentialVerificationUnsupported):
+		return status.Error(
+			codes.FailedPrecondition,
+			"BYOK credential cannot be used",
+		)
+
+	case errors.Is(err, domain.ErrCredentialRejected):
+		return status.Error(
+			codes.InvalidArgument,
+			"provider rejected the credential",
+		)
+
+	case errors.Is(err, domain.ErrCredentialVerificationUnavailable),
+		errors.Is(err, domain.ErrSecretStoreUnavailable):
+		return status.Error(
+			codes.Unavailable,
+			"credential verification is temporarily unavailable",
+		)
+
+	case errors.Is(err, domain.ErrSecretStoreConflict),
+		errors.Is(err, domain.ErrCredentialStateConflict):
+		return status.Error(
+			codes.Aborted,
+			"credential state changed; retry",
+		)
+
 	case errors.Is(err, domain.ErrTenantNotActive),
 		errors.Is(err, domain.ErrProviderDisabled),
 		errors.Is(err, domain.ErrUnsupportedConnectionType),

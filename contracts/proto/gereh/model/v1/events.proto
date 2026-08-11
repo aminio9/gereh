@@ -21,3 +21,24 @@ message ModelConnectionArchived {
 
   string archived_by_user_id = 2;
 }
+
+message ModelConnectionActivated {
+  ModelConnection connection = 1;
+
+  string activated_by_user_id = 2;
+}
+
+message ModelConnectionVerificationFailed {
+  ModelConnection connection = 1;
+
+  string verified_by_user_id = 2;
+
+  // Sanitized machine-readable category only.
+  string reason_code = 3;
+}
+
+message ModelConnectionCredentialRotated {
+  ModelConnection connection = 1;
+
+  string rotated_by_user_id = 2;
+}

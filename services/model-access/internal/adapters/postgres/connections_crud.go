@@ -99,6 +99,7 @@ func (repository *Repository) CreateConnection(
 					connection_type,
 					display_name,
 					status,
+					credential_fingerprint,
 					version,
 					created_by_user_id,
 					created_at,
@@ -113,24 +114,13 @@ func (repository *Repository) CreateConnection(
 					$6,
 					$7,
 					$8,
-					$9::uuid,
-					$10,
-					$11
+					$9,
+					$10::uuid,
+					$11,
+					$12
 				)
 				RETURNING
-					tenant_id::text,
-					connection_id::text,
-					provider_key,
-					provider_pool_key,
-					connection_type,
-					display_name,
-					status,
-					version,
-					created_by_user_id::text,
-					created_at,
-					updated_at,
-					archived_at
-			`,
+					`+connectionColumns,
 			connection.TenantID,
 			connection.ID,
 			connection.ProviderKey,
@@ -138,6 +128,7 @@ func (repository *Repository) CreateConnection(
 			string(connection.ConnectionType),
 			connection.DisplayName,
 			string(connection.Status),
+			connection.CredentialFingerprint,
 			connection.Version,
 			connection.CreatedByUserID,
 			connection.CreatedAt,
@@ -217,18 +208,7 @@ func (repository *Repository) GetConnection(
 			ctx,
 			`
 				SELECT
-					tenant_id::text,
-					connection_id::text,
-					provider_key,
-					provider_pool_key,
-					connection_type,
-					display_name,
-					status,
-					version,
-					created_by_user_id::text,
-					created_at,
-					updated_at,
-					archived_at
+					`+connectionColumns+`
 				FROM model_access_connections
 				WHERE tenant_id = $1::uuid
 				  AND connection_id = $2::uuid
@@ -279,18 +259,7 @@ func (repository *Repository) ListConnections(
 		ctx,
 		`
 			SELECT
-				tenant_id::text,
-				connection_id::text,
-				provider_key,
-				provider_pool_key,
-				connection_type,
-				display_name,
-				status,
-				version,
-				created_by_user_id::text,
-				created_at,
-				updated_at,
-				archived_at
+				`+connectionColumns+`
 			FROM model_access_connections
 			WHERE tenant_id = $1::uuid
 			  AND ($2 OR status <> 'archived')

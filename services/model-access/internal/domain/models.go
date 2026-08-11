@@ -61,10 +61,11 @@ type Provider struct {
 
 // Connection is the business identity of a model connection.
 //
-// ProviderPoolKey is internal routing metadata used only for
-// platform-managed connections.
+// ProviderPoolKey is internal routing metadata for platform-managed
+// connections and must never be exposed through the public Protobuf.
 //
-// It MUST NOT be added to the public ModelConnection protobuf.
+// CredentialFingerprint is intentionally safe to expose. It is a keyed,
+// truncated HMAC representation; it is never the raw credential.
 //
 // Raw provider credentials must never be added to this structure.
 type Connection struct {
@@ -84,6 +85,10 @@ type Connection struct {
 	DisplayName string
 
 	Status ConnectionStatus
+
+	// CredentialFingerprint is a keyed, truncated HMAC of the currently
+	// active BYOK credential. It is never the raw credential.
+	CredentialFingerprint string
 
 	Version int64
 

@@ -23,6 +23,7 @@ func scanConnection(row rowScanner) (domain.Connection, error) {
 		&connectionType,
 		&result.DisplayName,
 		&status,
+		&result.CredentialFingerprint,
 		&result.Version,
 		&result.CreatedByUserID,
 		&result.CreatedAt,
@@ -188,6 +189,7 @@ func insertRevision(
 					connection_type,
 					display_name,
 					status,
+					credential_fingerprint,
 					change_kind,
 					changed_by_user_id,
 					created_at
@@ -202,8 +204,9 @@ func insertRevision(
 				$7,
 				$8,
 				$9,
-				$10::uuid,
-				$11
+				$10,
+				$11::uuid,
+				$12
 			)
 		`,
 		value.TenantID,
@@ -214,6 +217,7 @@ func insertRevision(
 		string(value.ConnectionType),
 		value.DisplayName,
 		string(value.Status),
+		value.CredentialFingerprint,
 		changeKind,
 		actorUserID,
 		value.UpdatedAt,

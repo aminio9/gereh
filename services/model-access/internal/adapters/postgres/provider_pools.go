@@ -20,6 +20,10 @@ import (
 //  4. stable pool-key tie break
 //
 // The caller already runs inside the connection-create transaction.
+//
+// No FOR SHARE row lock is used: the app role holds only SELECT on the
+// operator-owned pools table (least privilege), and the foreign key from
+// model_access_connections already guarantees referential integrity.
 func selectPlatformManagedPool(
 	ctx context.Context,
 	transaction pgx.Tx,
@@ -56,7 +60,6 @@ func selectPlatformManagedPool(
 				priority DESC,
 				pool_key
 			LIMIT 1
-			FOR SHARE
 		`,
 		providerKey,
 		region,
