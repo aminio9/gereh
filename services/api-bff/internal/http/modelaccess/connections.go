@@ -169,10 +169,10 @@ func (handler *Handler) listConnections(
 	response, err := handler.client.ListConnections(
 		request.Context(),
 		&modelv1.ListConnectionsRequest{
-			ActorUserId:    principal.UserID,
-			TenantId:       tenantID(request),
-			PageSize:       int32(pageSize),
-			PageToken:      request.URL.Query().Get("page_token"),
+			ActorUserId:     principal.UserID,
+			TenantId:        tenantID(request),
+			PageSize:        int32(pageSize),
+			PageToken:       request.URL.Query().Get("page_token"),
 			IncludeArchived: includeArchived,
 		},
 	)

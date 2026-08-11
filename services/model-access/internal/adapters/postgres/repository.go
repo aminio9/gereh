@@ -15,9 +15,9 @@ import (
 )
 
 const (
-	uniqueViolationCode     = "23505"
-	foreignKeyViolationCode = "23503"
-	checkViolationCode      = "23514"
+	uniqueViolationCode      = "23505"
+	foreignKeyViolationCode  = "23503"
+	checkViolationCode       = "23514"
 	serializationFailureCode = "40001"
 )
 

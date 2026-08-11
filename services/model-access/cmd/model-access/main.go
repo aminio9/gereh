@@ -95,17 +95,17 @@ func run() error {
 	database, err := platformpostgres.Open(
 		ctx,
 		platformpostgres.Config{
-			URL:                   runtimeConfig.DatabaseURL,
-			ApplicationName:       runtimeConfig.ServiceName,
-			MaxConnections:        runtimeConfig.PostgresMaxConnections,
-			MinConnections:        runtimeConfig.PostgresMinConnections,
-			MaxConnectionLifetime: 30 * time.Minute,
-			MaxConnectionIdleTime: 5 * time.Minute,
-			HealthCheckPeriod:     30 * time.Second,
-			StatementTimeout:      15 * time.Second,
-			LockTimeout:           3 * time.Second,
+			URL:                      runtimeConfig.DatabaseURL,
+			ApplicationName:          runtimeConfig.ServiceName,
+			MaxConnections:           runtimeConfig.PostgresMaxConnections,
+			MinConnections:           runtimeConfig.PostgresMinConnections,
+			MaxConnectionLifetime:    30 * time.Minute,
+			MaxConnectionIdleTime:    5 * time.Minute,
+			HealthCheckPeriod:        30 * time.Second,
+			StatementTimeout:         15 * time.Second,
+			LockTimeout:              3 * time.Second,
 			IdleInTransactionTimeout: 15 * time.Second,
-			OwnedTableSchemas:     []string{"public"},
+			OwnedTableSchemas:        []string{"public"},
 		},
 	)
 	if err != nil {
@@ -183,7 +183,7 @@ func run() error {
 		repository,
 		authorizer,
 		modelapplication.Config{
-			EventTopic:    runtimeConfig.EventTopic,
+			EventTopic:     runtimeConfig.EventTopic,
 			IdempotencyTTL: runtimeConfig.IdempotencyTTL,
 		},
 	)

@@ -261,14 +261,14 @@ func TestConnectionRLSPreventsCrossTenantWrite(t *testing.T) {
 	_, err := test.repository.UpdateConnection(
 		context.Background(),
 		ports.UpdateConnectionParams{
-			ActorUserID:     test.userB,
-			TenantID:        test.tenantB,
-			ConnectionID:    connection.ID,
-			ExpectedVersion: connection.Version,
-			DisplayName:     "Stolen",
-			UpdatedAt:       connection.UpdatedAt,
-			IdempotencyKey:  uuid.NewString(),
-			RequestHash:     make([]byte, 32),
+			ActorUserID:          test.userB,
+			TenantID:             test.tenantB,
+			ConnectionID:         connection.ID,
+			ExpectedVersion:      connection.Version,
+			DisplayName:          "Stolen",
+			UpdatedAt:            connection.UpdatedAt,
+			IdempotencyKey:       uuid.NewString(),
+			RequestHash:          make([]byte, 32),
 			IdempotencyExpiresAt: connection.UpdatedAt.Add(24 * time.Hour),
 		},
 	)

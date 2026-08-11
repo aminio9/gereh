@@ -28,12 +28,12 @@ func (value ConnectionType) Valid() bool {
 type ConnectionStatus string
 
 const (
-	ConnectionStatusDraft              ConnectionStatus = "draft"
+	ConnectionStatusDraft               ConnectionStatus = "draft"
 	ConnectionStatusPendingVerification ConnectionStatus = "pending_verification"
-	ConnectionStatusActive             ConnectionStatus = "active"
-	ConnectionStatusVerificationFailed ConnectionStatus = "verification_failed"
-	ConnectionStatusDisabled           ConnectionStatus = "disabled"
-	ConnectionStatusArchived           ConnectionStatus = "archived"
+	ConnectionStatusActive              ConnectionStatus = "active"
+	ConnectionStatusVerificationFailed  ConnectionStatus = "verification_failed"
+	ConnectionStatusDisabled            ConnectionStatus = "disabled"
+	ConnectionStatusArchived            ConnectionStatus = "archived"
 )
 
 // Provider contains non-secret platform provider metadata.

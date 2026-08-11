@@ -175,10 +175,10 @@ func (service *Service) CreateConnection(
 	return service.repository.CreateConnection(
 		ctx,
 		ports.CreateConnectionParams{
-			ActorUserID: input.ActorUserID,
-			Connection:  connection,
-			IdempotencyKey:     input.IdempotencyKey,
-			RequestHash:        requestHash,
+			ActorUserID:          input.ActorUserID,
+			Connection:           connection,
+			IdempotencyKey:       input.IdempotencyKey,
+			RequestHash:          requestHash,
 			IdempotencyExpiresAt: now.Add(service.config.IdempotencyTTL),
 			EventFactory: func(result domain.Connection) (domain.OutboxEvent, error) {
 				return service.connectionEvent(
@@ -322,14 +322,14 @@ func (service *Service) UpdateConnection(
 	return service.repository.UpdateConnection(
 		ctx,
 		ports.UpdateConnectionParams{
-			ActorUserID:    input.ActorUserID,
-			TenantID:       input.TenantID,
-			ConnectionID:   input.ConnectionID,
-			ExpectedVersion: input.ExpectedVersion,
-			DisplayName:    displayName,
-			UpdatedAt:      now,
-			IdempotencyKey: input.IdempotencyKey,
-			RequestHash:    requestHash,
+			ActorUserID:          input.ActorUserID,
+			TenantID:             input.TenantID,
+			ConnectionID:         input.ConnectionID,
+			ExpectedVersion:      input.ExpectedVersion,
+			DisplayName:          displayName,
+			UpdatedAt:            now,
+			IdempotencyKey:       input.IdempotencyKey,
+			RequestHash:          requestHash,
 			IdempotencyExpiresAt: now.Add(service.config.IdempotencyTTL),
 			EventFactory: func(result domain.Connection) (domain.OutboxEvent, error) {
 				return service.connectionEvent(
@@ -337,7 +337,7 @@ func (service *Service) UpdateConnection(
 					"model.connection.updated",
 					result,
 					&modelv1.ModelConnectionUpdated{
-						Connection:     protoutil.Connection(result),
+						Connection:      protoutil.Connection(result),
 						UpdatedByUserId: input.ActorUserID,
 					},
 					now,
@@ -389,13 +389,13 @@ func (service *Service) ArchiveConnection(
 	return service.repository.ArchiveConnection(
 		ctx,
 		ports.ArchiveConnectionParams{
-			ActorUserID:    input.ActorUserID,
-			TenantID:       input.TenantID,
-			ConnectionID:   input.ConnectionID,
-			ExpectedVersion: input.ExpectedVersion,
-			ArchivedAt:     now,
-			IdempotencyKey: input.IdempotencyKey,
-			RequestHash:    requestHash,
+			ActorUserID:          input.ActorUserID,
+			TenantID:             input.TenantID,
+			ConnectionID:         input.ConnectionID,
+			ExpectedVersion:      input.ExpectedVersion,
+			ArchivedAt:           now,
+			IdempotencyKey:       input.IdempotencyKey,
+			RequestHash:          requestHash,
 			IdempotencyExpiresAt: now.Add(service.config.IdempotencyTTL),
 			EventFactory: func(result domain.Connection) (domain.OutboxEvent, error) {
 				return service.connectionEvent(
@@ -403,7 +403,7 @@ func (service *Service) ArchiveConnection(
 					"model.connection.archived",
 					result,
 					&modelv1.ModelConnectionArchived{
-						Connection:     protoutil.Connection(result),
+						Connection:       protoutil.Connection(result),
 						ArchivedByUserId: input.ActorUserID,
 					},
 					now,
