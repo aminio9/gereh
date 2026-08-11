@@ -128,11 +128,11 @@ func (repository *Repository) UpdateConnection(
 						updated_at,
 						archived_at
 				`,
-				params.TenantID,
-				params.ConnectionID,
-				params.ExpectedVersion,
-				params.DisplayName,
-				params.UpdatedAt,
+			params.TenantID,
+			params.ConnectionID,
+			params.ExpectedVersion,
+			params.DisplayName,
+			params.UpdatedAt,
 		),
 	)
 	if errors.Is(err, domain.ErrNotFound) {
@@ -273,10 +273,10 @@ func (repository *Repository) ArchiveConnection(
 						updated_at,
 						archived_at
 				`,
-				params.TenantID,
-				params.ConnectionID,
-				params.ExpectedVersion,
-				params.ArchivedAt,
+			params.TenantID,
+			params.ConnectionID,
+			params.ExpectedVersion,
+			params.ArchivedAt,
 		),
 	)
 	if errors.Is(err, domain.ErrNotFound) {
