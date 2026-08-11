@@ -85,5 +85,3 @@ func (service *Service) connectionEvent(
 		OccurredAt: occurredAt,
 	}, nil
 }
-
-

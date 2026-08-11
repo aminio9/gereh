@@ -40,11 +40,11 @@ func New(
 	}
 
 	if config.EventTopic == "" {
-		return nil, fmt.Errorf("Model Access event topic is required")
+		return nil, fmt.Errorf("model access event topic is required")
 	}
 
 	if config.IdempotencyTTL <= 0 {
-		return nil, fmt.Errorf("Model Access idempotency TTL must be positive")
+		return nil, fmt.Errorf("model access idempotency TTL must be positive")
 	}
 
 	return &Service{

@@ -62,7 +62,7 @@ func (authorizer *TenantAuthorizer) Require(
 
 	if decision == nil {
 		return errors.New(
-			"Tenant Service returned no authorization decision",
+			"tenant service returned no authorization decision",
 		)
 	}
 
@@ -113,7 +113,7 @@ func (authorizer *TenantAuthorizer) RequireWithContext(
 		tenantContext.GetTenant() == nil ||
 		tenantContext.GetEntitlements() == nil {
 		return ports.TenantAccessContext{}, errors.New(
-			"Tenant Service returned incomplete tenant context",
+			"tenant service returned incomplete tenant context",
 		)
 	}
 

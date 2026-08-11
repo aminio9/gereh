@@ -35,7 +35,7 @@ type ConnectionStatus string
 // Supported connection statuses.
 const (
 	// ConnectionStatusDraft indicates an incomplete connection awaiting verification.
-	ConnectionStatusDraft ConnectionStatus = "draft"
+	ConnectionStatusDraft               ConnectionStatus = "draft"
 	ConnectionStatusPendingVerification ConnectionStatus = "pending_verification"
 	ConnectionStatusActive              ConnectionStatus = "active"
 	ConnectionStatusVerificationFailed  ConnectionStatus = "verification_failed"
