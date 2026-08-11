@@ -97,20 +97,20 @@ func (service *Service) ListProviders(
 	return service.repository.ListProviders(ctx, actorUserID, tenantID)
 }
 
-// CreateConnection creates a draft connection idempotently.
+// CreateConnection creates a connection idempotently.
+//
+// Platform-managed:
+//
+//	entitlement + active tenant + provider pool
+//	=> ACTIVE immediately.
+//
+// BYOK/private endpoint:
+//
+//	=> DRAFT until later credential/endpoint phases verify them.
 func (service *Service) CreateConnection(
 	ctx context.Context,
 	input CreateConnectionInput,
 ) (domain.Connection, error) {
-	if err := service.authorizer.Require(
-		ctx,
-		input.ActorUserID,
-		input.TenantID,
-		tenantv1.Permission_PERMISSION_MODEL_CONNECTION_CREATE,
-	); err != nil {
-		return domain.Connection{}, err
-	}
-
 	if err := validateUUID("actor_user_id", input.ActorUserID); err != nil {
 		return domain.Connection{}, err
 	}
@@ -149,6 +149,52 @@ func (service *Service) CreateConnection(
 		return domain.Connection{}, err
 	}
 
+	connectionStatus := domain.ConnectionStatusDraft
+
+	platformManagedRegion := ""
+
+	switch input.ConnectionType {
+	case domain.ConnectionTypePlatformManaged:
+		accessContext, err := service.authorizer.RequireWithContext(
+			ctx,
+			input.ActorUserID,
+			input.TenantID,
+			tenantv1.Permission_PERMISSION_MODEL_CONNECTION_CREATE,
+		)
+		if err != nil {
+			return domain.Connection{}, err
+		}
+
+		if !accessContext.Features["platform_managed_models"] {
+			return domain.Connection{},
+				domain.ErrPlatformManagedEntitlementRequired
+		}
+
+		if accessContext.Region == "" {
+			return domain.Connection{},
+				domain.ErrPlatformManagedPoolUnavailable
+		}
+
+		platformManagedRegion = accessContext.Region
+
+		// No customer credential exists to verify.
+		//
+		// An eligible Gereh provider pool is selected atomically by
+		// the repository. Therefore the control-plane connection may
+		// become active immediately.
+		connectionStatus = domain.ConnectionStatusActive
+
+	default:
+		if err := service.authorizer.Require(
+			ctx,
+			input.ActorUserID,
+			input.TenantID,
+			tenantv1.Permission_PERMISSION_MODEL_CONNECTION_CREATE,
+		); err != nil {
+			return domain.Connection{}, err
+		}
+	}
+
 	connectionID, err := uuid.NewV7()
 	if err != nil {
 		return domain.Connection{}, fmt.Errorf(
@@ -165,7 +211,7 @@ func (service *Service) CreateConnection(
 		ProviderKey:     providerKey,
 		ConnectionType:  input.ConnectionType,
 		DisplayName:     displayName,
-		Status:          domain.ConnectionStatusDraft,
+		Status:          connectionStatus,
 		Version:         1,
 		CreatedByUserID: input.ActorUserID,
 		CreatedAt:       now,
@@ -175,11 +221,12 @@ func (service *Service) CreateConnection(
 	return service.repository.CreateConnection(
 		ctx,
 		ports.CreateConnectionParams{
-			ActorUserID:          input.ActorUserID,
-			Connection:           connection,
-			IdempotencyKey:       input.IdempotencyKey,
-			RequestHash:          requestHash,
-			IdempotencyExpiresAt: now.Add(service.config.IdempotencyTTL),
+			ActorUserID:           input.ActorUserID,
+			Connection:            connection,
+			PlatformManagedRegion: platformManagedRegion,
+			IdempotencyKey:        input.IdempotencyKey,
+			RequestHash:           requestHash,
+			IdempotencyExpiresAt:  now.Add(service.config.IdempotencyTTL),
 			EventFactory: func(result domain.Connection) (domain.OutboxEvent, error) {
 				return service.connectionEvent(
 					ctx,

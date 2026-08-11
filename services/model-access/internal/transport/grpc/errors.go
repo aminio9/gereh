@@ -29,6 +29,12 @@ func mapError(err error) error {
 			"Model Access resource not found",
 		)
 
+	case errors.Is(err, domain.ErrPlatformManagedEntitlementRequired):
+		return status.Error(
+			codes.PermissionDenied,
+			"platform-managed model access is not enabled for this tenant",
+		)
+
 	case errors.Is(err, domain.ErrForbidden):
 		return status.Error(
 			codes.PermissionDenied,
@@ -60,6 +66,12 @@ func mapError(err error) error {
 		return status.Error(
 			codes.AlreadyExists,
 			"idempotency key was reused with different input",
+		)
+
+	case errors.Is(err, domain.ErrPlatformManagedPoolUnavailable):
+		return status.Error(
+			codes.Unavailable,
+			"platform-managed model access is currently unavailable",
 		)
 
 	default:

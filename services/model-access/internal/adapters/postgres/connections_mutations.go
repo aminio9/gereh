@@ -115,23 +115,24 @@ func (repository *Repository) UpdateConnection(
 				  AND version = $3
 				  AND status <> 'archived'
 				RETURNING
-					tenant_id::text,
-					connection_id::text,
-					provider_key,
-					connection_type,
-					display_name,
-					status,
-					version,
-					created_by_user_id::text,
-					created_at,
-					updated_at,
-					archived_at
-			`,
-			params.TenantID,
-			params.ConnectionID,
-			params.ExpectedVersion,
-			params.DisplayName,
-			params.UpdatedAt,
+						tenant_id::text,
+						connection_id::text,
+						provider_key,
+						provider_pool_key,
+						connection_type,
+						display_name,
+						status,
+						version,
+						created_by_user_id::text,
+						created_at,
+						updated_at,
+						archived_at
+				`,
+				params.TenantID,
+				params.ConnectionID,
+				params.ExpectedVersion,
+				params.DisplayName,
+				params.UpdatedAt,
 		),
 	)
 	if errors.Is(err, domain.ErrNotFound) {
@@ -259,22 +260,23 @@ func (repository *Repository) ArchiveConnection(
 				  AND version = $3
 				  AND status <> 'archived'
 				RETURNING
-					tenant_id::text,
-					connection_id::text,
-					provider_key,
-					connection_type,
-					display_name,
-					status,
-					version,
-					created_by_user_id::text,
-					created_at,
-					updated_at,
-					archived_at
-			`,
-			params.TenantID,
-			params.ConnectionID,
-			params.ExpectedVersion,
-			params.ArchivedAt,
+						tenant_id::text,
+						connection_id::text,
+						provider_key,
+						provider_pool_key,
+						connection_type,
+						display_name,
+						status,
+						version,
+						created_by_user_id::text,
+						created_at,
+						updated_at,
+						archived_at
+				`,
+				params.TenantID,
+				params.ConnectionID,
+				params.ExpectedVersion,
+				params.ArchivedAt,
 		),
 	)
 	if errors.Is(err, domain.ErrNotFound) {

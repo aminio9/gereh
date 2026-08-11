@@ -19,6 +19,14 @@ var (
 
 	ErrTenantNotActive = errors.New("tenant is not active")
 
+	ErrPlatformManagedEntitlementRequired = errors.New(
+		"platform-managed model access is not enabled for this tenant",
+	)
+
+	ErrPlatformManagedPoolUnavailable = errors.New(
+		"no platform-managed provider pool is available",
+	)
+
 	ErrConflict = errors.New("model access resource conflict")
 
 	ErrVersionConflict = errors.New("model connection version conflict")

@@ -19,6 +19,8 @@ type connectionSnapshot struct {
 
 	ProviderKey string `json:"providerKey"`
 
+	ProviderPoolKey *string `json:"providerPoolKey,omitempty"`
+
 	ConnectionType string `json:"connectionType"`
 
 	DisplayName string `json:"displayName"`
@@ -40,6 +42,7 @@ func snapshotConnection(value domain.Connection) connectionSnapshot {
 		TenantID:        value.TenantID,
 		ID:              value.ID,
 		ProviderKey:     value.ProviderKey,
+		ProviderPoolKey: value.ProviderPoolKey,
 		ConnectionType:  string(value.ConnectionType),
 		DisplayName:     value.DisplayName,
 		Status:          string(value.Status),
@@ -56,6 +59,7 @@ func domainConnection(value connectionSnapshot) domain.Connection {
 		TenantID:        value.TenantID,
 		ID:              value.ID,
 		ProviderKey:     value.ProviderKey,
+		ProviderPoolKey: value.ProviderPoolKey,
 		ConnectionType:  domain.ConnectionType(value.ConnectionType),
 		DisplayName:     value.DisplayName,
 		Status:          domain.ConnectionStatus(value.Status),

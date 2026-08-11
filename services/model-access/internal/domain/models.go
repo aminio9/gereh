@@ -52,10 +52,14 @@ type Provider struct {
 	UpdatedAt time.Time
 }
 
-// Connection is the public/business identity of a model connection.
+// Connection is the business identity of a model connection.
 //
-// Do not add raw provider credentials to this structure in later phases.
-// Phase 18 secret references belong to a separate internal record.
+// ProviderPoolKey is internal routing metadata used only for
+// platform-managed connections.
+//
+// It MUST NOT be added to the public ModelConnection protobuf.
+//
+// Raw provider credentials must never be added to this structure.
 type Connection struct {
 	TenantID string
 	ID       string
@@ -63,6 +67,12 @@ type Connection struct {
 	ProviderKey string
 
 	ConnectionType ConnectionType
+
+	// ProviderPoolKey is populated only for a Gereh-managed connection.
+	//
+	// It is not secret material, but it is internal platform topology and
+	// therefore intentionally absent from public APIs and Kafka payloads.
+	ProviderPoolKey *string
 
 	DisplayName string
 
@@ -75,4 +85,24 @@ type Connection struct {
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 	ArchivedAt *time.Time
+}
+
+// ProviderPool is an internal Gereh-managed routing pool.
+//
+// It describes eligibility/routing only. It contains no provider credential.
+type ProviderPool struct {
+	Key string
+
+	ProviderKey string
+
+	Regions []string
+
+	Enabled bool
+
+	Priority int
+
+	Version int64
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }

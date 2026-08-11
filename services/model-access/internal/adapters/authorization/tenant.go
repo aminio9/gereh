@@ -5,10 +5,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
+	"strings"
 	"time"
 
 	tenantv1 "github.com/aminio9/gereh/gen/go/gereh/tenant/v1"
 	"github.com/aminio9/gereh/services/model-access/internal/domain"
+	"github.com/aminio9/gereh/services/model-access/internal/ports"
 )
 
 // TenantAuthorizer performs authoritative tenant permission checks.
@@ -33,7 +36,7 @@ func NewTenantAuthorizer(
 	}
 }
 
-// Require checks a tenant permission and maps denial to domain errors.
+// Require performs the lightweight authorization-only path.
 func (authorizer *TenantAuthorizer) Require(
 	ctx context.Context,
 	actorUserID string,
@@ -77,4 +80,89 @@ func (authorizer *TenantAuthorizer) Require(
 	default:
 		return domain.ErrForbidden
 	}
+}
+
+// RequireWithContext performs one Tenant Service call and obtains the trusted
+// tenant status, region, entitlements and effective permissions together.
+func (authorizer *TenantAuthorizer) RequireWithContext(
+	ctx context.Context,
+	actorUserID string,
+	tenantID string,
+	permission tenantv1.Permission,
+) (ports.TenantAccessContext, error) {
+	callContext, cancel := context.WithTimeout(ctx, authorizer.timeout)
+	defer cancel()
+
+	response, err := authorizer.client.GetTenantContext(
+		callContext,
+		&tenantv1.GetTenantContextRequest{
+			ActorUserId: actorUserID,
+			TenantId:    tenantID,
+		},
+	)
+	if err != nil {
+		return ports.TenantAccessContext{}, fmt.Errorf(
+			"get tenant context: %w",
+			err,
+		)
+	}
+
+	tenantContext := response.GetContext()
+
+	if tenantContext == nil ||
+		tenantContext.GetTenant() == nil ||
+		tenantContext.GetEntitlements() == nil {
+		return ports.TenantAccessContext{}, errors.New(
+			"Tenant Service returned incomplete tenant context",
+		)
+	}
+
+	tenant := tenantContext.GetTenant()
+
+	if !containsPermission(
+		tenantContext.GetPermissions(),
+		permission,
+	) {
+		if tenant.GetStatus() !=
+			tenantv1.TenantStatus_TENANT_STATUS_ACTIVE {
+			return ports.TenantAccessContext{}, domain.ErrTenantNotActive
+		}
+
+		return ports.TenantAccessContext{}, domain.ErrForbidden
+	}
+
+	entitlements := tenantContext.GetEntitlements()
+
+	return ports.TenantAccessContext{
+		Region: strings.ToLower(
+			strings.TrimSpace(
+				tenant.GetRegion(),
+			),
+		),
+
+		PlanKey: strings.TrimSpace(
+			entitlements.GetPlanKey(),
+		),
+
+		Features: maps.Clone(
+			entitlements.GetFeatures(),
+		),
+
+		Limits: maps.Clone(
+			entitlements.GetLimits(),
+		),
+	}, nil
+}
+
+func containsPermission(
+	values []tenantv1.Permission,
+	target tenantv1.Permission,
+) bool {
+	for _, value := range values {
+		if value == target {
+			return true
+		}
+	}
+
+	return false
 }
