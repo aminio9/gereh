@@ -1,4 +1,5 @@
-h1:GgfJIlBHtwpBG5hV3kxzzG9G1uhfeeQIOdBL5xUpIYw=
+h1:XKRQXbjvQgo2p3fwRx6vL584SlEL6O9BjHJ4RqMOL28=
 000001_model_access.up.sql h1:loXYQHbZxLLT4bfluT9veV2+aaWRFnmM+MaDKAMgTBI=
 000002_platform_managed.up.sql h1:Kq+NDMWKWCC/uH0A6L+GQdp3lcWqFJXSLBI1lxb0Br4=
 000003_byok_encrypted.up.sql h1:EzLU6I7qVuDX4znpcKbEjHcl0iXNCb/XgCw16thQ82Y=
+000004_model_catalog_bindings.up.sql h1:UhNnSMSJpVjK/eSBmrjCriEyNTzLbMpapKUE9Gv/ulE=

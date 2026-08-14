@@ -280,6 +280,27 @@ func (repository *Repository) ArchiveConnection(
 		}
 	}
 
+	_, err = transaction.Exec(
+		ctx,
+		`
+			UPDATE model_access_model_offerings
+			SET
+				status = 'unavailable',
+				version = version + 1,
+				unavailable_at = $3,
+				refreshed_at = $3
+			WHERE tenant_id = $1::uuid
+			  AND connection_id = $2::uuid
+			  AND status = 'available'
+		`,
+		result.TenantID,
+		result.ID,
+		params.ArchivedAt,
+	)
+	if err != nil {
+		return domain.Connection{}, mapDatabaseError(err)
+	}
+
 	if err := insertRevision(
 		ctx,
 		transaction,

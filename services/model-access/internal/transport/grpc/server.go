@@ -7,6 +7,7 @@ import (
 	modelv1 "github.com/aminio9/gereh/gen/go/gereh/model/v1"
 	"github.com/aminio9/gereh/services/model-access/internal/application"
 	"github.com/aminio9/gereh/services/model-access/internal/domain"
+	"github.com/aminio9/gereh/services/model-access/internal/ports"
 	"github.com/aminio9/gereh/services/model-access/internal/protoutil"
 )
 
@@ -235,3 +236,166 @@ func (server *Server) ArchiveConnection(
 		Connection: protoutil.Connection(value),
 	}, nil
 }
+
+// ListModelOfferings returns a page of model offerings.
+func (server *Server) ListModelOfferings(
+	ctx context.Context,
+	request *modelv1.ListModelOfferingsRequest,
+) (*modelv1.ListModelOfferingsResponse, error) {
+	var cursor *ports.OfferingCursor
+	if request.GetPageToken() != "" {
+		cursor = &ports.OfferingCursor{OfferingID: request.GetPageToken()}
+	}
+
+	var connectionID string
+	if request.ConnectionId != nil {
+		connectionID = *request.ConnectionId
+	}
+
+	result, err := server.service.ListModelOfferings(
+		ctx,
+		application.ListOfferingsInput{
+			ActorUserID:  request.GetActorUserId(),
+			TenantID:     request.GetTenantId(),
+			ConnectionID: connectionID,
+			Limit:        normalizePageSize(request.GetPageSize()),
+			Cursor:       cursor,
+		},
+	)
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	items := make([]*modelv1.ModelOffering, 0, len(result.Offerings))
+	for _, item := range result.Offerings {
+		items = append(items, protoutil.ModelOffering(item))
+	}
+
+	nextPageToken := ""
+	if result.NextCursor != nil {
+		nextPageToken = result.NextCursor.OfferingID
+	}
+
+	return &modelv1.ListModelOfferingsResponse{
+		Offerings:     items,
+		NextPageToken: nextPageToken,
+	}, nil
+}
+
+// RefreshModelCatalog enqueues a catalog refresh for a connection.
+func (server *Server) RefreshModelCatalog(
+	ctx context.Context,
+	request *modelv1.RefreshModelCatalogRequest,
+) (*modelv1.RefreshModelCatalogResponse, error) {
+	refresh, err := server.service.RefreshModelCatalog(
+		ctx,
+		application.RefreshModelCatalogInput{
+			ActorUserID:  request.GetActorUserId(),
+			TenantID:     request.GetTenantId(),
+			ConnectionID: request.GetConnectionId(),
+		},
+	)
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	return &modelv1.RefreshModelCatalogResponse{
+		Refresh: protoutil.ModelCatalogRefresh(refresh),
+	}, nil
+}
+
+// GetModelCatalogRefresh returns the status of a catalog refresh.
+func (server *Server) GetModelCatalogRefresh(
+	ctx context.Context,
+	request *modelv1.GetModelCatalogRefreshRequest,
+) (*modelv1.GetModelCatalogRefreshResponse, error) {
+	refresh, err := server.service.GetModelCatalogRefresh(
+		ctx,
+		request.GetActorUserId(),
+		request.GetTenantId(),
+		request.GetRefreshId(),
+	)
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	return &modelv1.GetModelCatalogRefreshResponse{
+		Refresh: protoutil.ModelCatalogRefresh(refresh),
+	}, nil
+}
+
+// GetAgentModelBinding returns the model binding for an agent.
+func (server *Server) GetAgentModelBinding(
+	ctx context.Context,
+	request *modelv1.GetAgentModelBindingRequest,
+) (*modelv1.GetAgentModelBindingResponse, error) {
+	binding, err := server.service.GetAgentModelBinding(
+		ctx,
+		request.GetActorUserId(),
+		request.GetTenantId(),
+		request.GetAgentId(),
+	)
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	return &modelv1.GetAgentModelBindingResponse{
+		Binding: protoutil.AgentModelBinding(binding),
+	}, nil
+}
+
+// SetAgentModelBinding binds an agent to model offerings.
+func (server *Server) SetAgentModelBinding(
+	ctx context.Context,
+	request *modelv1.SetAgentModelBindingRequest,
+) (*modelv1.SetAgentModelBindingResponse, error) {
+	fallbackPolicy := protoutil.DomainFallbackPolicy(request.GetFallbackPolicy())
+
+	binding, err := server.service.SetAgentModelBinding(
+		ctx,
+		application.SetAgentBindingInput{
+			ActorUserID:          request.GetActorUserId(),
+			TenantID:             request.GetTenantId(),
+			AgentID:              request.GetAgentId(),
+			IdempotencyKey:       request.GetIdempotencyKey(),
+			ExpectedVersion:      request.GetExpectedVersion(),
+			PrimaryOfferingID:    request.GetPrimaryOfferingId(),
+			FastOfferingID:       request.FastOfferingId,
+			FallbackOfferingIDs:  request.GetFallbackOfferingIds(),
+			FallbackPolicy:       fallbackPolicy,
+			MaxModelCostMicroUSD: request.MaxModelCostMicrousd,
+		},
+	)
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	return &modelv1.SetAgentModelBindingResponse{
+		Binding: protoutil.AgentModelBinding(binding),
+	}, nil
+}
+
+// RemoveAgentModelBinding unbinds an agent from models.
+func (server *Server) RemoveAgentModelBinding(
+	ctx context.Context,
+	request *modelv1.RemoveAgentModelBindingRequest,
+) (*modelv1.RemoveAgentModelBindingResponse, error) {
+	binding, err := server.service.RemoveAgentModelBinding(
+		ctx,
+		application.RemoveAgentBindingInput{
+			ActorUserID:     request.GetActorUserId(),
+			TenantID:        request.GetTenantId(),
+			AgentID:         request.GetAgentId(),
+			IdempotencyKey:  request.GetIdempotencyKey(),
+			ExpectedVersion: request.GetExpectedVersion(),
+		},
+	)
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	return &modelv1.RemoveAgentModelBindingResponse{
+		Binding: protoutil.AgentModelBinding(binding),
+	}, nil
+}
+

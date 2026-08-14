@@ -231,6 +231,54 @@ func (fake *repositoryFake) ReleaseSecretCleanup(
 	panic("unexpected repository call")
 }
 
+func (fake *repositoryFake) ListOfferings(context.Context, ports.ListOfferingsParams) ([]domain.ModelOffering, error) {
+	panic("unexpected repository call")
+}
+
+func (fake *repositoryFake) GetOffering(context.Context, string, string, string) (domain.ModelOffering, error) {
+	panic("unexpected repository call")
+}
+
+func (fake *repositoryFake) EnqueueCatalogRefresh(context.Context, string, string, string, time.Time) (domain.CatalogRefresh, error) {
+	panic("unexpected repository call")
+}
+
+func (fake *repositoryFake) GetCatalogRefresh(context.Context, string, string, string) (domain.CatalogRefresh, error) {
+	panic("unexpected repository call")
+}
+
+func (fake *repositoryFake) ClaimCatalogRefresh(context.Context, int, time.Duration) ([]domain.CatalogRefreshJob, error) {
+	panic("unexpected repository call")
+}
+
+func (fake *repositoryFake) ApplyCatalogRefresh(context.Context, ports.ApplyCatalogRefreshParams) (domain.CatalogRefreshResult, error) {
+	panic("unexpected repository call")
+}
+
+func (fake *repositoryFake) FailCatalogRefresh(context.Context, string, string, string, string, string, time.Time) error {
+	panic("unexpected repository call")
+}
+
+func (fake *repositoryFake) ReleaseCatalogRefresh(context.Context, string, time.Time, string) error {
+	panic("unexpected repository call")
+}
+
+func (fake *repositoryFake) MarkConnectionOfferingsUnavailable(context.Context, string, string, string, time.Time) error {
+	panic("unexpected repository call")
+}
+
+func (fake *repositoryFake) GetAgentBinding(context.Context, string, string, string) (domain.AgentModelBinding, error) {
+	panic("unexpected repository call")
+}
+
+func (fake *repositoryFake) SetAgentBinding(context.Context, ports.SetBindingParams) (domain.AgentModelBinding, error) {
+	panic("unexpected repository call")
+}
+
+func (fake *repositoryFake) RemoveAgentBinding(context.Context, ports.RemoveBindingParams) (domain.AgentModelBinding, error) {
+	panic("unexpected repository call")
+}
+
 func TestPlatformManagedRequiresEntitlement(t *testing.T) {
 	t.Parallel()
 

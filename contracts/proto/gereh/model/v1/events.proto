@@ -3,6 +3,7 @@ syntax = "proto3";
 package gereh.model.v1;
 
 import "gereh/model/v1/model_access.proto";
+import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/aminio9/gereh/gen/go/gereh/model/v1;modelv1";
 
@@ -41,4 +42,27 @@ message ModelConnectionCredentialRotated {
   ModelConnection connection = 1;
 
   string rotated_by_user_id = 2;
+}
+
+message ModelCatalogRefreshed {
+  string tenant_id = 1;
+  string connection_id = 2;
+
+  int64 catalog_generation = 3;
+
+  int32 discovered_count = 4;
+  int32 available_count = 5;
+  int32 unavailable_count = 6;
+
+  google.protobuf.Timestamp refreshed_at = 7;
+}
+
+message AgentModelBindingSet {
+  AgentModelBinding binding = 1;
+}
+
+message AgentModelBindingRemoved {
+  AgentModelBinding binding = 1;
+
+  string removed_by_user_id = 2;
 }

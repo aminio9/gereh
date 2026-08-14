@@ -70,4 +70,45 @@ var (
 
 	// ErrSecretNotFound indicates a secret or version does not exist.
 	ErrSecretNotFound = errors.New("secret not found")
+
+	ErrCatalogUnavailable = errors.New(
+		"model catalog is unavailable",
+	)
+
+	ErrCatalogRefreshNotFound = errors.New(
+		"model catalog refresh not found",
+	)
+
+	ErrOfferingNotFound = errors.New(
+		"model offering not found",
+	)
+
+	ErrOfferingUnavailable = errors.New(
+		"model offering is unavailable",
+	)
+
+	ErrOfferingNotAgentUsable = errors.New(
+		"model offering is not usable by an agent",
+	)
+
+	ErrAgentNotFound = errors.New(
+		"agent not found",
+	)
+
+	ErrAgentDeleted = errors.New(
+		"agent is deleting or deleted",
+	)
+
+	ErrBindingNotFound = errors.New(
+		"agent model binding not found",
+	)
+
+	ErrBindingVersionConflict = errors.New(
+		"agent model binding version conflict",
+	)
+
+	ErrInvalidFallbackPolicy = errors.New(
+		"invalid model fallback policy",
+	)
 )
+

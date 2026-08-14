@@ -71,6 +71,16 @@ const (
 	PermissionModelConnectionUpdate Permission = "model.connection_update"
 
 	PermissionModelConnectionArchive Permission = "model.connection_archive"
+
+	PermissionModelCatalogRead Permission = "model.catalog_read"
+
+	PermissionModelCatalogRefresh Permission = "model.catalog_refresh"
+
+	PermissionModelBindingRead Permission = "model.binding_read"
+
+	PermissionModelBindingUpdate Permission = "model.binding_update"
+
+	PermissionModelBindingRemove Permission = "model.binding_remove"
 )
 
 // DenialReason identifies why authorization was denied.
@@ -151,6 +161,13 @@ var knownPermissions = []Permission{
 	PermissionModelConnectionCreate,
 	PermissionModelConnectionUpdate,
 	PermissionModelConnectionArchive,
+
+	PermissionModelCatalogRead,
+	PermissionModelCatalogRefresh,
+
+	PermissionModelBindingRead,
+	PermissionModelBindingUpdate,
+	PermissionModelBindingRemove,
 }
 
 var ownerPermissions = append(
@@ -213,6 +230,13 @@ var adminPermissions = []Permission{
 	PermissionModelConnectionCreate,
 	PermissionModelConnectionUpdate,
 	PermissionModelConnectionArchive,
+
+	PermissionModelCatalogRead,
+	PermissionModelCatalogRefresh,
+
+	PermissionModelBindingRead,
+	PermissionModelBindingUpdate,
+	PermissionModelBindingRemove,
 }
 
 var memberPermissions = []Permission{
@@ -232,6 +256,8 @@ var memberPermissions = []Permission{
 	PermissionTaskChecklistManage,
 	PermissionTaskScheduleManage,
 	PermissionModelProviderRead,
+	PermissionModelCatalogRead,
+	PermissionModelBindingRead,
 }
 
 var viewerPermissions = []Permission{
@@ -241,6 +267,8 @@ var viewerPermissions = []Permission{
 	PermissionAgentRead,
 	PermissionWorkRead,
 	PermissionModelProviderRead,
+	PermissionModelCatalogRead,
+	PermissionModelBindingRead,
 }
 
 // IsKnownPermission reports whether a permission is supported.
@@ -330,7 +358,10 @@ func IsMutationPermission(
 		PermissionPolicyArchive,
 		PermissionModelConnectionCreate,
 		PermissionModelConnectionUpdate,
-		PermissionModelConnectionArchive:
+		PermissionModelConnectionArchive,
+		PermissionModelCatalogRefresh,
+		PermissionModelBindingUpdate,
+		PermissionModelBindingRemove:
 		return true
 
 	default:

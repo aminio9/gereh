@@ -33,6 +33,18 @@ service ModelAccessService {
   rpc RotateBYOKCredential(RotateBYOKCredentialRequest) returns (RotateBYOKCredentialResponse);
 
   rpc ArchiveConnection(ArchiveConnectionRequest) returns (ArchiveConnectionResponse);
+
+  rpc ListModelOfferings(ListModelOfferingsRequest) returns (ListModelOfferingsResponse);
+
+  rpc RefreshModelCatalog(RefreshModelCatalogRequest) returns (RefreshModelCatalogResponse);
+
+  rpc GetModelCatalogRefresh(GetModelCatalogRefreshRequest) returns (GetModelCatalogRefreshResponse);
+
+  rpc GetAgentModelBinding(GetAgentModelBindingRequest) returns (GetAgentModelBindingResponse);
+
+  rpc SetAgentModelBinding(SetAgentModelBindingRequest) returns (SetAgentModelBindingResponse);
+
+  rpc RemoveAgentModelBinding(RemoveAgentModelBindingRequest) returns (RemoveAgentModelBindingResponse);
 }
 
 enum ModelConnectionType {
@@ -221,4 +233,227 @@ message ArchiveConnectionRequest {
 
 message ArchiveConnectionResponse {
   ModelConnection connection = 1;
+}
+
+enum ModelOfferingStatus {
+  MODEL_OFFERING_STATUS_UNSPECIFIED = 0;
+
+  MODEL_OFFERING_STATUS_AVAILABLE = 1;
+  MODEL_OFFERING_STATUS_UNAVAILABLE = 2;
+}
+
+enum ModelOfferingSource {
+  MODEL_OFFERING_SOURCE_UNSPECIFIED = 0;
+
+  MODEL_OFFERING_SOURCE_PROVIDER_DISCOVERED = 1;
+  MODEL_OFFERING_SOURCE_PLATFORM_CATALOG = 2;
+}
+
+message ModelOffering {
+  string tenant_id = 1;
+  string offering_id = 2;
+
+  string connection_id = 3;
+
+  string provider_key = 4;
+  string provider_model_id = 5;
+
+  string display_name = 6;
+  string description = 7;
+
+  ModelOfferingStatus status = 8;
+  ModelOfferingSource source = 9;
+
+  // Only offerings explicitly known to support agent inference may be bound.
+  bool agent_usable = 10;
+
+  repeated string capabilities = 11;
+
+  repeated string input_modalities = 12;
+  repeated string output_modalities = 13;
+
+  // 0 means the provider catalog does not expose a reliable value.
+  int64 context_window_tokens = 14;
+
+  // 0 means the provider catalog does not expose a reliable value.
+  int64 max_output_tokens = 15;
+
+  int64 version = 16;
+
+  google.protobuf.Timestamp first_seen_at = 17;
+  google.protobuf.Timestamp last_seen_at = 18;
+  google.protobuf.Timestamp refreshed_at = 19;
+
+  google.protobuf.Timestamp unavailable_at = 20;
+}
+
+enum ModelCatalogRefreshStatus {
+  MODEL_CATALOG_REFRESH_STATUS_UNSPECIFIED = 0;
+
+  MODEL_CATALOG_REFRESH_STATUS_PENDING = 1;
+  MODEL_CATALOG_REFRESH_STATUS_RUNNING = 2;
+  MODEL_CATALOG_REFRESH_STATUS_SUCCEEDED = 3;
+  MODEL_CATALOG_REFRESH_STATUS_FAILED = 4;
+}
+
+message ModelCatalogRefresh {
+  string tenant_id = 1;
+  string refresh_id = 2;
+  string connection_id = 3;
+
+  ModelCatalogRefreshStatus status = 4;
+
+  int64 catalog_generation = 5;
+
+  int32 discovered_count = 6;
+  int32 available_count = 7;
+  int32 unavailable_count = 8;
+
+  // Sanitized code only. No provider response body.
+  string error_code = 9;
+
+  google.protobuf.Timestamp requested_at = 10;
+  google.protobuf.Timestamp started_at = 11;
+  google.protobuf.Timestamp completed_at = 12;
+}
+
+message ListModelOfferingsRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+
+  optional string connection_id = 3;
+
+  ModelOfferingStatus status = 4;
+
+  int32 page_size = 5;
+  string page_token = 6;
+}
+
+message ListModelOfferingsResponse {
+  repeated ModelOffering offerings = 1;
+
+  string next_page_token = 2;
+}
+
+message RefreshModelCatalogRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+
+  string connection_id = 3;
+
+  string idempotency_key = 4;
+}
+
+message RefreshModelCatalogResponse {
+  ModelCatalogRefresh refresh = 1;
+}
+
+message GetModelCatalogRefreshRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+
+  string refresh_id = 3;
+}
+
+message GetModelCatalogRefreshResponse {
+  ModelCatalogRefresh refresh = 1;
+}
+
+enum ModelFallbackPolicy {
+  MODEL_FALLBACK_POLICY_UNSPECIFIED = 0;
+
+  MODEL_FALLBACK_POLICY_NONE = 1;
+  MODEL_FALLBACK_POLICY_ORDERED = 2;
+}
+
+enum AgentModelBindingStatus {
+  AGENT_MODEL_BINDING_STATUS_UNSPECIFIED = 0;
+
+  AGENT_MODEL_BINDING_STATUS_ACTIVE = 1;
+  AGENT_MODEL_BINDING_STATUS_REMOVED = 2;
+}
+
+message AgentModelBinding {
+  string tenant_id = 1;
+
+  string agent_id = 2;
+  string company_id = 3;
+
+  AgentModelBindingStatus status = 4;
+
+  string primary_offering_id = 5;
+
+  optional string fast_offering_id = 6;
+
+  repeated string fallback_offering_ids = 7;
+
+  ModelFallbackPolicy fallback_policy = 8;
+
+  // Millionths of USD.
+  //
+  // 0 / absent means no binding-level maximum.
+  // Phase 20/30 will enforce this value.
+  optional int64 max_model_cost_microusd = 9;
+
+  int64 version = 10;
+
+  string created_by_user_id = 11;
+  string updated_by_user_id = 12;
+
+  google.protobuf.Timestamp created_at = 13;
+  google.protobuf.Timestamp updated_at = 14;
+  google.protobuf.Timestamp removed_at = 15;
+}
+
+message GetAgentModelBindingRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+  string agent_id = 3;
+}
+
+message GetAgentModelBindingResponse {
+  AgentModelBinding binding = 1;
+}
+
+message SetAgentModelBindingRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+
+  string agent_id = 3;
+
+  string idempotency_key = 4;
+
+  // 0 means create a binding that does not yet exist.
+  //
+  // Positive means update/reactivate exactly this version.
+  int64 expected_version = 5;
+
+  string primary_offering_id = 6;
+
+  optional string fast_offering_id = 7;
+
+  repeated string fallback_offering_ids = 8;
+
+  ModelFallbackPolicy fallback_policy = 9;
+
+  optional int64 max_model_cost_microusd = 10;
+}
+
+message SetAgentModelBindingResponse {
+  AgentModelBinding binding = 1;
+}
+
+message RemoveAgentModelBindingRequest {
+  string actor_user_id = 1;
+  string tenant_id = 2;
+
+  string agent_id = 3;
+
+  string idempotency_key = 4;
+
+  int64 expected_version = 5;
+}
+
+message RemoveAgentModelBindingResponse {
+  AgentModelBinding binding = 1;
 }

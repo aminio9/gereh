@@ -61,6 +61,42 @@ type Client interface {
 		*modelv1.ArchiveConnectionRequest,
 		...grpc.CallOption,
 	) (*modelv1.ArchiveConnectionResponse, error)
+
+	ListModelOfferings(
+		context.Context,
+		*modelv1.ListModelOfferingsRequest,
+		...grpc.CallOption,
+	) (*modelv1.ListModelOfferingsResponse, error)
+
+	RefreshModelCatalog(
+		context.Context,
+		*modelv1.RefreshModelCatalogRequest,
+		...grpc.CallOption,
+	) (*modelv1.RefreshModelCatalogResponse, error)
+
+	GetModelCatalogRefresh(
+		context.Context,
+		*modelv1.GetModelCatalogRefreshRequest,
+		...grpc.CallOption,
+	) (*modelv1.GetModelCatalogRefreshResponse, error)
+
+	GetAgentModelBinding(
+		context.Context,
+		*modelv1.GetAgentModelBindingRequest,
+		...grpc.CallOption,
+	) (*modelv1.GetAgentModelBindingResponse, error)
+
+	SetAgentModelBinding(
+		context.Context,
+		*modelv1.SetAgentModelBindingRequest,
+		...grpc.CallOption,
+	) (*modelv1.SetAgentModelBindingResponse, error)
+
+	RemoveAgentModelBinding(
+		context.Context,
+		*modelv1.RemoveAgentModelBindingRequest,
+		...grpc.CallOption,
+	) (*modelv1.RemoveAgentModelBindingResponse, error)
 }
 
 // PermissionChecker checks tenant permissions through Tenant Service.
@@ -173,6 +209,65 @@ func (handler *Handler) Register(
 			).Post(
 				"/model-connections/{connectionID}/credential/rotate",
 				handler.rotateBYOKCredential,
+			)
+
+			// Catalog offerings & refreshes
+			resource.With(
+				handler.RequirePermission(
+					tenantv1.Permission_PERMISSION_MODEL_CATALOG_READ,
+				),
+			).Get(
+				"/model-offerings",
+				handler.listModelOfferings,
+			)
+
+			resource.With(
+				handler.RequirePermission(
+					tenantv1.Permission_PERMISSION_MODEL_CATALOG_REFRESH,
+				),
+				authHandler.RequireCSRF,
+			).Post(
+				"/model-connections/{connectionID}/catalog/refresh",
+				handler.refreshModelCatalog,
+			)
+
+			resource.With(
+				handler.RequirePermission(
+					tenantv1.Permission_PERMISSION_MODEL_CATALOG_READ,
+				),
+			).Get(
+				"/model-catalog-refreshes/{refreshID}",
+				handler.getModelCatalogRefresh,
+			)
+
+			// Agent model bindings
+			resource.With(
+				handler.RequirePermission(
+					tenantv1.Permission_PERMISSION_MODEL_BINDING_READ,
+				),
+			).Get(
+				"/agents/{agentID}/model-binding",
+				handler.getAgentModelBinding,
+			)
+
+			resource.With(
+				handler.RequirePermission(
+					tenantv1.Permission_PERMISSION_MODEL_BINDING_UPDATE,
+				),
+				authHandler.RequireCSRF,
+			).Put(
+				"/agents/{agentID}/model-binding",
+				handler.setAgentModelBinding,
+			)
+
+			resource.With(
+				handler.RequirePermission(
+					tenantv1.Permission_PERMISSION_MODEL_BINDING_REMOVE,
+				),
+				authHandler.RequireCSRF,
+			).Post(
+				"/agents/{agentID}/model-binding/remove",
+				handler.removeAgentModelBinding,
 			)
 		},
 	)

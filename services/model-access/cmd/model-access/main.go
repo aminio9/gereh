@@ -14,6 +14,7 @@ import (
 	"time"
 
 	modelv1 "github.com/aminio9/gereh/gen/go/gereh/model/v1"
+	organizationv1 "github.com/aminio9/gereh/gen/go/gereh/organization/v1"
 	tenantv1 "github.com/aminio9/gereh/gen/go/gereh/tenant/v1"
 
 	platformkafka "github.com/aminio9/gereh/platform/go/events/kafka"
@@ -22,6 +23,8 @@ import (
 	platformpostgres "github.com/aminio9/gereh/platform/go/postgres"
 
 	modelauthorization "github.com/aminio9/gereh/services/model-access/internal/adapters/authorization"
+	modelcatalog "github.com/aminio9/gereh/services/model-access/internal/adapters/catalog"
+	modelorganization "github.com/aminio9/gereh/services/model-access/internal/adapters/organization"
 	"github.com/aminio9/gereh/services/model-access/internal/adapters/outbox"
 	modelpostgres "github.com/aminio9/gereh/services/model-access/internal/adapters/postgres"
 	modelprovider "github.com/aminio9/gereh/services/model-access/internal/adapters/provider"
@@ -223,6 +226,54 @@ func run() error {
 		return err
 	}
 
+	orgClientConfig := grpcx.DefaultClientConfig(
+		runtimeConfig.OrganizationGRPCTarget,
+	)
+	orgClientConfig.Insecure = runtimeConfig.OrganizationGRPCInsecure
+	if !orgClientConfig.Insecure {
+		tlsConfig, err := grpcx.LoadWorkloadClientTLS(
+			grpcx.WorkloadTLSFiles{
+				CertificateFile: runtimeConfig.GRPCTLSCertFile,
+				PrivateKeyFile:  runtimeConfig.GRPCTLSKeyFile,
+				CAFile:          runtimeConfig.GRPCTLSCAFile,
+			},
+			runtimeConfig.OrganizationGRPCServerName,
+		)
+		if err != nil {
+			return fmt.Errorf(
+				"configure Organization Service workload TLS: %w",
+				err,
+			)
+		}
+		orgClientConfig.TLSConfig = tlsConfig
+	}
+
+	orgConnection, err := grpcx.NewClient(
+		orgClientConfig,
+		telemetry,
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"create Organization Service gRPC client: %w",
+			err,
+		)
+	}
+	defer func() {
+		if err := orgConnection.Close(); err != nil {
+			logger.Warn("close Organization Service connection", "error", err)
+		}
+	}()
+
+	orgClient := organizationv1.NewOrganizationServiceClient(orgConnection)
+	agentDirectory := modelorganization.NewClient(orgClient, runtimeConfig.AuthorizerTimeout)
+
+	staticCatalogLoader, err := modelcatalog.NewStaticLoader(runtimeConfig.PlatformCatalogPath)
+	if err != nil {
+		logger.Warn("load platform static catalog", "path", runtimeConfig.PlatformCatalogPath, "error", err)
+	}
+
+	catalogClient := modelprovider.NewCatalogClient(runtimeConfig.ProviderVerifyTimeout)
+
 	modelService, err := modelapplication.New(
 		repository,
 		authorizer,
@@ -233,10 +284,26 @@ func run() error {
 			EventTopic:     runtimeConfig.EventTopic,
 			IdempotencyTTL: runtimeConfig.IdempotencyTTL,
 		},
+		modelapplication.WithCatalogClient(catalogClient),
+		modelapplication.WithStaticCatalog(staticCatalogLoader),
+		modelapplication.WithAgentDirectory(agentDirectory),
 	)
 	if err != nil {
 		return err
 	}
+
+	catalogWorker := modelapplication.NewCatalogWorker(
+		modelapplication.CatalogWorkerConfig{
+			BatchSize:    runtimeConfig.CatalogWorkerBatchSize,
+			PollInterval: runtimeConfig.CatalogWorkerPollInterval,
+			Lease:        runtimeConfig.CatalogWorkerLease,
+			MaxBackoff:   runtimeConfig.CatalogWorkerMaxBackoff,
+		},
+		repository,
+		modelService,
+		logger,
+	)
+	go catalogWorker.Run(ctx)
 
 	cleanupWorker, err :=
 		modelsecrets.NewCleanupWorker(
