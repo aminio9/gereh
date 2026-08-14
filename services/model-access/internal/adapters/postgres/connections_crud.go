@@ -6,6 +6,7 @@ import (
 
 	"github.com/aminio9/gereh/services/model-access/internal/domain"
 	"github.com/aminio9/gereh/services/model-access/internal/ports"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -152,6 +153,65 @@ func (repository *Repository) CreateConnection(
 	event, err := params.EventFactory(result)
 	if err != nil {
 		return domain.Connection{}, err
+	}
+
+	if result.Status == domain.ConnectionStatusActive {
+		refreshUUID, _ := uuid.NewV7()
+		refreshID := refreshUUID.String()
+
+		_, _ = transaction.Exec(
+			ctx,
+			`
+				INSERT INTO model_access_catalog_refreshes (
+					tenant_id,
+					refresh_id,
+					actor_user_id,
+					connection_id,
+					status,
+					generation,
+					requested_at
+				)
+				VALUES (
+					$1::uuid,
+					$2::uuid,
+					$3::uuid,
+					$4::uuid,
+					'pending',
+					1,
+					$5
+				)
+			`,
+			result.TenantID,
+			refreshID,
+			params.ActorUserID,
+			result.ID,
+			connection.CreatedAt,
+		)
+
+		_, _ = transaction.Exec(
+			ctx,
+			`
+				INSERT INTO model_access_catalog_refresh_queue (
+					tenant_id,
+					refresh_id,
+					connection_id,
+					actor_user_id,
+					available_at
+				)
+				VALUES (
+					$1::uuid,
+					$2::uuid,
+					$3::uuid,
+					$4::uuid,
+					$5
+				)
+			`,
+			result.TenantID,
+			refreshID,
+			result.ID,
+			params.ActorUserID,
+			connection.CreatedAt,
+		)
 	}
 
 	if err := insertOutbox(

@@ -68,6 +68,17 @@ type Config struct {
 	SecretCleanupLease        time.Duration
 	SecretCleanupMaxBackoff   time.Duration
 
+	OrganizationGRPCTarget     string
+	OrganizationGRPCInsecure   bool
+	OrganizationGRPCServerName string
+
+	PlatformCatalogPath string
+
+	CatalogWorkerBatchSize    int
+	CatalogWorkerPollInterval time.Duration
+	CatalogWorkerLease        time.Duration
+	CatalogWorkerMaxBackoff   time.Duration
+
 	Kafka platformkafka.Config
 }
 
@@ -211,6 +222,43 @@ func FromEnv(version string) (Config, error) {
 		return Config{}, err
 	}
 
+	catalogBatchSize, err := integerEnvironment(
+		"MODEL_ACCESS_CATALOG_WORKER_BATCH_SIZE",
+		10,
+	)
+	if err != nil {
+		return Config{}, err
+	}
+
+	catalogPollInterval, err := durationEnvironment(
+		"MODEL_ACCESS_CATALOG_WORKER_POLL_INTERVAL",
+		500*time.Millisecond,
+	)
+	if err != nil {
+		return Config{}, err
+	}
+
+	catalogLease, err := durationEnvironment(
+		"MODEL_ACCESS_CATALOG_WORKER_LEASE",
+		60*time.Second,
+	)
+	if err != nil {
+		return Config{}, err
+	}
+
+	catalogMaxBackoff, err := durationEnvironment(
+		"MODEL_ACCESS_CATALOG_WORKER_MAX_BACKOFF",
+		5*time.Minute,
+	)
+	if err != nil {
+		return Config{}, err
+	}
+
+	orgInsecure, err := boolEnvironment("ORGANIZATION_GRPC_INSECURE", true)
+	if err != nil {
+		return Config{}, err
+	}
+
 	config := Config{
 		ServiceName:    "model-access",
 		ServiceVersion: version,
@@ -229,6 +277,23 @@ func FromEnv(version string) (Config, error) {
 		),
 		TenantGRPCInsecure:   tenantInsecure,
 		TenantGRPCServerName: strings.TrimSpace(os.Getenv("TENANT_GRPC_SERVER_NAME")),
+
+		OrganizationGRPCTarget: envOrDefault(
+			"ORGANIZATION_GRPC_TARGET",
+			"passthrough:///127.0.0.1:18083",
+		),
+		OrganizationGRPCInsecure:   orgInsecure,
+		OrganizationGRPCServerName: strings.TrimSpace(os.Getenv("ORGANIZATION_GRPC_SERVER_NAME")),
+
+		PlatformCatalogPath: envOrDefault(
+			"MODEL_ACCESS_PLATFORM_CATALOG_PATH",
+			"deployments/model-access/platform-catalog.json",
+		),
+
+		CatalogWorkerBatchSize:    catalogBatchSize,
+		CatalogWorkerPollInterval: catalogPollInterval,
+		CatalogWorkerLease:        catalogLease,
+		CatalogWorkerMaxBackoff:   catalogMaxBackoff,
 
 		AuthorizerTimeout: authorizerTimeout,
 

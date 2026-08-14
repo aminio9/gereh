@@ -180,6 +180,9 @@ type CompleteRotationParams struct {
 
 // Repository owns Model Access persistence.
 type Repository interface {
+	CatalogRepository
+	BindingRepository
+
 	ListProviders(
 		ctx context.Context,
 		actorUserID string,

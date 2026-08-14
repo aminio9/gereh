@@ -26,9 +26,37 @@ type Service struct {
 
 	fingerprinter *security.Fingerprinter
 
+	catalogClient  ports.ProviderCatalogClient
+	staticCatalog  ports.StaticCatalogLoader
+	agentDirectory ports.AgentDirectory
+
 	config Config
 
 	now func() time.Time
+}
+
+// Option allows configuring optional dependencies on Service.
+type Option func(*Service)
+
+// WithCatalogClient sets the provider catalog client for dynamic discovery.
+func WithCatalogClient(client ports.ProviderCatalogClient) Option {
+	return func(s *Service) {
+		s.catalogClient = client
+	}
+}
+
+// WithStaticCatalog sets the static platform catalog loader.
+func WithStaticCatalog(staticCat ports.StaticCatalogLoader) Option {
+	return func(s *Service) {
+		s.staticCatalog = staticCat
+	}
+}
+
+// WithAgentDirectory sets the agent directory client for agent validation.
+func WithAgentDirectory(directory ports.AgentDirectory) Option {
+	return func(s *Service) {
+		s.agentDirectory = directory
+	}
 }
 
 // New validates dependencies and constructs the application service.
@@ -39,6 +67,7 @@ func New(
 	verifier ports.CredentialVerifier,
 	fingerprinter *security.Fingerprinter,
 	config Config,
+	opts ...Option,
 ) (*Service, error) {
 	if repository == nil {
 		return nil, fmt.Errorf("model access repository is required")
@@ -68,7 +97,7 @@ func New(
 		return nil, fmt.Errorf("model access idempotency TTL must be positive")
 	}
 
-	return &Service{
+	svc := &Service{
 		repository:    repository,
 		authorizer:    authorizer,
 		secretStore:   secretStore,
@@ -76,5 +105,11 @@ func New(
 		fingerprinter: fingerprinter,
 		config:        config,
 		now:           time.Now,
-	}, nil
+	}
+
+	for _, opt := range opts {
+		opt(svc)
+	}
+
+	return svc, nil
 }

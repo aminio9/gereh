@@ -1,0 +1,202 @@
+{
+  "version": "1.0.0",
+  "providers": {
+    "openai": {
+      "pools": {
+        "global": {
+          "models": [
+            {
+              "provider_model_id": "gpt-4o",
+              "display_name": "GPT-4o",
+              "description": "High-intelligence flagship model for multimodal reasoning and complex tasks",
+              "agent_usable": true,
+              "capabilities": ["tools", "structured_outputs", "vision", "streaming"],
+              "input_modalities": ["text", "image"],
+              "output_modalities": ["text"],
+              "context_window_tokens": 128000,
+              "max_output_tokens": 16384
+            },
+            {
+              "provider_model_id": "gpt-4o-mini",
+              "display_name": "GPT-4o mini",
+              "description": "Fast, cost-efficient small model for focused tasks",
+              "agent_usable": true,
+              "capabilities": ["tools", "structured_outputs", "vision", "streaming"],
+              "input_modalities": ["text", "image"],
+              "output_modalities": ["text"],
+              "context_window_tokens": 128000,
+              "max_output_tokens": 16384
+            },
+            {
+              "provider_model_id": "o1",
+              "display_name": "OpenAI o1",
+              "description": "Reasoning model designed for complex problems and deep deliberation",
+              "agent_usable": true,
+              "capabilities": ["tools", "structured_outputs", "vision", "streaming"],
+              "input_modalities": ["text", "image"],
+              "output_modalities": ["text"],
+              "context_window_tokens": 200000,
+              "max_output_tokens": 100000
+            },
+            {
+              "provider_model_id": "o3-mini",
+              "display_name": "OpenAI o3-mini",
+              "description": "Cost-effective, fast reasoning model specializing in coding and math",
+              "agent_usable": true,
+              "capabilities": ["tools", "structured_outputs", "streaming"],
+              "input_modalities": ["text"],
+              "output_modalities": ["text"],
+              "context_window_tokens": 200000,
+              "max_output_tokens": 100000
+            },
+            {
+              "provider_model_id": "text-embedding-3-small",
+              "display_name": "Text Embedding 3 Small",
+              "description": "Highly capable embedding model for search and classification",
+              "agent_usable": false,
+              "capabilities": ["embeddings"],
+              "input_modalities": ["text"],
+              "output_modalities": ["embeddings"],
+              "context_window_tokens": 8191,
+              "max_output_tokens": 0
+            }
+          ]
+        }
+      }
+    },
+    "anthropic": {
+      "pools": {
+        "global": {
+          "models": [
+            {
+              "provider_model_id": "claude-3-5-sonnet-20241022",
+              "display_name": "Claude 3.5 Sonnet",
+              "description": "State-of-the-art balance of intelligence, speed, and coding capabilities",
+              "agent_usable": true,
+              "capabilities": ["tools", "structured_outputs", "vision", "streaming"],
+              "input_modalities": ["text", "image"],
+              "output_modalities": ["text"],
+              "context_window_tokens": 200000,
+              "max_output_tokens": 8192
+            },
+            {
+              "provider_model_id": "claude-3-5-haiku-20241022",
+              "display_name": "Claude 3.5 Haiku",
+              "description": "Fastest and most compact model with high responsiveness",
+              "agent_usable": true,
+              "capabilities": ["tools", "structured_outputs", "vision", "streaming"],
+              "input_modalities": ["text", "image"],
+              "output_modalities": ["text"],
+              "context_window_tokens": 200000,
+              "max_output_tokens": 8192
+            },
+            {
+              "provider_model_id": "claude-3-opus-20240229",
+              "display_name": "Claude 3 Opus",
+              "description": "Powerful model for highly complex analysis and writing",
+              "agent_usable": true,
+              "capabilities": ["tools", "vision", "streaming"],
+              "input_modalities": ["text", "image"],
+              "output_modalities": ["text"],
+              "context_window_tokens": 200000,
+              "max_output_tokens": 4096
+            }
+          ]
+        }
+      }
+    },
+    "google": {
+      "pools": {
+        "global": {
+          "models": [
+            {
+              "provider_model_id": "gemini-2.0-flash",
+              "display_name": "Gemini 2.0 Flash",
+              "description": "Next-generation multimodal model built for speed and realtime applications",
+              "agent_usable": true,
+              "capabilities": ["tools", "structured_outputs", "vision", "audio", "streaming"],
+              "input_modalities": ["text", "image", "audio"],
+              "output_modalities": ["text"],
+              "context_window_tokens": 1048576,
+              "max_output_tokens": 8192
+            },
+            {
+              "provider_model_id": "gemini-1.5-pro",
+              "display_name": "Gemini 1.5 Pro",
+              "description": "Mid-size multimodal model with an ultra-long 2M context window",
+              "agent_usable": true,
+              "capabilities": ["tools", "structured_outputs", "vision", "audio", "streaming"],
+              "input_modalities": ["text", "image", "audio", "video"],
+              "output_modalities": ["text"],
+              "context_window_tokens": 2097152,
+              "max_output_tokens": 8192
+            },
+            {
+              "provider_model_id": "gemini-1.5-flash",
+              "display_name": "Gemini 1.5 Flash",
+              "description": "Lightweight and fast multimodal workhorse model",
+              "agent_usable": true,
+              "capabilities": ["tools", "structured_outputs", "vision", "audio", "streaming"],
+              "input_modalities": ["text", "image", "audio", "video"],
+              "output_modalities": ["text"],
+              "context_window_tokens": 1048576,
+              "max_output_tokens": 8192
+            }
+          ]
+        }
+      }
+    },
+    "openrouter": {
+      "pools": {
+        "global": {
+          "models": [
+            {
+              "provider_model_id": "openai/gpt-4o",
+              "display_name": "OpenAI: GPT-4o (via OpenRouter)",
+              "description": "GPT-4o served through OpenRouter gateway",
+              "agent_usable": true,
+              "capabilities": ["tools", "structured_outputs", "vision", "streaming"],
+              "input_modalities": ["text", "image"],
+              "output_modalities": ["text"],
+              "context_window_tokens": 128000,
+              "max_output_tokens": 16384
+            },
+            {
+              "provider_model_id": "anthropic/claude-3.5-sonnet",
+              "display_name": "Anthropic: Claude 3.5 Sonnet (via OpenRouter)",
+              "description": "Claude 3.5 Sonnet served through OpenRouter gateway",
+              "agent_usable": true,
+              "capabilities": ["tools", "structured_outputs", "vision", "streaming"],
+              "input_modalities": ["text", "image"],
+              "output_modalities": ["text"],
+              "context_window_tokens": 200000,
+              "max_output_tokens": 8192
+            },
+            {
+              "provider_model_id": "meta-llama/llama-3.3-70b-instruct",
+              "display_name": "Meta: Llama 3.3 70B Instruct",
+              "description": "Open-weight state of the art instruction tuned model",
+              "agent_usable": true,
+              "capabilities": ["tools", "streaming"],
+              "input_modalities": ["text"],
+              "output_modalities": ["text"],
+              "context_window_tokens": 131072,
+              "max_output_tokens": 8192
+            },
+            {
+              "provider_model_id": "deepseek/deepseek-r1",
+              "display_name": "DeepSeek: R1",
+              "description": "Open-weights reasoning model with high performance on coding and logic",
+              "agent_usable": true,
+              "capabilities": ["streaming"],
+              "input_modalities": ["text"],
+              "output_modalities": ["text"],
+              "context_window_tokens": 64000,
+              "max_output_tokens": 8000
+            }
+          ]
+        }
+      }
+    }
+  }
+}

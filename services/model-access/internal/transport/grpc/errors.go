@@ -95,10 +95,35 @@ func mapError(err error) error {
 			"idempotency key was reused with different input",
 		)
 
-	case errors.Is(err, domain.ErrPlatformManagedPoolUnavailable):
+	case errors.Is(err, domain.ErrPlatformManagedPoolUnavailable),
+		errors.Is(err, domain.ErrCatalogUnavailable):
 		return status.Error(
 			codes.Unavailable,
-			"platform-managed model access is currently unavailable",
+			"platform-managed model access or catalog is currently unavailable",
+		)
+
+	case errors.Is(err, domain.ErrOfferingNotFound),
+		errors.Is(err, domain.ErrAgentNotFound),
+		errors.Is(err, domain.ErrBindingNotFound),
+		errors.Is(err, domain.ErrCatalogRefreshNotFound):
+		return status.Error(
+			codes.NotFound,
+			err.Error(),
+		)
+
+	case errors.Is(err, domain.ErrOfferingUnavailable),
+		errors.Is(err, domain.ErrOfferingNotAgentUsable),
+		errors.Is(err, domain.ErrAgentDeleted),
+		errors.Is(err, domain.ErrInvalidFallbackPolicy):
+		return status.Error(
+			codes.FailedPrecondition,
+			err.Error(),
+		)
+
+	case errors.Is(err, domain.ErrBindingVersionConflict):
+		return status.Error(
+			codes.Aborted,
+			"agent model binding changed; reload and retry",
 		)
 
 	default:

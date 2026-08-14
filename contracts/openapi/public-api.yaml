@@ -1585,7 +1585,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
+                $ref: "#/components/schemas/ModelConnection"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -1622,7 +1622,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
+                $ref: "#/components/schemas/ModelConnection"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -1658,7 +1658,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
+                $ref: "#/components/schemas/ModelConnection"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -1818,6 +1818,256 @@ paths:
           $ref: "#/components/responses/Conflict"
         "503":
           description: Vault or provider verification unavailable
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /v1/tenants/{tenantId}/model-offerings:
+    get:
+      operationId: listModelOfferings
+      tags: [Model Access]
+      summary: List model offerings
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: connection_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: agent_usable_only
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: page_size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Model offerings page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListModelOfferingsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /v1/tenants/{tenantId}/model-connections/{connectionId}/catalog/refresh:
+    post:
+      operationId: refreshModelCatalog
+      tags: [Model Access]
+      summary: Enqueue a catalog refresh for a connection
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: connectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "202":
+          description: Catalog refresh enqueued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefreshModelCatalogResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /v1/tenants/{tenantId}/model-catalog-refreshes/{refreshId}:
+    get:
+      operationId: getModelCatalogRefresh
+      tags: [Model Access]
+      summary: Get the status of a catalog refresh
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: refreshId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Catalog refresh status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetModelCatalogRefreshResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /v1/tenants/{tenantId}/agents/{agentId}/model-binding:
+    get:
+      operationId: getAgentModelBinding
+      tags: [Model Access]
+      summary: Get the model binding for an agent
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Agent model binding
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetAgentModelBindingResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+    put:
+      operationId: setAgentModelBinding
+      tags: [Model Access]
+      summary: Set or replace the model binding for an agent
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetAgentModelBindingRequest"
+      responses:
+        "200":
+          description: Agent model binding set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetAgentModelBindingResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /v1/tenants/{tenantId}/agents/{agentId}/model-binding/remove:
+    post:
+      operationId: removeAgentModelBinding
+      tags: [Model Access]
+      summary: Remove the model binding for an agent
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemoveAgentModelBindingRequest"
+      responses:
+        "200":
+          description: Agent model binding removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemoveAgentModelBindingResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "503":
           $ref: "#/components/responses/ServiceUnavailable"
 
 components:
@@ -3505,6 +3755,283 @@ components:
           type: integer
           format: int64
           minimum: 1
+
+    ModelOffering:
+      type: object
+      required:
+        - tenantId
+        - offeringId
+        - connectionId
+        - providerKey
+        - providerModelId
+        - displayName
+        - status
+        - source
+        - agentUsable
+        - version
+        - firstSeenAt
+        - lastSeenAt
+        - refreshedAt
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        offeringId:
+          type: string
+          format: uuid
+        connectionId:
+          type: string
+          format: uuid
+        providerKey:
+          type: string
+        providerModelId:
+          type: string
+        displayName:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [available, unavailable]
+        source:
+          type: string
+          enum: [provider_discovered, platform_catalog]
+        agentUsable:
+          type: boolean
+        capabilities:
+          type: array
+          items:
+            type: string
+        inputModalities:
+          type: array
+          items:
+            type: string
+        outputModalities:
+          type: array
+          items:
+            type: string
+        contextWindowTokens:
+          type: integer
+          format: int64
+        maxOutputTokens:
+          type: integer
+          format: int64
+        version:
+          type: integer
+          format: int64
+        firstSeenAt:
+          type: string
+          format: date-time
+        lastSeenAt:
+          type: string
+          format: date-time
+        refreshedAt:
+          type: string
+          format: date-time
+        unavailableAt:
+          type: string
+          format: date-time
+
+    ListModelOfferingsResponse:
+      type: object
+      required:
+        - offerings
+      properties:
+        offerings:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModelOffering"
+        nextPageToken:
+          type: string
+
+    RefreshModelCatalogResponse:
+      type: object
+      required:
+        - refresh
+      properties:
+        refresh:
+          $ref: "#/components/schemas/ModelCatalogRefresh"
+
+    ModelCatalogRefresh:
+      type: object
+      required:
+        - tenantId
+        - refreshId
+        - connectionId
+        - actorUserId
+        - status
+        - generation
+        - requestedAt
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        refreshId:
+          type: string
+          format: uuid
+        actorUserId:
+          type: string
+          format: uuid
+        connectionId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, running, succeeded, failed]
+        generation:
+          type: integer
+          format: int64
+        discoveredCount:
+          type: integer
+        availableCount:
+          type: integer
+        unavailableCount:
+          type: integer
+        errorCode:
+          type: string
+        requestedAt:
+          type: string
+          format: date-time
+        startedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+
+    GetModelCatalogRefreshResponse:
+      type: object
+      required:
+        - refresh
+      properties:
+        refresh:
+          $ref: "#/components/schemas/ModelCatalogRefresh"
+
+    AgentModelBinding:
+      type: object
+      required:
+        - tenantId
+        - agentId
+        - companyId
+        - status
+        - primaryOfferingId
+        - fallbackPolicy
+        - version
+        - createdByUserId
+        - updatedByUserId
+        - createdAt
+        - updatedAt
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        agentId:
+          type: string
+          format: uuid
+        companyId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [active, removed]
+        primaryOfferingId:
+          type: string
+          format: uuid
+        fastOfferingId:
+          type: string
+          format: uuid
+        fallbackOfferingIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        fallbackPolicy:
+          type: string
+          enum: [none, ordered]
+        maxModelCostMicroUsd:
+          type: integer
+          format: int64
+        version:
+          type: integer
+          format: int64
+        createdByUserId:
+          type: string
+          format: uuid
+        updatedByUserId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        removedAt:
+          type: string
+          format: date-time
+
+    GetAgentModelBindingResponse:
+      type: object
+      required:
+        - binding
+      properties:
+        binding:
+          $ref: "#/components/schemas/AgentModelBinding"
+
+    SetAgentModelBindingRequest:
+      type: object
+      required:
+        - expectedVersion
+        - primaryOfferingId
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+        primaryOfferingId:
+          type: string
+          format: uuid
+        fastOfferingId:
+          type: string
+          format: uuid
+        fallbackOfferingIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        fallbackPolicy:
+          type: string
+          enum: [none, ordered]
+        maxModelCostMicroUsd:
+          type: integer
+          format: int64
+          minimum: 0
+
+    SetAgentModelBindingResponse:
+      type: object
+      required:
+        - binding
+      properties:
+        binding:
+          $ref: "#/components/schemas/AgentModelBinding"
+
+    RemoveAgentModelBindingRequest:
+      type: object
+      required:
+        - expectedVersion
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 1
+
+    RemoveAgentModelBindingResponse:
+      type: object
+      required:
+        - binding
+      properties:
+        binding:
+          $ref: "#/components/schemas/AgentModelBinding"
 
   responses:
     BadRequest:

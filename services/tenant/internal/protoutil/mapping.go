@@ -223,6 +223,21 @@ func Permission(
 	case domain.PermissionModelConnectionArchive:
 		return tenantv1.Permission_PERMISSION_MODEL_CONNECTION_ARCHIVE
 
+	case domain.PermissionModelCatalogRead:
+		return tenantv1.Permission_PERMISSION_MODEL_CATALOG_READ
+
+	case domain.PermissionModelCatalogRefresh:
+		return tenantv1.Permission_PERMISSION_MODEL_CATALOG_REFRESH
+
+	case domain.PermissionModelBindingRead:
+		return tenantv1.Permission_PERMISSION_MODEL_BINDING_READ
+
+	case domain.PermissionModelBindingUpdate:
+		return tenantv1.Permission_PERMISSION_MODEL_BINDING_UPDATE
+
+	case domain.PermissionModelBindingRemove:
+		return tenantv1.Permission_PERMISSION_MODEL_BINDING_REMOVE
+
 	default:
 		return tenantv1.Permission_PERMISSION_UNSPECIFIED
 	}
@@ -364,6 +379,21 @@ func DomainPermission(
 
 	case tenantv1.Permission_PERMISSION_MODEL_CONNECTION_ARCHIVE:
 		return domain.PermissionModelConnectionArchive
+
+	case tenantv1.Permission_PERMISSION_MODEL_CATALOG_READ:
+		return domain.PermissionModelCatalogRead
+
+	case tenantv1.Permission_PERMISSION_MODEL_CATALOG_REFRESH:
+		return domain.PermissionModelCatalogRefresh
+
+	case tenantv1.Permission_PERMISSION_MODEL_BINDING_READ:
+		return domain.PermissionModelBindingRead
+
+	case tenantv1.Permission_PERMISSION_MODEL_BINDING_UPDATE:
+		return domain.PermissionModelBindingUpdate
+
+	case tenantv1.Permission_PERMISSION_MODEL_BINDING_REMOVE:
+		return domain.PermissionModelBindingRemove
 
 	default:
 		return ""
