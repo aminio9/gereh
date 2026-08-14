@@ -4,14 +4,7 @@
   "service": "workspace",
   "workspaceFolder": "/workspaces/gereh-platform",
   "runServices": [
-    "workspace",
-    "postgres",
-    "redis",
-    "kafka",
-    "kafka-init",
-    "temporal",
-    "minio",
-    "minio-init"
+    "workspace"
   ],
   "shutdownAction": "stopCompose",
   "remoteUser": "vscode",

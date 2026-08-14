@@ -58,10 +58,8 @@ timeout = 60
 EOF
 RUN go env -w GO111MODULE=on GOPROXY="${GOPROXY_URL}"
 
-COPY .devcontainer/scripts/github-download /usr/local/bin/github-download
-COPY .devcontainer/scripts/github-clone /usr/local/bin/github-clone
 COPY .devcontainer/scripts/install-infra-cli-tools /usr/local/bin/install-infra-cli-tools
-RUN chmod +x /usr/local/bin/github-download /usr/local/bin/github-clone /usr/local/bin/install-infra-cli-tools
+RUN chmod +x /usr/local/bin/install-infra-cli-tools
 
 USER vscode
 RUN mkdir -p /home/vscode/.config/pip /home/vscode/.local/share/pnpm/store \

@@ -224,11 +224,11 @@ install_gh() {
 
   mkdir -p "$extract_dir"
 
-  github-download \
+  download \
     "$base/$archive_name" \
     "$archive"
 
-  github-download \
+  download \
     "$base/gh_${version}_checksums.txt" \
     "$checksums"
 
@@ -257,11 +257,11 @@ install_trivy() {
 
   mkdir -p "$extract_dir"
 
-  github-download \
+  download \
     "$base/$archive_name" \
     "$archive"
 
-  github-download \
+  download \
     "$base/trivy_${TRIVY_VERSION}_checksums.txt" \
     "$checksums"
 
@@ -297,7 +297,6 @@ require_command sha256sum
 require_command tar
 require_command unzip
 require_command sudo
-require_command github-download
 
 install_kubectl
 install_helm
