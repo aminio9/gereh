@@ -87,9 +87,11 @@ func (service *Service) ListModelOfferings(
 
 // RefreshModelCatalogInput specifies the connection and actor for triggering a catalog refresh.
 type RefreshModelCatalogInput struct {
-	ActorUserID  string
-	TenantID     string
-	ConnectionID string
+	ActorUserID    string
+	TenantID       string
+	ConnectionID   string
+	IdempotencyKey string
+	Reason         string
 }
 
 // RefreshModelCatalog enqueues an asynchronous catalog refresh for a connection.
@@ -105,6 +107,14 @@ func (service *Service) RefreshModelCatalog(
 	}
 	if err := validateUUID("connection_id", input.ConnectionID); err != nil {
 		return domain.CatalogRefresh{}, err
+	}
+	if err := validateIdempotencyKey(input.IdempotencyKey); err != nil {
+		return domain.CatalogRefresh{}, err
+	}
+
+	reason := input.Reason
+	if reason == "" {
+		reason = "manual"
 	}
 
 	if err := service.authorizer.Require(
@@ -136,6 +146,8 @@ func (service *Service) RefreshModelCatalog(
 		input.ActorUserID,
 		input.TenantID,
 		input.ConnectionID,
+		input.IdempotencyKey,
+		reason,
 		now,
 	)
 }

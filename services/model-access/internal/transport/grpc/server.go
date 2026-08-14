@@ -290,9 +290,11 @@ func (server *Server) RefreshModelCatalog(
 	refresh, err := server.service.RefreshModelCatalog(
 		ctx,
 		application.RefreshModelCatalogInput{
-			ActorUserID:  request.GetActorUserId(),
-			TenantID:     request.GetTenantId(),
-			ConnectionID: request.GetConnectionId(),
+			ActorUserID:    request.GetActorUserId(),
+			TenantID:       request.GetTenantId(),
+			ConnectionID:   request.GetConnectionId(),
+			IdempotencyKey: request.GetIdempotencyKey(),
+			Reason:         "manual",
 		},
 	)
 	if err != nil {

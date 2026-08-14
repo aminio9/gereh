@@ -13,6 +13,7 @@ FROM (
     ('work_db'),
     ('policy_db'),
     ('model_access_db'),
+    ('model_gateway_db'),
     ('execution_db'),
     ('billing_db'),
     ('projection_db'),

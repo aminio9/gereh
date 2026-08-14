@@ -159,8 +159,7 @@ jobs:
         run: |
           set -Eeuo pipefail
 
-          rm -rf gen/go
-          buf generate
+          bash scripts/contracts/generate.sh
 
           git diff \
             --exit-code \
@@ -311,3 +310,57 @@ jobs:
             --env-file deployments/local/.env \
             -f deployments/local/compose.yaml \
             down -v --remove-orphans
+
+  database-contracts:
+    name: Database contract validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:18.4-bookworm
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Install Atlas
+        run: |
+          curl -sSf https://atlasgo.sh | sh
+
+      - name: Create migration databases
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h 127.0.0.1 -U postgres -d postgres -c 'CREATE DATABASE model_access_ci;'
+          psql -h 127.0.0.1 -U postgres -d postgres -c 'CREATE DATABASE model_gateway_ci;'
+
+      - name: Validate Model Access migrations
+        env:
+          MODEL_ACCESS_MIGRATION_DATABASE_URL: >-
+            postgres://postgres:postgres@127.0.0.1:5432/model_access_ci?sslmode=disable
+        run: |
+          atlas migrate validate --env model_access
+          atlas migrate apply --env model_access
+
+      - name: Validate Model Gateway migrations
+        env:
+          MODEL_GATEWAY_MIGRATION_DATABASE_URL: >-
+            postgres://postgres:postgres@127.0.0.1:5432/model_gateway_ci?sslmode=disable
+        run: |
+          atlas migrate validate --env model_gateway
+          atlas migrate apply --env model_gateway
+

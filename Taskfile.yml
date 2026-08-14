@@ -341,6 +341,42 @@ tasks:
       - go test -race -count=1 ./services/model-access/...
       - go test -race -count=1 ./services/api-bff/internal/http/modelaccess/...
 
+  db:model-gateway:hash:
+    desc: Recompute Model Gateway migration checksums
+    cmds:
+      - atlas migrate hash --env model_gateway
+
+  db:model-gateway:validate:
+    desc: Validate Model Gateway migrations
+    cmds:
+      - atlas migrate validate --env model_gateway
+
+  db:model-gateway:status:
+    desc: Show Model Gateway migration status
+    cmds:
+      - atlas migrate status --env model_gateway
+
+  db:model-gateway:dry-run:
+    desc: Show pending Model Gateway migrations
+    preconditions:
+      - sh: test -n "${MODEL_GATEWAY_MIGRATION_DATABASE_URL:-}"
+        msg: MODEL_GATEWAY_MIGRATION_DATABASE_URL is required
+    cmds:
+      - atlas migrate apply --env model_gateway --dry-run
+
+  db:model-gateway:apply:
+    desc: Apply Model Gateway migrations
+    preconditions:
+      - sh: test -n "${MODEL_GATEWAY_MIGRATION_DATABASE_URL:-}"
+        msg: MODEL_GATEWAY_MIGRATION_DATABASE_URL is required
+    cmds:
+      - atlas migrate apply --env model_gateway
+
+  test:model-gateway:
+    desc: Run Model Gateway tests
+    cmds:
+      - go test -race -count=1 ./services/model-gateway/...
+
   dev:web:
     desc: Run the React development server
     cmds:

@@ -1,8 +1,12 @@
 package postgres
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"time"
 
 	"github.com/aminio9/gereh/services/model-access/internal/domain"
 	"github.com/aminio9/gereh/services/model-access/internal/ports"
@@ -17,7 +21,7 @@ const bindingColumns = `
 	primary_offering_id::text,
 	fast_offering_id::text,
 	fallback_policy,
-	max_model_cost_micro_usd,
+	max_model_cost_microusd,
 	version,
 	created_by_user_id::text,
 	updated_by_user_id::text,
@@ -25,6 +29,174 @@ const bindingColumns = `
 	updated_at,
 	removed_at
 `
+
+type bindingSnapshot struct {
+	TenantID             string     `json:"tenantId"`
+	AgentID              string     `json:"agentId"`
+	CompanyID            string     `json:"companyId"`
+	Status               string     `json:"status"`
+	PrimaryOfferingID    string     `json:"primaryOfferingId"`
+	FastOfferingID       *string    `json:"fastOfferingId,omitempty"`
+	FallbackOfferingIDs  []string   `json:"fallbackOfferingIds"`
+	FallbackPolicy       string     `json:"fallbackPolicy"`
+	MaxModelCostMicroUSD *int64     `json:"maxModelCostMicrousd,omitempty"`
+	Version              int64      `json:"version"`
+	CreatedByUserID      string     `json:"createdByUserId"`
+	UpdatedByUserID      string     `json:"updatedByUserId"`
+	CreatedAt            time.Time  `json:"createdAt"`
+	UpdatedAt            time.Time  `json:"updatedAt"`
+	RemovedAt            *time.Time `json:"removedAt,omitempty"`
+}
+
+func snapshotBinding(value domain.AgentModelBinding) bindingSnapshot {
+	return bindingSnapshot{
+		TenantID:             value.TenantID,
+		AgentID:              value.AgentID,
+		CompanyID:            value.CompanyID,
+		Status:               string(value.Status),
+		PrimaryOfferingID:    value.PrimaryOfferingID,
+		FastOfferingID:       value.FastOfferingID,
+		FallbackOfferingIDs:  append([]string(nil), value.FallbackOfferingIDs...),
+		FallbackPolicy:       string(value.FallbackPolicy),
+		MaxModelCostMicroUSD: value.MaxModelCostMicroUSD,
+		Version:              value.Version,
+		CreatedByUserID:      value.CreatedByUserID,
+		UpdatedByUserID:      value.UpdatedByUserID,
+		CreatedAt:            value.CreatedAt,
+		UpdatedAt:            value.UpdatedAt,
+		RemovedAt:            value.RemovedAt,
+	}
+}
+
+func (value bindingSnapshot) domainBinding() domain.AgentModelBinding {
+	return domain.AgentModelBinding{
+		TenantID:             value.TenantID,
+		AgentID:              value.AgentID,
+		CompanyID:            value.CompanyID,
+		Status:               domain.BindingStatus(value.Status),
+		PrimaryOfferingID:    value.PrimaryOfferingID,
+		FastOfferingID:       value.FastOfferingID,
+		FallbackOfferingIDs:  append([]string(nil), value.FallbackOfferingIDs...),
+		FallbackPolicy:       domain.FallbackPolicy(value.FallbackPolicy),
+		MaxModelCostMicroUSD: value.MaxModelCostMicroUSD,
+		Version:              value.Version,
+		CreatedByUserID:      value.CreatedByUserID,
+		UpdatedByUserID:      value.UpdatedByUserID,
+		CreatedAt:            value.CreatedAt,
+		UpdatedAt:            value.UpdatedAt,
+		RemovedAt:            value.RemovedAt,
+	}
+}
+
+func lookupBindingIdempotency(
+	ctx context.Context,
+	tx pgx.Tx,
+	tenantID string,
+	actorUserID string,
+	operation string,
+	idempotencyKey string,
+	requestHash []byte,
+) (domain.AgentModelBinding, bool, error) {
+	var (
+		existingHash []byte
+		rawSnapshot  []byte
+	)
+
+	err := tx.QueryRow(
+		ctx,
+		`
+			SELECT
+				request_hash,
+				response_snapshot
+			FROM
+				model_access_binding_idempotency
+			WHERE tenant_id = $1::uuid
+			  AND actor_user_id = $2::uuid
+			  AND operation = $3
+			  AND idempotency_key = $4::uuid
+		`,
+		tenantID,
+		actorUserID,
+		operation,
+		idempotencyKey,
+	).Scan(
+		&existingHash,
+		&rawSnapshot,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.AgentModelBinding{}, false, nil
+	}
+
+	if err != nil {
+		return domain.AgentModelBinding{}, false, mapDatabaseError(err)
+	}
+
+	if !bytes.Equal(existingHash, requestHash) {
+		return domain.AgentModelBinding{}, false, domain.ErrIdempotencyConflict
+	}
+
+	var snapshot bindingSnapshot
+	if err := json.Unmarshal(rawSnapshot, &snapshot); err != nil {
+		return domain.AgentModelBinding{}, false, fmt.Errorf("decode binding idempotency snapshot: %w", err)
+	}
+
+	return snapshot.domainBinding(), true, nil
+}
+
+func insertBindingIdempotency(
+	ctx context.Context,
+	tx pgx.Tx,
+	tenantID string,
+	actorUserID string,
+	operation string,
+	idempotencyKey string,
+	requestHash []byte,
+	value domain.AgentModelBinding,
+	now time.Time,
+	expiresAt time.Time,
+) error {
+	snapshot, err := json.Marshal(snapshotBinding(value))
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(
+		ctx,
+		`
+			INSERT INTO model_access_binding_idempotency (
+				tenant_id,
+				actor_user_id,
+				operation,
+				idempotency_key,
+				request_hash,
+				response_snapshot,
+				created_at,
+				expires_at
+			)
+			VALUES (
+				$1::uuid,
+				$2::uuid,
+				$3,
+				$4::uuid,
+				$5,
+				$6::jsonb,
+				$7,
+				$8
+			)
+		`,
+		tenantID,
+		actorUserID,
+		operation,
+		idempotencyKey,
+		requestHash,
+		snapshot,
+		now,
+		expiresAt,
+	)
+
+	return mapDatabaseError(err)
+}
 
 func scanBinding(row rowScanner) (domain.AgentModelBinding, error) {
 	var result domain.AgentModelBinding
@@ -109,7 +281,7 @@ func (repository *Repository) GetAgentBinding(
 			FROM model_access_agent_binding_fallbacks
 			WHERE tenant_id = $1::uuid
 			  AND agent_id = $2::uuid
-			ORDER BY priority ASC
+			ORDER BY position ASC
 		`,
 		tenantID,
 		agentID,
@@ -157,39 +329,29 @@ func (repository *Repository) SetAgentBinding(
 	defer func() { _ = transaction.Rollback(ctx) }()
 
 	// Verify idempotency
-	var existingHash string
-	var existingResponseVersion int64
-	err = transaction.QueryRow(
+	cached, matched, err := lookupBindingIdempotency(
 		ctx,
-		`
-			SELECT request_hash, response_binding_version
-			FROM model_access_binding_idempotency
-			WHERE tenant_id = $1::uuid
-			  AND idempotency_key = $2::uuid
-		`,
+		transaction,
 		params.TenantID,
+		params.ActorUserID,
+		"set_agent_model_binding",
 		params.IdempotencyKey,
-	).Scan(&existingHash, &existingResponseVersion)
-
-	if err == nil {
-		if existingHash != params.RequestHash {
-			return domain.AgentModelBinding{}, domain.ErrIdempotencyConflict
-		}
-		// Return current binding state
-		return repository.GetAgentBinding(ctx, params.ActorUserID, params.TenantID, params.AgentID)
-	} else if !errors.Is(err, pgx.ErrNoRows) {
-		return domain.AgentModelBinding{}, mapDatabaseError(err)
+		params.RequestHash,
+	)
+	if err != nil {
+		return domain.AgentModelBinding{}, err
+	}
+	if matched {
+		return cached, nil
 	}
 
 	// Check existing binding for optimistic concurrency
 	var existingVersion int64
-	var existingCreatedBy string
-	var existingCreatedAt string
 	var currentStatus string
 	row := transaction.QueryRow(
 		ctx,
 		`
-			SELECT version, created_by_user_id::text, created_at::text, status
+			SELECT version, status
 			FROM model_access_agent_bindings
 			WHERE tenant_id = $1::uuid
 			  AND agent_id = $2::uuid
@@ -198,28 +360,23 @@ func (repository *Repository) SetAgentBinding(
 		params.TenantID,
 		params.AgentID,
 	)
-	err = row.Scan(&existingVersion, &existingCreatedBy, &existingCreatedAt, &currentStatus)
-	isNew := errors.Is(err, pgx.ErrNoRows)
+	err = row.Scan(&existingVersion, &currentStatus)
+	exists := !errors.Is(err, pgx.ErrNoRows)
 
-	if !isNew && err != nil {
+	if exists && err != nil {
 		return domain.AgentModelBinding{}, mapDatabaseError(err)
 	}
 
-	if isNew {
+	if !exists {
 		if params.ExpectedVersion != 0 {
 			return domain.AgentModelBinding{}, domain.ErrBindingVersionConflict
 		}
-	} else {
-		if currentStatus == "active" && params.ExpectedVersion != existingVersion {
-			return domain.AgentModelBinding{}, domain.ErrBindingVersionConflict
-		}
-		if currentStatus == "removed" && params.ExpectedVersion != 0 {
-			return domain.AgentModelBinding{}, domain.ErrBindingVersionConflict
-		}
+	} else if params.ExpectedVersion != existingVersion {
+		return domain.AgentModelBinding{}, domain.ErrBindingVersionConflict
 	}
 
 	var newVersion int64 = 1
-	if !isNew {
+	if exists {
 		newVersion = existingVersion + 1
 	}
 
@@ -234,7 +391,7 @@ func (repository *Repository) SetAgentBinding(
 				primary_offering_id,
 				fast_offering_id,
 				fallback_policy,
-				max_model_cost_micro_usd,
+				max_model_cost_microusd,
 				version,
 				created_by_user_id,
 				updated_by_user_id,
@@ -265,7 +422,7 @@ func (repository *Repository) SetAgentBinding(
 				primary_offering_id = EXCLUDED.primary_offering_id,
 				fast_offering_id = EXCLUDED.fast_offering_id,
 				fallback_policy = EXCLUDED.fallback_policy,
-				max_model_cost_micro_usd = EXCLUDED.max_model_cost_micro_usd,
+				max_model_cost_microusd = EXCLUDED.max_model_cost_microusd,
 				version = $8,
 				updated_by_user_id = EXCLUDED.updated_by_user_id,
 				updated_at = EXCLUDED.updated_at,
@@ -286,7 +443,7 @@ func (repository *Repository) SetAgentBinding(
 		return domain.AgentModelBinding{}, mapDatabaseError(err)
 	}
 
-	// Update fallbacks: delete existing, insert new
+	// Update fallbacks: delete existing, insert new with 0-based position
 	_, err = transaction.Exec(
 		ctx,
 		`
@@ -301,33 +458,39 @@ func (repository *Repository) SetAgentBinding(
 		return domain.AgentModelBinding{}, mapDatabaseError(err)
 	}
 
-	for priority, offeringID := range params.FallbackOfferingIDs {
+	for position, offeringID := range params.FallbackOfferingIDs {
 		_, err = transaction.Exec(
 			ctx,
 			`
 				INSERT INTO model_access_agent_binding_fallbacks (
 					tenant_id,
 					agent_id,
-					priority,
-					offering_id,
-					created_at
+					position,
+					offering_id
 				)
 				VALUES (
 					$1::uuid,
 					$2::uuid,
 					$3,
-					$4::uuid,
-					$5
+					$4::uuid
 				)
 			`,
 			params.TenantID,
 			params.AgentID,
-			priority+1,
+			position,
 			offeringID,
-			params.Now,
 		)
 		if err != nil {
 			return domain.AgentModelBinding{}, mapDatabaseError(err)
+		}
+	}
+
+	changeKind := "created"
+	if exists {
+		if currentStatus == string(domain.BindingStatusRemoved) {
+			changeKind = "reactivated"
+		} else {
+			changeKind = "updated"
 		}
 	}
 
@@ -345,7 +508,7 @@ func (repository *Repository) SetAgentBinding(
 				fast_offering_id,
 				fallback_offering_ids,
 				fallback_policy,
-				max_model_cost_micro_usd,
+				max_model_cost_microusd,
 				change_kind,
 				changed_by_user_id,
 				created_at
@@ -375,46 +538,9 @@ func (repository *Repository) SetAgentBinding(
 		params.FallbackOfferingIDs,
 		string(params.FallbackPolicy),
 		params.MaxModelCostMicroUSD,
-		"set",
+		changeKind,
 		params.ActorUserID,
 		params.Now,
-	)
-	if err != nil {
-		return domain.AgentModelBinding{}, mapDatabaseError(err)
-	}
-
-	// Record idempotency
-	_, err = transaction.Exec(
-		ctx,
-		`
-			INSERT INTO model_access_binding_idempotency (
-				tenant_id,
-				idempotency_key,
-				agent_id,
-				action,
-				request_hash,
-				response_binding_version,
-				created_at,
-				expires_at
-			)
-			VALUES (
-				$1::uuid,
-				$2::uuid,
-				$3::uuid,
-				'set_binding',
-				$4,
-				$5,
-				$6,
-				$7
-			)
-		`,
-		params.TenantID,
-		params.IdempotencyKey,
-		params.AgentID,
-		params.RequestHash,
-		newVersion,
-		params.Now,
-		params.IdempotencyExpiresAt,
 	)
 	if err != nil {
 		return domain.AgentModelBinding{}, mapDatabaseError(err)
@@ -435,6 +561,21 @@ func (repository *Repository) SetAgentBinding(
 		UpdatedByUserID:      params.ActorUserID,
 		CreatedAt:            params.Now,
 		UpdatedAt:            params.Now,
+	}
+
+	if err := insertBindingIdempotency(
+		ctx,
+		transaction,
+		params.TenantID,
+		params.ActorUserID,
+		"set_agent_model_binding",
+		params.IdempotencyKey,
+		params.RequestHash,
+		binding,
+		params.Now,
+		params.IdempotencyExpiresAt,
+	); err != nil {
+		return domain.AgentModelBinding{}, err
 	}
 
 	if params.EventFactory != nil {
@@ -471,33 +612,20 @@ func (repository *Repository) RemoveAgentBinding(
 	defer func() { _ = transaction.Rollback(ctx) }()
 
 	// Verify idempotency
-	var existingHash string
-	var existingResponseVersion int64
-	err = transaction.QueryRow(
+	cached, matched, err := lookupBindingIdempotency(
 		ctx,
-		`
-			SELECT request_hash, response_binding_version
-			FROM model_access_binding_idempotency
-			WHERE tenant_id = $1::uuid
-			  AND idempotency_key = $2::uuid
-		`,
+		transaction,
 		params.TenantID,
+		params.ActorUserID,
+		"remove_agent_model_binding",
 		params.IdempotencyKey,
-	).Scan(&existingHash, &existingResponseVersion)
-
-	if err == nil {
-		if existingHash != params.RequestHash {
-			return domain.AgentModelBinding{}, domain.ErrIdempotencyConflict
-		}
-		// Return deleted binding record
-		return domain.AgentModelBinding{
-			TenantID: params.TenantID,
-			AgentID:  params.AgentID,
-			Status:   domain.BindingStatusRemoved,
-			Version:  existingResponseVersion,
-		}, nil
-	} else if !errors.Is(err, pgx.ErrNoRows) {
-		return domain.AgentModelBinding{}, mapDatabaseError(err)
+		params.RequestHash,
+	)
+	if err != nil {
+		return domain.AgentModelBinding{}, err
+	}
+	if matched {
+		return cached, nil
 	}
 
 	// Fetch current binding
@@ -584,7 +712,7 @@ func (repository *Repository) RemoveAgentBinding(
 				fast_offering_id,
 				fallback_offering_ids,
 				fallback_policy,
-				max_model_cost_micro_usd,
+				max_model_cost_microusd,
 				change_kind,
 				changed_by_user_id,
 				created_at
@@ -621,48 +749,26 @@ func (repository *Repository) RemoveAgentBinding(
 		return domain.AgentModelBinding{}, mapDatabaseError(err)
 	}
 
-	// Record idempotency
-	_, err = transaction.Exec(
-		ctx,
-		`
-			INSERT INTO model_access_binding_idempotency (
-				tenant_id,
-				idempotency_key,
-				agent_id,
-				action,
-				request_hash,
-				response_binding_version,
-				created_at,
-				expires_at
-			)
-			VALUES (
-				$1::uuid,
-				$2::uuid,
-				$3::uuid,
-				'remove_binding',
-				$4,
-				$5,
-				$6,
-				$7
-			)
-		`,
-		params.TenantID,
-		params.IdempotencyKey,
-		params.AgentID,
-		params.RequestHash,
-		newVersion,
-		params.Now,
-		params.IdempotencyExpiresAt,
-	)
-	if err != nil {
-		return domain.AgentModelBinding{}, mapDatabaseError(err)
-	}
-
 	binding.Status = domain.BindingStatusRemoved
 	binding.Version = newVersion
 	binding.UpdatedByUserID = params.ActorUserID
 	binding.UpdatedAt = params.Now
 	binding.RemovedAt = &params.Now
+
+	if err := insertBindingIdempotency(
+		ctx,
+		transaction,
+		params.TenantID,
+		params.ActorUserID,
+		"remove_agent_model_binding",
+		params.IdempotencyKey,
+		params.RequestHash,
+		binding,
+		params.Now,
+		params.IdempotencyExpiresAt,
+	); err != nil {
+		return domain.AgentModelBinding{}, err
+	}
 
 	if params.EventFactory != nil {
 		event, err := params.EventFactory(binding)

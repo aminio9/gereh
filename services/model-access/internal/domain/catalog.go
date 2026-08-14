@@ -101,6 +101,9 @@ type CatalogRefresh struct {
 
 	ConnectionID string
 
+	IdempotencyKey string
+	Reason         string
+
 	Status CatalogRefreshStatus
 
 	Generation int64

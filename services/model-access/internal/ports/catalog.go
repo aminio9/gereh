@@ -57,6 +57,8 @@ type CatalogRepository interface {
 		actorUserID string,
 		tenantID string,
 		connectionID string,
+		idempotencyKey string,
+		reason string,
 		requestedAt time.Time,
 	) (domain.CatalogRefresh, error)
 

@@ -83,3 +83,17 @@ env "model_access" {
     format = golang-migrate
   }
 }
+
+variable "model_gateway_database_url" {
+  type    = string
+  default = getenv("MODEL_GATEWAY_MIGRATION_DATABASE_URL")
+}
+
+env "model_gateway" {
+  url = var.model_gateway_database_url
+
+  migration {
+    dir    = "file://services/model-gateway/migrations"
+    format = golang-migrate
+  }
+}

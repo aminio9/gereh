@@ -239,7 +239,11 @@ func (fake *repositoryFake) GetOffering(context.Context, string, string, string)
 	panic("unexpected repository call")
 }
 
-func (fake *repositoryFake) EnqueueCatalogRefresh(context.Context, string, string, string, time.Time) (domain.CatalogRefresh, error) {
+func (fake *repositoryFake) EnqueueCatalogRefresh(context.Context, string, string, string, string, string, time.Time) (domain.CatalogRefresh, error) {
+	panic("unexpected repository call")
+}
+
+func (fake *repositoryFake) ResolveInferencePlan(context.Context, string, string, time.Time) (domain.InferencePlan, error) {
 	panic("unexpected repository call")
 }
 

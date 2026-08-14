@@ -192,13 +192,46 @@ func (service *Service) SetAgentModelBinding(
 		}
 	}
 
-	// Validate fallback policy
-	fallbackPolicy := input.FallbackPolicy
-	if len(input.FallbackOfferingIDs) == 0 {
-		fallbackPolicy = domain.FallbackPolicyNone
-	} else if fallbackPolicy == "" {
-		fallbackPolicy = domain.FallbackPolicyOrdered
+	if len(input.FallbackOfferingIDs) > 5 {
+		return domain.AgentModelBinding{}, fmt.Errorf("%w: at most five fallback offerings are allowed", domain.ErrInvalidArgument)
 	}
+
+	seen := map[string]struct{}{
+		input.PrimaryOfferingID: {},
+	}
+
+	if input.FastOfferingID != nil && *input.FastOfferingID != "" {
+		if _, duplicate := seen[*input.FastOfferingID]; duplicate {
+			return domain.AgentModelBinding{}, fmt.Errorf("%w: duplicate model offering", domain.ErrInvalidArgument)
+		}
+		seen[*input.FastOfferingID] = struct{}{}
+	}
+
+	for _, fallbackID := range input.FallbackOfferingIDs {
+		if _, duplicate := seen[fallbackID]; duplicate {
+			return domain.AgentModelBinding{}, fmt.Errorf("%w: duplicate model offering", domain.ErrInvalidArgument)
+		}
+		seen[fallbackID] = struct{}{}
+	}
+
+	switch input.FallbackPolicy {
+	case domain.FallbackPolicyNone:
+		if len(input.FallbackOfferingIDs) != 0 {
+			return domain.AgentModelBinding{}, domain.ErrInvalidFallbackPolicy
+		}
+	case domain.FallbackPolicyOrdered:
+		if len(input.FallbackOfferingIDs) == 0 {
+			return domain.AgentModelBinding{}, domain.ErrInvalidFallbackPolicy
+		}
+	default:
+		return domain.AgentModelBinding{}, domain.ErrInvalidFallbackPolicy
+	}
+
+	if input.MaxModelCostMicroUSD != nil && *input.MaxModelCostMicroUSD <= 0 {
+		return domain.AgentModelBinding{}, domain.ErrInvalidArgument
+	}
+
+	fallbackPolicy := input.FallbackPolicy
 
 	fastStr := ""
 	if input.FastOfferingID != nil {
@@ -246,7 +279,7 @@ func (service *Service) SetAgentModelBinding(
 			FallbackPolicy:       fallbackPolicy,
 			MaxModelCostMicroUSD: input.MaxModelCostMicroUSD,
 			IdempotencyKey:       input.IdempotencyKey,
-			RequestHash:          string(requestHash),
+			RequestHash:          requestHash,
 			IdempotencyExpiresAt: now.Add(service.config.IdempotencyTTL),
 			Now:                  now,
 			EventFactory: func(result domain.AgentModelBinding) (domain.OutboxEvent, error) {
@@ -312,7 +345,7 @@ func (service *Service) RemoveAgentModelBinding(
 			AgentID:              input.AgentID,
 			ExpectedVersion:      input.ExpectedVersion,
 			IdempotencyKey:       input.IdempotencyKey,
-			RequestHash:          string(requestHash),
+			RequestHash:          requestHash,
 			IdempotencyExpiresAt: now.Add(service.config.IdempotencyTTL),
 			Now:                  now,
 			EventFactory: func(result domain.AgentModelBinding) (domain.OutboxEvent, error) {
