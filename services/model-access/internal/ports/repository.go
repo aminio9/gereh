@@ -183,6 +183,13 @@ type Repository interface {
 	CatalogRepository
 	BindingRepository
 
+	ResolveInferencePlan(
+		ctx context.Context,
+		tenantID string,
+		agentID string,
+		now time.Time,
+	) (domain.InferencePlan, error)
+
 	ListProviders(
 		ctx context.Context,
 		actorUserID string,

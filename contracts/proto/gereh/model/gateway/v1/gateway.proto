@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package gereh.model.gateway.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aminio9/gereh/gen/go/gereh/model/gateway/v1;modelgatewayv1";
+
+// Internal inference routing plan returned to Model Gateway.
+//
+// Never contains raw credentials or provider API keys.
+// Model Gateway fetches decrypted credentials separately via Vault/SecretStore.
+message InferencePlan {
+  string tenant_id = 1;
+  string agent_id = 2;
+  string company_id = 3;
+
+  int64 binding_version = 4;
+
+  InferenceRoute primary_route = 5;
+  optional InferenceRoute fast_route = 6;
+  repeated InferenceRoute fallback_routes = 7;
+
+  optional int64 max_model_cost_microusd = 8;
+
+  google.protobuf.Timestamp resolved_at = 9;
+}
+
+message InferenceRoute {
+  string offering_id = 1;
+  string connection_id = 2;
+
+  string provider_key = 3;
+  string provider_model_id = 4;
+
+  string connection_type = 5;
+  optional string provider_pool_key = 6;
+
+  int64 context_window_tokens = 7;
+  int64 max_output_tokens = 8;
+
+  repeated string capabilities = 9;
+}
+
+message ResolveInferencePlanRequest {
+  string tenant_id = 1;
+  string agent_id = 2;
+}
+
+message ResolveInferencePlanResponse {
+  InferencePlan plan = 1;
+}
+
+service ModelGatewayResolverService {
+  rpc ResolveInferencePlan(ResolveInferencePlanRequest) returns (ResolveInferencePlanResponse);
+}

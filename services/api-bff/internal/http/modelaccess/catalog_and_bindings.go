@@ -72,12 +72,18 @@ func (handler *Handler) refreshModelCatalog(
 ) {
 	principal, _ := principal(request)
 
+	key, ok := idempotencyKey(writer, request)
+	if !ok {
+		return
+	}
+
 	response, err := handler.client.RefreshModelCatalog(
 		request.Context(),
 		&modelv1.RefreshModelCatalogRequest{
-			ActorUserId:  principal.UserID,
-			TenantId:     tenantID(request),
-			ConnectionId: connectionID(request),
+			ActorUserId:    principal.UserID,
+			TenantId:       tenantID(request),
+			ConnectionId:   connectionID(request),
+			IdempotencyKey: key,
 		},
 	)
 	if err != nil {

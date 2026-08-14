@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	modelgatewayv1 "github.com/aminio9/gereh/gen/go/gereh/model/gateway/v1"
 	modelv1 "github.com/aminio9/gereh/gen/go/gereh/model/v1"
 	organizationv1 "github.com/aminio9/gereh/gen/go/gereh/organization/v1"
 	tenantv1 "github.com/aminio9/gereh/gen/go/gereh/tenant/v1"
@@ -377,6 +378,11 @@ func run() error {
 	modelv1.RegisterModelAccessServiceServer(
 		server.GRPC(),
 		modelgrpc.New(modelService),
+	)
+
+	modelgatewayv1.RegisterModelGatewayResolverServiceServer(
+		server.GRPC(),
+		modelgrpc.NewGatewayResolverServer(repository),
 	)
 
 	listenConfig := net.ListenConfig{}

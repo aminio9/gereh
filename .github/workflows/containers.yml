@@ -20,11 +20,6 @@ jobs:
   services:
     name: Service image — ${{ matrix.service }}
 
-    if: >-
-      github.event_name != 'pull_request' ||
-      matrix.service == 'api-bff' ||
-      matrix.service == 'tenant'
-
     runs-on: ubuntu-24.04
     timeout-minutes: 35
 
@@ -32,22 +27,11 @@ jobs:
       fail-fast: false
 
       matrix:
-        service:
-          - api-bff
-          - identity-access
-          - tenant
-          - organization-agent
-          - work-management
-          - policy-approval
-          - model-access
-          - model-gateway
-          - execution-orchestrator
-          - runtime-manager
-          - integration-gateway
-          - usage-billing
-          - notification-realtime
-          - projection
-          - audit
+        service: ${{ fromJSON(
+          github.event_name == 'pull_request'
+          && '["api-bff","tenant","model-access","model-gateway"]'
+          || '["api-bff","identity-access","tenant","organization-agent","work-management","policy-approval","model-access","model-gateway","execution-orchestrator","runtime-manager","integration-gateway","usage-billing","notification-realtime","projection","audit"]'
+          ) }}
 
     steps:
       - name: Check out repository

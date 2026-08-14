@@ -25,7 +25,7 @@ type SetBindingParams struct {
 	MaxModelCostMicroUSD *int64
 
 	IdempotencyKey       string
-	RequestHash          string
+	RequestHash          []byte
 	IdempotencyExpiresAt time.Time
 
 	Now time.Time
@@ -43,7 +43,7 @@ type RemoveBindingParams struct {
 	ExpectedVersion int64
 
 	IdempotencyKey       string
-	RequestHash          string
+	RequestHash          []byte
 	IdempotencyExpiresAt time.Time
 
 	Now time.Time

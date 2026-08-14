@@ -192,6 +192,8 @@ func (repository *Repository) EnqueueCatalogRefresh(
 	actorUserID string,
 	tenantID string,
 	connectionID string,
+	idempotencyKey string,
+	reason string,
 	requestedAt time.Time,
 ) (domain.CatalogRefresh, error) {
 	transaction, err := repository.beginUserTenant(
@@ -212,7 +214,7 @@ func (repository *Repository) EnqueueCatalogRefresh(
 
 	refreshID := refreshUUID.String()
 
-	_, err = transaction.Exec(
+	tag, err := transaction.Exec(
 		ctx,
 		`
 			INSERT INTO model_access_catalog_refreshes (
@@ -220,8 +222,10 @@ func (repository *Repository) EnqueueCatalogRefresh(
 				refresh_id,
 				actor_user_id,
 				connection_id,
+				idempotency_key,
+				reason,
 				status,
-				generation,
+				catalog_generation,
 				requested_at
 			)
 			VALUES (
@@ -229,29 +233,100 @@ func (repository *Repository) EnqueueCatalogRefresh(
 				$2::uuid,
 				$3::uuid,
 				$4::uuid,
+				$5::uuid,
+				$6,
 				'pending',
-				1,
-				$5
+				0,
+				$7
 			)
+			ON CONFLICT (
+				tenant_id,
+				actor_user_id,
+				idempotency_key
+			)
+			DO NOTHING
 		`,
 		tenantID,
 		refreshID,
 		actorUserID,
 		connectionID,
+		idempotencyKey,
+		reason,
 		requestedAt,
 	)
 	if err != nil {
 		return domain.CatalogRefresh{}, mapDatabaseError(err)
 	}
 
+	if tag.RowsAffected() == 0 {
+		// Idempotent conflict: return existing refresh
+		var existing domain.CatalogRefresh
+		var status string
+
+		err = transaction.QueryRow(
+			ctx,
+			`
+				SELECT
+					tenant_id::text,
+					refresh_id::text,
+					actor_user_id::text,
+					connection_id::text,
+					idempotency_key::text,
+					reason,
+					status,
+					catalog_generation,
+					discovered_count,
+					available_count,
+					unavailable_count,
+					error_code,
+					requested_at,
+					started_at,
+					completed_at
+				FROM model_access_catalog_refreshes
+				WHERE tenant_id = $1::uuid
+				  AND actor_user_id = $2::uuid
+				  AND idempotency_key = $3::uuid
+			`,
+			tenantID,
+			actorUserID,
+			idempotencyKey,
+		).Scan(
+			&existing.TenantID,
+			&existing.ID,
+			&existing.ActorUserID,
+			&existing.ConnectionID,
+			&existing.IdempotencyKey,
+			&existing.Reason,
+			&status,
+			&existing.Generation,
+			&existing.DiscoveredCount,
+			&existing.AvailableCount,
+			&existing.UnavailableCount,
+			&existing.ErrorCode,
+			&existing.RequestedAt,
+			&existing.StartedAt,
+			&existing.CompletedAt,
+		)
+		if err != nil {
+			return domain.CatalogRefresh{}, mapDatabaseError(err)
+		}
+		existing.Status = domain.CatalogRefreshStatus(status)
+
+		if err := commit(ctx, transaction); err != nil {
+			return domain.CatalogRefresh{}, err
+		}
+
+		return existing, nil
+	}
+
 	_, err = transaction.Exec(
 		ctx,
 		`
 			INSERT INTO model_access_catalog_refresh_queue (
-				tenant_id,
 				refresh_id,
-				connection_id,
+				tenant_id,
 				actor_user_id,
+				connection_id,
 				available_at
 			)
 			VALUES (
@@ -262,10 +337,10 @@ func (repository *Repository) EnqueueCatalogRefresh(
 				$5
 			)
 		`,
-		tenantID,
 		refreshID,
-		connectionID,
+		tenantID,
 		actorUserID,
+		connectionID,
 		requestedAt,
 	)
 	if err != nil {
@@ -277,13 +352,15 @@ func (repository *Repository) EnqueueCatalogRefresh(
 	}
 
 	return domain.CatalogRefresh{
-		TenantID:     tenantID,
-		ID:           refreshID,
-		ActorUserID:  actorUserID,
-		ConnectionID: connectionID,
-		Status:       domain.CatalogRefreshPending,
-		Generation:   1,
-		RequestedAt:  requestedAt,
+		TenantID:       tenantID,
+		ID:             refreshID,
+		ActorUserID:    actorUserID,
+		ConnectionID:   connectionID,
+		IdempotencyKey: idempotencyKey,
+		Reason:         reason,
+		Status:         domain.CatalogRefreshPending,
+		Generation:     0,
+		RequestedAt:    requestedAt,
 	}, nil
 }
 
@@ -316,8 +393,10 @@ func (repository *Repository) GetCatalogRefresh(
 				refresh_id::text,
 				actor_user_id::text,
 				connection_id::text,
+				idempotency_key::text,
+				reason,
 				status,
-				generation,
+				catalog_generation,
 				discovered_count,
 				available_count,
 				unavailable_count,
@@ -336,6 +415,8 @@ func (repository *Repository) GetCatalogRefresh(
 		&result.ID,
 		&result.ActorUserID,
 		&result.ConnectionID,
+		&result.IdempotencyKey,
+		&result.Reason,
 		&status,
 		&result.Generation,
 		&result.DiscoveredCount,
@@ -376,7 +457,7 @@ func (repository *Repository) ClaimCatalogRefresh(
 				FROM model_access_catalog_refresh_queue
 				WHERE available_at <= clock_timestamp()
 				  AND (claimed_at IS NULL OR claimed_at < clock_timestamp() - $2::interval)
-				ORDER BY queue_id
+				ORDER BY available_at ASC, refresh_id ASC
 				FOR UPDATE SKIP LOCKED
 				LIMIT $1
 			)
@@ -440,7 +521,7 @@ func (repository *Repository) ApplyCatalogRefresh(
 	err = transaction.QueryRow(
 		ctx,
 		`
-			SELECT last_generation
+			SELECT generation
 			FROM model_access_catalog_states
 			WHERE tenant_id = $1::uuid
 			  AND connection_id = $2::uuid
@@ -452,15 +533,17 @@ func (repository *Repository) ApplyCatalogRefresh(
 
 	switch {
 	case errors.Is(err, pgx.ErrNoRows):
-		currentGeneration = 0
+		currentGeneration = 1
 		_, err = transaction.Exec(
 			ctx,
 			`
 				INSERT INTO model_access_catalog_states (
 					tenant_id,
 					connection_id,
-					last_generation,
-					last_refreshed_at,
+					generation,
+					last_success_at,
+					available_count,
+					unavailable_count,
 					updated_at
 				)
 				VALUES (
@@ -468,6 +551,8 @@ func (repository *Repository) ApplyCatalogRefresh(
 					$2::uuid,
 					1,
 					$3,
+					0,
+					0,
 					$3
 				)
 			`,
@@ -478,7 +563,6 @@ func (repository *Repository) ApplyCatalogRefresh(
 		if err != nil {
 			return domain.CatalogRefreshResult{}, mapDatabaseError(err)
 		}
-		currentGeneration = 1
 	case err != nil:
 		return domain.CatalogRefreshResult{}, mapDatabaseError(err)
 	default:
@@ -488,8 +572,8 @@ func (repository *Repository) ApplyCatalogRefresh(
 			`
 				UPDATE model_access_catalog_states
 				SET
-					last_generation = $3,
-					last_refreshed_at = $4,
+					generation = $3,
+					last_success_at = $4,
 					updated_at = $4
 				WHERE tenant_id = $1::uuid
 				  AND connection_id = $2::uuid
@@ -567,7 +651,32 @@ func (repository *Repository) ApplyCatalogRefresh(
 					output_modalities = EXCLUDED.output_modalities,
 					context_window_tokens = EXCLUDED.context_window_tokens,
 					max_output_tokens = EXCLUDED.max_output_tokens,
-					version = model_access_model_offerings.version + 1,
+					version = CASE
+						WHEN (
+							model_access_model_offerings.display_name,
+							model_access_model_offerings.description,
+							model_access_model_offerings.status,
+							model_access_model_offerings.source,
+							model_access_model_offerings.agent_usable,
+							model_access_model_offerings.capabilities,
+							model_access_model_offerings.input_modalities,
+							model_access_model_offerings.output_modalities,
+							model_access_model_offerings.context_window_tokens,
+							model_access_model_offerings.max_output_tokens
+						) IS DISTINCT FROM (
+							EXCLUDED.display_name,
+							EXCLUDED.description,
+							'available',
+							EXCLUDED.source,
+							EXCLUDED.agent_usable,
+							EXCLUDED.capabilities,
+							EXCLUDED.input_modalities,
+							EXCLUDED.output_modalities,
+							EXCLUDED.context_window_tokens,
+							EXCLUDED.max_output_tokens
+						) THEN model_access_model_offerings.version + 1
+						ELSE model_access_model_offerings.version
+					END,
 					last_seen_at = EXCLUDED.last_seen_at,
 					refreshed_at = EXCLUDED.refreshed_at,
 					unavailable_at = NULL
@@ -620,6 +729,38 @@ func (repository *Repository) ApplyCatalogRefresh(
 	unavailableCount := int(tag.RowsAffected())
 	availableCount := len(params.Discovered)
 
+	// Update catalog state counts
+	_, err = transaction.Exec(
+		ctx,
+		`
+			UPDATE model_access_catalog_states
+			SET
+				available_count = (
+					SELECT count(*)
+					FROM model_access_model_offerings
+					WHERE tenant_id = $1::uuid
+					  AND connection_id = $2::uuid
+					  AND status = 'available'
+				),
+				unavailable_count = (
+					SELECT count(*)
+					FROM model_access_model_offerings
+					WHERE tenant_id = $1::uuid
+					  AND connection_id = $2::uuid
+					  AND status = 'unavailable'
+				),
+				updated_at = $3
+			WHERE tenant_id = $1::uuid
+			  AND connection_id = $2::uuid
+		`,
+		params.TenantID,
+		params.ConnectionID,
+		params.RefreshedAt,
+	)
+	if err != nil {
+		return domain.CatalogRefreshResult{}, mapDatabaseError(err)
+	}
+
 	// Update refresh record if refreshID was provided
 	if params.RefreshID != "" {
 		_, err = transaction.Exec(
@@ -628,7 +769,7 @@ func (repository *Repository) ApplyCatalogRefresh(
 				UPDATE model_access_catalog_refreshes
 				SET
 					status = 'succeeded',
-					generation = $3,
+					catalog_generation = $3,
 					discovered_count = $4,
 					available_count = $5,
 					unavailable_count = $6,
