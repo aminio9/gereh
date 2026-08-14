@@ -4,8 +4,7 @@ ARG NODE_TOOLCHAIN_IMAGE=node:24-bookworm
 FROM ${GO_TOOLCHAIN_IMAGE} AS go-toolchain
 FROM ${NODE_TOOLCHAIN_IMAGE} AS node-toolchain
 
-# MCR is outside Docker Hub, so use DaoCloud's explicit registry prefix.
-FROM m.daocloud.io/mcr.microsoft.com/devcontainers/base:ubuntu-24.04
+FROM mcr.microsoft.com/devcontainers/base:ubuntu-24.04
 
 ARG NPM_REGISTRY=https://registry.npmmirror.com
 ARG PYPI_INDEX=https://mirrors.ustc.edu.cn/pypi/simple
