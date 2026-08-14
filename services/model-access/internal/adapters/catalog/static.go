@@ -1,3 +1,4 @@
+// Package catalog implements static catalog loading from JSON definitions.
 package catalog
 
 import (
@@ -34,12 +35,14 @@ type staticModel struct {
 	MaxOutputTokens     int64    `json:"max_output_tokens"`
 }
 
+// StaticLoader loads and caches platform catalog definitions from a JSON file.
 type StaticLoader struct {
 	mu       sync.RWMutex
 	filePath string
 	cached   *staticCatalogFile
 }
 
+// NewStaticLoader constructs and initializes a StaticLoader from the given JSON file.
 func NewStaticLoader(filePath string) (*StaticLoader, error) {
 	loader := &StaticLoader{filePath: filePath}
 	if err := loader.reload(); err != nil {
@@ -67,6 +70,7 @@ func (l *StaticLoader) reload() error {
 	return nil
 }
 
+// LoadPlatformOfferings returns discovered models for a given provider and pool.
 func (l *StaticLoader) LoadPlatformOfferings(
 	providerKey string,
 	poolKey string,

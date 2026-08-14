@@ -398,4 +398,3 @@ func (server *Server) RemoveAgentModelBinding(
 		Binding: protoutil.AgentModelBinding(binding),
 	}, nil
 }
-

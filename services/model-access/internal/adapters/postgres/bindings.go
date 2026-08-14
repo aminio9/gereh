@@ -59,6 +59,7 @@ func scanBinding(row rowScanner) (domain.AgentModelBinding, error) {
 	return result, nil
 }
 
+// GetAgentBinding retrieves the active binding and fallback list for an agent.
 func (repository *Repository) GetAgentBinding(
 	ctx context.Context,
 	actorUserID string,
@@ -139,6 +140,7 @@ func (repository *Repository) GetAgentBinding(
 	return binding, nil
 }
 
+// SetAgentBinding transactionally upserts an agent model binding, creates revisions, and records outbox events.
 func (repository *Repository) SetAgentBinding(
 	ctx context.Context,
 	params ports.SetBindingParams,
@@ -452,6 +454,7 @@ func (repository *Repository) SetAgentBinding(
 	return binding, nil
 }
 
+// RemoveAgentBinding removes an agent model binding and records an outbox event.
 func (repository *Repository) RemoveAgentBinding(
 	ctx context.Context,
 	params ports.RemoveBindingParams,

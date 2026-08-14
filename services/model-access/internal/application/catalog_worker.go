@@ -8,6 +8,7 @@ import (
 	"github.com/aminio9/gereh/services/model-access/internal/ports"
 )
 
+// CatalogWorkerConfig configures queue batch polling and leases for catalog refresh jobs.
 type CatalogWorkerConfig struct {
 	BatchSize    int
 	PollInterval time.Duration
@@ -15,6 +16,7 @@ type CatalogWorkerConfig struct {
 	MaxBackoff   time.Duration
 }
 
+// CatalogWorker asynchronously polls and executes catalog refresh jobs.
 type CatalogWorker struct {
 	config  CatalogWorkerConfig
 	repo    ports.CatalogRepository
@@ -22,6 +24,7 @@ type CatalogWorker struct {
 	logger  *slog.Logger
 }
 
+// NewCatalogWorker constructs a new CatalogWorker.
 func NewCatalogWorker(
 	config CatalogWorkerConfig,
 	repo ports.CatalogRepository,
@@ -52,6 +55,7 @@ func NewCatalogWorker(
 	}
 }
 
+// Run starts the background catalog refresh worker loop.
 func (w *CatalogWorker) Run(ctx context.Context) {
 	ticker := time.NewTicker(w.config.PollInterval)
 	defer ticker.Stop()

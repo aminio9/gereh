@@ -6,6 +6,7 @@ import (
 	organizationv1 "github.com/aminio9/gereh/gen/go/gereh/organization/v1"
 )
 
+// AgentReference represents the minimal agent metadata required by model access.
 type AgentReference struct {
 	TenantID string
 
@@ -17,6 +18,7 @@ type AgentReference struct {
 	Version int64
 }
 
+// AgentDirectory describes the capability to query agent records from the Organization service.
 type AgentDirectory interface {
 	GetAgent(
 		ctx context.Context,

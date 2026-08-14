@@ -17,7 +17,7 @@ type staticTestCatalog struct{}
 
 var _ ports.StaticCatalogLoader = staticTestCatalog{}
 
-func (staticTestCatalog) LoadPlatformOfferings(providerKey string, poolKey string) ([]domain.DiscoveredModel, error) {
+func (staticTestCatalog) LoadPlatformOfferings(_ string, _ string) ([]domain.DiscoveredModel, error) {
 	return []domain.DiscoveredModel{
 		{
 			ProviderModelID:     "gpt-4o",
@@ -41,7 +41,7 @@ func (staticTestCatalog) LoadPlatformOfferings(providerKey string, poolKey strin
 	}, nil
 }
 
-func (staticTestCatalog) FindCuratedMetadata(providerKey string, providerModelID string) *domain.DiscoveredModel {
+func (staticTestCatalog) FindCuratedMetadata(_ string, _ string) *domain.DiscoveredModel {
 	return nil
 }
 
@@ -50,7 +50,7 @@ type agentDirectoryFake struct {
 	err   error
 }
 
-func (f agentDirectoryFake) GetAgent(ctx context.Context, actorUserID, tenantID, agentID string) (ports.AgentReference, error) {
+func (f agentDirectoryFake) GetAgent(_ context.Context, _, _, _ string) (ports.AgentReference, error) {
 	if f.err != nil {
 		return ports.AgentReference{}, f.err
 	}

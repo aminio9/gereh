@@ -218,4 +218,3 @@ func (service *Service) bindingEvent(
 		OccurredAt: occurredAt,
 	}, nil
 }
-

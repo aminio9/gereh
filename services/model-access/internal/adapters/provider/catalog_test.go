@@ -40,9 +40,8 @@ func TestOpenAIDiscovery(t *testing.T) {
 func TestStaticCatalogLoader(t *testing.T) {
 	t.Parallel()
 
-	// Load the repository platform catalog
-	loader, err := provider.NewCatalogClient(time.Second), error(nil)
-	if loader == nil || err != nil {
-		// Just verify constructor
+	client := provider.NewCatalogClient(time.Second)
+	if client == nil {
+		t.Fatal("expected non-nil client")
 	}
 }

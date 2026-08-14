@@ -12,11 +12,13 @@ import (
 	"github.com/aminio9/gereh/services/model-access/internal/domain"
 )
 
+// CatalogClient performs model discovery against provider APIs.
 type CatalogClient struct {
 	httpClient *http.Client
 	timeout    time.Duration
 }
 
+// NewCatalogClient constructs a new provider CatalogClient with the given timeout.
 func NewCatalogClient(timeout time.Duration) *CatalogClient {
 	if timeout <= 0 {
 		timeout = 15 * time.Second
@@ -32,6 +34,7 @@ func NewCatalogClient(timeout time.Duration) *CatalogClient {
 
 const maxCatalogResponseBytes = 2 * 1024 * 1024 // 2MB bound
 
+// DiscoverModels fetches model offerings from the specified provider API.
 func (c *CatalogClient) DiscoverModels(
 	ctx context.Context,
 	providerKey string,
@@ -82,7 +85,7 @@ func (c *CatalogClient) discoverOpenAI(
 	if err != nil {
 		return nil, fmt.Errorf("openai catalog request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
 		return nil, domain.ErrCredentialRejected
@@ -180,7 +183,7 @@ func (c *CatalogClient) discoverAnthropic(
 	if err != nil {
 		return nil, fmt.Errorf("anthropic catalog request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
 		return nil, domain.ErrCredentialRejected
@@ -263,7 +266,7 @@ func (c *CatalogClient) discoverGoogle(
 	if err != nil {
 		return nil, fmt.Errorf("google catalog request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusBadRequest {
 		return nil, domain.ErrCredentialRejected
@@ -321,9 +324,9 @@ type openRouterModelsResponse struct {
 		Description   string `json:"description"`
 		ContextLength int64  `json:"context_length"`
 		Architecture  struct {
-			Modality     string   `json:"modality"`
-			Tokenizer    string   `json:"tokenizer"`
-			InstructType *string  `json:"instruct_type"`
+			Modality     string  `json:"modality"`
+			Tokenizer    string  `json:"tokenizer"`
+			InstructType *string `json:"instruct_type"`
 		} `json:"architecture"`
 		TopProvider struct {
 			MaxCompletionTokens *int64 `json:"max_completion_tokens"`
@@ -352,7 +355,7 @@ func (c *CatalogClient) discoverOpenRouter(
 	if err != nil {
 		return nil, fmt.Errorf("openrouter catalog request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
 		return nil, domain.ErrCredentialRejected
@@ -400,5 +403,12 @@ func formatDisplayName(id string) string {
 	name := parts[len(parts)-1]
 	name = strings.ReplaceAll(name, "-", " ")
 	name = strings.ReplaceAll(name, "_", " ")
-	return strings.Title(name)
+
+	words := strings.Fields(name)
+	for i, w := range words {
+		if len(w) > 0 {
+			words[i] = strings.ToUpper(w[:1]) + strings.ToLower(w[1:])
+		}
+	}
+	return strings.Join(words, " ")
 }

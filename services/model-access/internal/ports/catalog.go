@@ -7,6 +7,7 @@ import (
 	"github.com/aminio9/gereh/services/model-access/internal/domain"
 )
 
+// ListOfferingsParams represents query parameters for listing model offerings.
 type ListOfferingsParams struct {
 	ActorUserID string
 	TenantID    string
@@ -18,10 +19,12 @@ type ListOfferingsParams struct {
 	Cursor *OfferingCursor
 }
 
+// OfferingCursor provides keyset pagination state for model offerings.
 type OfferingCursor struct {
 	OfferingID string
 }
 
+// ApplyCatalogRefreshParams encapsulates the batch input required to update the catalog state.
 type ApplyCatalogRefreshParams struct {
 	ActorUserID  string
 	TenantID     string
@@ -35,6 +38,7 @@ type ApplyCatalogRefreshParams struct {
 	RefreshedAt time.Time
 }
 
+// CatalogRepository manages storage and transactional updates for model offerings and catalog refresh state.
 type CatalogRepository interface {
 	ListOfferings(
 		ctx context.Context,
@@ -100,6 +104,7 @@ type CatalogRepository interface {
 	) error
 }
 
+// ProviderCatalogClient queries model offerings from provider endpoints.
 type ProviderCatalogClient interface {
 	DiscoverModels(
 		ctx context.Context,
@@ -108,6 +113,7 @@ type ProviderCatalogClient interface {
 	) ([]domain.DiscoveredModel, error)
 }
 
+// StaticCatalogLoader loads preconfigured platform model offerings and curated metadata.
 type StaticCatalogLoader interface {
 	LoadPlatformOfferings(
 		providerKey string,

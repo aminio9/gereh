@@ -38,18 +38,21 @@ type Service struct {
 // Option allows configuring optional dependencies on Service.
 type Option func(*Service)
 
+// WithCatalogClient sets the provider catalog client for dynamic discovery.
 func WithCatalogClient(client ports.ProviderCatalogClient) Option {
 	return func(s *Service) {
 		s.catalogClient = client
 	}
 }
 
+// WithStaticCatalog sets the static platform catalog loader.
 func WithStaticCatalog(staticCat ports.StaticCatalogLoader) Option {
 	return func(s *Service) {
 		s.staticCatalog = staticCat
 	}
 }
 
+// WithAgentDirectory sets the agent directory client for agent validation.
 func WithAgentDirectory(directory ports.AgentDirectory) Option {
 	return func(s *Service) {
 		s.agentDirectory = directory

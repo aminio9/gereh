@@ -12,6 +12,7 @@ import (
 	"github.com/aminio9/gereh/services/model-access/internal/protoutil"
 )
 
+// SetAgentBindingInput specifies the parameters for creating or updating an agent model binding.
 type SetAgentBindingInput struct {
 	ActorUserID string
 	TenantID    string
@@ -30,6 +31,7 @@ type SetAgentBindingInput struct {
 	MaxModelCostMicroUSD *int64
 }
 
+// RemoveAgentBindingInput specifies the parameters for removing an agent model binding.
 type RemoveAgentBindingInput struct {
 	ActorUserID string
 	TenantID    string
@@ -41,6 +43,7 @@ type RemoveAgentBindingInput struct {
 	ExpectedVersion int64
 }
 
+// GetAgentModelBinding retrieves the model binding assigned to an agent.
 func (service *Service) GetAgentModelBinding(
 	ctx context.Context,
 	actorUserID string,
@@ -74,6 +77,7 @@ func (service *Service) GetAgentModelBinding(
 	)
 }
 
+// SetAgentModelBinding creates or updates the model offerings assigned to an agent.
 func (service *Service) SetAgentModelBinding(
 	ctx context.Context,
 	input SetAgentBindingInput,
@@ -260,6 +264,7 @@ func (service *Service) SetAgentModelBinding(
 	)
 }
 
+// RemoveAgentModelBinding marks an agent's model binding as removed.
 func (service *Service) RemoveAgentModelBinding(
 	ctx context.Context,
 	input RemoveAgentBindingInput,

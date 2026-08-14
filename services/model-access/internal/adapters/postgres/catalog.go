@@ -72,6 +72,7 @@ func scanOffering(row rowScanner) (domain.ModelOffering, error) {
 	return result, nil
 }
 
+// ListOfferings returns model offerings for a tenant according to the specified filter parameters.
 func (repository *Repository) ListOfferings(
 	ctx context.Context,
 	params ports.ListOfferingsParams,
@@ -140,6 +141,7 @@ func (repository *Repository) ListOfferings(
 	return results, nil
 }
 
+// GetOffering looks up a single offering by tenant and offering ID.
 func (repository *Repository) GetOffering(
 	ctx context.Context,
 	actorUserID string,
@@ -184,6 +186,7 @@ func (repository *Repository) GetOffering(
 	return offering, nil
 }
 
+// EnqueueCatalogRefresh records a catalog refresh request and enqueues it for worker processing.
 func (repository *Repository) EnqueueCatalogRefresh(
 	ctx context.Context,
 	actorUserID string,
@@ -284,6 +287,7 @@ func (repository *Repository) EnqueueCatalogRefresh(
 	}, nil
 }
 
+// GetCatalogRefresh retrieves the catalog refresh state record.
 func (repository *Repository) GetCatalogRefresh(
 	ctx context.Context,
 	actorUserID string,
@@ -358,6 +362,7 @@ func (repository *Repository) GetCatalogRefresh(
 	return result, nil
 }
 
+// ClaimCatalogRefresh locks and claims pending catalog refresh jobs from the queue.
 func (repository *Repository) ClaimCatalogRefresh(
 	ctx context.Context,
 	limit int,
@@ -414,6 +419,7 @@ func (repository *Repository) ClaimCatalogRefresh(
 	return jobs, rows.Err()
 }
 
+// ApplyCatalogRefresh transactionally updates model offerings and catalog refresh state.
 func (repository *Repository) ApplyCatalogRefresh(
 	ctx context.Context,
 	params ports.ApplyCatalogRefreshParams,
@@ -444,7 +450,8 @@ func (repository *Repository) ApplyCatalogRefresh(
 		params.ConnectionID,
 	).Scan(&currentGeneration)
 
-	if errors.Is(err, pgx.ErrNoRows) {
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
 		currentGeneration = 0
 		_, err = transaction.Exec(
 			ctx,
@@ -472,9 +479,9 @@ func (repository *Repository) ApplyCatalogRefresh(
 			return domain.CatalogRefreshResult{}, mapDatabaseError(err)
 		}
 		currentGeneration = 1
-	} else if err != nil {
+	case err != nil:
 		return domain.CatalogRefreshResult{}, mapDatabaseError(err)
-	} else {
+	default:
 		currentGeneration++
 		_, err = transaction.Exec(
 			ctx,
@@ -667,12 +674,13 @@ func (repository *Repository) ApplyCatalogRefresh(
 	}, nil
 }
 
+// FailCatalogRefresh marks a catalog refresh execution as failed in the database.
 func (repository *Repository) FailCatalogRefresh(
 	ctx context.Context,
 	refreshID string,
 	tenantID string,
 	actorUserID string,
-	connectionID string,
+	_ string,
 	errorCode string,
 	failedAt time.Time,
 ) error {
@@ -721,6 +729,7 @@ func (repository *Repository) FailCatalogRefresh(
 	return commit(ctx, transaction)
 }
 
+// ReleaseCatalogRefresh unlocks a claimed queue job and schedules its retry.
 func (repository *Repository) ReleaseCatalogRefresh(
 	ctx context.Context,
 	refreshID string,
@@ -748,6 +757,7 @@ func (repository *Repository) ReleaseCatalogRefresh(
 	return nil
 }
 
+// MarkConnectionOfferingsUnavailable updates all active offerings under a connection to unavailable.
 func (repository *Repository) MarkConnectionOfferingsUnavailable(
 	ctx context.Context,
 	actorUserID string,

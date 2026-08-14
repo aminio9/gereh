@@ -7,6 +7,7 @@ import (
 	"github.com/aminio9/gereh/services/model-access/internal/domain"
 )
 
+// SetBindingParams contains the parameters for creating or updating an agent model binding.
 type SetBindingParams struct {
 	ActorUserID string
 	TenantID    string
@@ -32,6 +33,7 @@ type SetBindingParams struct {
 	EventFactory func(domain.AgentModelBinding) (domain.OutboxEvent, error)
 }
 
+// RemoveBindingParams contains the parameters for removing an agent model binding.
 type RemoveBindingParams struct {
 	ActorUserID string
 	TenantID    string
@@ -49,6 +51,7 @@ type RemoveBindingParams struct {
 	EventFactory func(domain.AgentModelBinding) (domain.OutboxEvent, error)
 }
 
+// BindingRepository specifies the persistence operations for agent model bindings.
 type BindingRepository interface {
 	GetAgentBinding(
 		ctx context.Context,

@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// ListOfferingsInput contains query and pagination filters for listing offerings.
 type ListOfferingsInput struct {
 	ActorUserID string
 	TenantID    string
@@ -22,11 +23,13 @@ type ListOfferingsInput struct {
 	Cursor *ports.OfferingCursor
 }
 
+// ListOfferingsResult contains a page of offerings and an optional next page cursor.
 type ListOfferingsResult struct {
 	Offerings  []domain.ModelOffering
 	NextCursor *ports.OfferingCursor
 }
 
+// ListModelOfferings lists model offerings available to a tenant.
 func (service *Service) ListModelOfferings(
 	ctx context.Context,
 	input ListOfferingsInput,
@@ -82,12 +85,14 @@ func (service *Service) ListModelOfferings(
 	return result, nil
 }
 
+// RefreshModelCatalogInput specifies the connection and actor for triggering a catalog refresh.
 type RefreshModelCatalogInput struct {
 	ActorUserID  string
 	TenantID     string
 	ConnectionID string
 }
 
+// RefreshModelCatalog enqueues an asynchronous catalog refresh for a connection.
 func (service *Service) RefreshModelCatalog(
 	ctx context.Context,
 	input RefreshModelCatalogInput,
@@ -135,6 +140,7 @@ func (service *Service) RefreshModelCatalog(
 	)
 }
 
+// GetModelCatalogRefresh retrieves the status of a catalog refresh job.
 func (service *Service) GetModelCatalogRefresh(
 	ctx context.Context,
 	actorUserID string,
@@ -168,6 +174,7 @@ func (service *Service) GetModelCatalogRefresh(
 	)
 }
 
+// ExecuteCatalogRefresh performs provider/static discovery and updates offerings in the database.
 func (service *Service) ExecuteCatalogRefresh(
 	ctx context.Context,
 	job domain.CatalogRefreshJob,
@@ -204,11 +211,10 @@ func (service *Service) ExecuteCatalogRefresh(
 	}
 
 	now := service.now().UTC()
-	var discovered []domain.DiscoveredModel
+	var models []domain.DiscoveredModel
 	var source domain.OfferingSource
 
-	switch connection.ConnectionType {
-	case domain.ConnectionTypePlatformManaged:
+	if connection.ConnectionType == domain.ConnectionTypePlatformManaged {
 		source = domain.OfferingSourcePlatformCatalog
 		if service.staticCatalog == nil {
 			return service.repository.FailCatalogRefresh(
@@ -225,7 +231,7 @@ func (service *Service) ExecuteCatalogRefresh(
 		if connection.ProviderPoolKey != nil && *connection.ProviderPoolKey != "" {
 			poolKey = *connection.ProviderPoolKey
 		}
-		models, err := service.staticCatalog.LoadPlatformOfferings(
+		discovered, err := service.staticCatalog.LoadPlatformOfferings(
 			connection.ProviderKey,
 			poolKey,
 		)
@@ -240,9 +246,8 @@ func (service *Service) ExecuteCatalogRefresh(
 				now,
 			)
 		}
-		discovered = models
-
-	case domain.ConnectionTypeBYOK:
+		models = discovered
+	} else {
 		source = domain.OfferingSourceProviderDiscovered
 		if service.catalogClient == nil {
 			return service.repository.FailCatalogRefresh(
@@ -251,7 +256,7 @@ func (service *Service) ExecuteCatalogRefresh(
 				job.TenantID,
 				job.ActorUserID,
 				job.ConnectionID,
-				"provider_discovery_unavailable",
+				"catalog_client_unavailable",
 				now,
 			)
 		}
@@ -288,7 +293,7 @@ func (service *Service) ExecuteCatalogRefresh(
 		}
 		defer zeroBytes(rawSecret)
 
-		models, err := service.catalogClient.DiscoverModels(
+		discovered, err := service.catalogClient.DiscoverModels(
 			ctx,
 			connection.ProviderKey,
 			rawSecret,
@@ -304,6 +309,7 @@ func (service *Service) ExecuteCatalogRefresh(
 				now,
 			)
 		}
+		models = discovered
 
 		// Enrich discovered models with static catalog curated metadata if available
 		if service.staticCatalog != nil {
@@ -330,23 +336,9 @@ func (service *Service) ExecuteCatalogRefresh(
 					if curated.MaxOutputTokens > 0 {
 						models[i].MaxOutputTokens = curated.MaxOutputTokens
 					}
-					models[i].AgentUsable = curated.AgentUsable
 				}
 			}
 		}
-
-		discovered = models
-
-	default:
-		return service.repository.FailCatalogRefresh(
-			ctx,
-			job.RefreshID,
-			job.TenantID,
-			job.ActorUserID,
-			job.ConnectionID,
-			"unsupported_connection_type",
-			now,
-		)
 	}
 
 	result, err := service.repository.ApplyCatalogRefresh(
@@ -356,7 +348,7 @@ func (service *Service) ExecuteCatalogRefresh(
 			TenantID:     job.TenantID,
 			ConnectionID: job.ConnectionID,
 			RefreshID:    job.RefreshID,
-			Discovered:   discovered,
+			Discovered:   models,
 			Source:       source,
 			RefreshedAt:  now,
 		},
@@ -366,7 +358,7 @@ func (service *Service) ExecuteCatalogRefresh(
 	}
 
 	// Publish outbox event
-	_ = service.publishCatalogRefreshedEvent(ctx, job, connection, result)
+	_ = service.publishCatalogRefreshedEvent(ctx, job, result)
 
 	return nil
 }
@@ -374,7 +366,6 @@ func (service *Service) ExecuteCatalogRefresh(
 func (service *Service) publishCatalogRefreshedEvent(
 	ctx context.Context,
 	job domain.CatalogRefreshJob,
-	connection domain.Connection,
 	result domain.CatalogRefreshResult,
 ) error {
 	_, err := service.catalogRefreshedEvent(

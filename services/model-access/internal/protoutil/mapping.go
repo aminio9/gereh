@@ -126,6 +126,7 @@ func Provider(
 	}
 }
 
+// OfferingStatus converts domain offering status to protobuf offering status enum.
 func OfferingStatus(value domain.OfferingStatus) modelv1.ModelOfferingStatus {
 	switch value {
 	case domain.OfferingStatusAvailable:
@@ -137,6 +138,7 @@ func OfferingStatus(value domain.OfferingStatus) modelv1.ModelOfferingStatus {
 	}
 }
 
+// OfferingSource converts domain offering source to protobuf offering source enum.
 func OfferingSource(value domain.OfferingSource) modelv1.ModelOfferingSource {
 	switch value {
 	case domain.OfferingSourceProviderDiscovered:
@@ -148,6 +150,7 @@ func OfferingSource(value domain.OfferingSource) modelv1.ModelOfferingSource {
 	}
 }
 
+// ModelOffering converts domain.ModelOffering to protobuf *modelv1.ModelOffering.
 func ModelOffering(value domain.ModelOffering) *modelv1.ModelOffering {
 	result := &modelv1.ModelOffering{
 		TenantId:            value.TenantID,
@@ -177,6 +180,7 @@ func ModelOffering(value domain.ModelOffering) *modelv1.ModelOffering {
 	return result
 }
 
+// CatalogRefreshStatus converts domain catalog refresh status to protobuf enum.
 func CatalogRefreshStatus(value domain.CatalogRefreshStatus) modelv1.ModelCatalogRefreshStatus {
 	switch value {
 	case domain.CatalogRefreshPending:
@@ -192,18 +196,19 @@ func CatalogRefreshStatus(value domain.CatalogRefreshStatus) modelv1.ModelCatalo
 	}
 }
 
+// ModelCatalogRefresh converts domain.CatalogRefresh to protobuf *modelv1.ModelCatalogRefresh.
 func ModelCatalogRefresh(value domain.CatalogRefresh) *modelv1.ModelCatalogRefresh {
 	result := &modelv1.ModelCatalogRefresh{
-		TenantId:         value.TenantID,
-		RefreshId:        value.ID,
-		ConnectionId:     value.ConnectionID,
-		Status:           CatalogRefreshStatus(value.Status),
+		TenantId:          value.TenantID,
+		RefreshId:         value.ID,
+		ConnectionId:      value.ConnectionID,
+		Status:            CatalogRefreshStatus(value.Status),
 		CatalogGeneration: value.Generation,
-		DiscoveredCount:  int32(value.DiscoveredCount),
-		AvailableCount:   int32(value.AvailableCount),
-		UnavailableCount: int32(value.UnavailableCount),
-		ErrorCode:        value.ErrorCode,
-		RequestedAt:      timestamppb.New(value.RequestedAt),
+		DiscoveredCount:   int32(value.DiscoveredCount),
+		AvailableCount:    int32(value.AvailableCount),
+		UnavailableCount:  int32(value.UnavailableCount),
+		ErrorCode:         value.ErrorCode,
+		RequestedAt:       timestamppb.New(value.RequestedAt),
 	}
 	if value.StartedAt != nil {
 		result.StartedAt = timestamppb.New(*value.StartedAt)
@@ -215,6 +220,7 @@ func ModelCatalogRefresh(value domain.CatalogRefresh) *modelv1.ModelCatalogRefre
 	return result
 }
 
+// BindingStatus converts domain binding status to protobuf agent model binding status enum.
 func BindingStatus(value domain.BindingStatus) modelv1.AgentModelBindingStatus {
 	switch value {
 	case domain.BindingStatusActive:
@@ -226,6 +232,7 @@ func BindingStatus(value domain.BindingStatus) modelv1.AgentModelBindingStatus {
 	}
 }
 
+// FallbackPolicy converts domain fallback policy to protobuf model fallback policy enum.
 func FallbackPolicy(value domain.FallbackPolicy) modelv1.ModelFallbackPolicy {
 	switch value {
 	case domain.FallbackPolicyOrdered:
@@ -237,6 +244,7 @@ func FallbackPolicy(value domain.FallbackPolicy) modelv1.ModelFallbackPolicy {
 	}
 }
 
+// DomainFallbackPolicy converts protobuf model fallback policy enum to domain fallback policy.
 func DomainFallbackPolicy(value modelv1.ModelFallbackPolicy) domain.FallbackPolicy {
 	switch value {
 	case modelv1.ModelFallbackPolicy_MODEL_FALLBACK_POLICY_ORDERED:
@@ -248,6 +256,7 @@ func DomainFallbackPolicy(value modelv1.ModelFallbackPolicy) domain.FallbackPoli
 	}
 }
 
+// AgentModelBinding converts domain.AgentModelBinding to protobuf *modelv1.AgentModelBinding.
 func AgentModelBinding(value domain.AgentModelBinding) *modelv1.AgentModelBinding {
 	result := &modelv1.AgentModelBinding{
 		TenantId:             value.TenantID,
@@ -261,8 +270,8 @@ func AgentModelBinding(value domain.AgentModelBinding) *modelv1.AgentModelBindin
 		Version:              value.Version,
 		CreatedByUserId:      value.CreatedByUserID,
 		UpdatedByUserId:      value.UpdatedByUserID,
-		CreatedAt:             timestamppb.New(value.CreatedAt),
-		UpdatedAt:             timestamppb.New(value.UpdatedAt),
+		CreatedAt:            timestamppb.New(value.CreatedAt),
+		UpdatedAt:            timestamppb.New(value.UpdatedAt),
 	}
 	if value.FastOfferingID != nil {
 		result.FastOfferingId = value.FastOfferingID
@@ -273,4 +282,3 @@ func AgentModelBinding(value domain.AgentModelBinding) *modelv1.AgentModelBindin
 
 	return result
 }
-

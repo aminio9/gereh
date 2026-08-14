@@ -1,3 +1,4 @@
+// Package organization implements an adapter to query agent information from the Organization service.
 package organization
 
 import (
@@ -13,11 +14,13 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// Client adapts OrganizationServiceClient to ports.AgentDirectory.
 type Client struct {
 	client  organizationv1.OrganizationServiceClient
 	timeout time.Duration
 }
 
+// NewClient constructs an Organization service client adapter.
 func NewClient(
 	client organizationv1.OrganizationServiceClient,
 	timeout time.Duration,
@@ -32,6 +35,7 @@ func NewClient(
 	}
 }
 
+// GetAgent fetches agent metadata from the Organization service.
 func (c *Client) GetAgent(
 	ctx context.Context,
 	actorUserID string,

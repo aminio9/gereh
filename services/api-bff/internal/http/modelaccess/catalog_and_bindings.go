@@ -11,9 +11,9 @@ import (
 type setAgentModelBindingRequest struct {
 	ExpectedVersion int64 `json:"expectedVersion"`
 
-	PrimaryOfferingID   string                     `json:"primaryOfferingId"`
-	FastOfferingID      *string                    `json:"fastOfferingId,omitempty"`
-	FallbackOfferingIDs []string                   `json:"fallbackOfferingIds,omitempty"`
+	PrimaryOfferingID   string                      `json:"primaryOfferingId"`
+	FastOfferingID      *string                     `json:"fastOfferingId,omitempty"`
+	FallbackOfferingIDs []string                    `json:"fallbackOfferingIds,omitempty"`
 	FallbackPolicy      modelv1.ModelFallbackPolicy `json:"fallbackPolicy,omitempty"`
 
 	MaxModelCostMicroUSD *int64 `json:"maxModelCostMicroUsd,omitempty"`
