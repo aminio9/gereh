@@ -14,9 +14,9 @@ export PNPM_HOME="${PNPM_HOME:-${HOME}/.local/share/pnpm}"
 
 export PATH="${PNPM_HOME}:${GOPATH}/bin:/usr/local/go/bin:/usr/local/bin:${PATH}"
 
-export GOPROXY="${GOPROXY:-https://goproxy.cn,direct}"
-export NPM_CONFIG_REGISTRY="${NPM_CONFIG_REGISTRY:-https://registry.npmmirror.com}"
-export PIP_INDEX_URL="${PIP_INDEX_URL:-https://mirrors.ustc.edu.cn/pypi/simple}"
+export GOPROXY="${GOPROXY:-https://proxy.golang.org,direct}"
+export NPM_CONFIG_REGISTRY="${NPM_CONFIG_REGISTRY:-https://registry.npmjs.org/}"
+export PIP_INDEX_URL="${PIP_INDEX_URL:-https://pypi.org/simple}"
 
 readonly USER_ID="$(id -u)"
 readonly GROUP_ID="$(id -g)"
@@ -40,7 +40,7 @@ sudo chown -R "${USER_ID}:${GROUP_ID}" \
   "${GOMODCACHE}"
 
 # ---------------------------------------------------------------------------
-# Package mirrors
+# Package registries
 # ---------------------------------------------------------------------------
 
 go env -w \
@@ -56,7 +56,6 @@ pnpm config set store-dir "${PNPM_HOME}/store"
 cat >"${HOME}/.config/pip/pip.conf" <<EOF
 [global]
 index-url = ${PIP_INDEX_URL}
-trusted-host = mirrors.ustc.edu.cn
 timeout = 60
 EOF
 

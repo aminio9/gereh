@@ -6,9 +6,9 @@ services:
       context: ..
       dockerfile: .devcontainer/Dockerfile
       args:
-        NPM_REGISTRY: https://registry.npmmirror.com
-        PYPI_INDEX: https://mirrors.ustc.edu.cn/pypi/simple
-        GOPROXY_URL: https://goproxy.cn,direct
+        NPM_REGISTRY: https://registry.npmjs.org/
+        PYPI_INDEX: https://pypi.org/simple
+        GOPROXY_URL: https://proxy.golang.org,direct
 
     init: true
     command: sleep infinity
@@ -28,13 +28,13 @@ services:
       GEREH_ENV: development
       GEREH_ENVIRONMENT: development
 
-      # Download mirrors
-      GOPROXY: https://goproxy.cn,direct
+      # Package registries
+      GOPROXY: https://proxy.golang.org,direct
       GO111MODULE: "on"
-      NPM_CONFIG_REGISTRY: https://registry.npmmirror.com
-      npm_config_registry: https://registry.npmmirror.com
-      PIP_INDEX_URL: https://mirrors.ustc.edu.cn/pypi/simple
-      UV_DEFAULT_INDEX: https://mirrors.ustc.edu.cn/pypi/simple
+      NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
+      npm_config_registry: https://registry.npmjs.org/
+      PIP_INDEX_URL: https://pypi.org/simple
+      UV_DEFAULT_INDEX: https://pypi.org/simple
 
       # PostgreSQL
       DATABASE_URL: postgres://gereh:gereh@postgres:5432/iam_db?sslmode=disable
