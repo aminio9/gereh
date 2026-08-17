@@ -515,6 +515,40 @@ tasks:
       - go test -count=1 ./services/tenant/...
       - go test -count=1 ./services/execution-orchestrator/...
 
+  runtimecell:generate:
+    desc: Generate RuntimeCell Go and CRD artifacts
+    cmds:
+      - bash scripts/runtimecell/generate.sh
+
+  runtimecell:check-generated:
+    desc: Verify committed RuntimeCell generated artifacts are current
+    cmds:
+      - task: runtimecell:generate
+      - >-
+        git diff --exit-code --
+        platform/go/runtimecell/api/v1/zz_generated.deepcopy.go
+        deploy/crds/runtime.gereh.ai_runtimecells.yaml
+
+  runtimecell:test:
+    desc: Run RuntimeCell API unit tests
+    cmds:
+      - >-
+        go test -race -count=1
+        ./platform/go/runtimecell/api/v1
+
+  runtimecell:install:
+    desc: Install the RuntimeCell CRD into the current Kubernetes cluster
+    cmds:
+      - kubectl apply -k deploy/crds
+      - >-
+        kubectl wait --for=condition=Established
+        crd/runtimecells.runtime.gereh.ai --timeout=60s
+
+  runtimecell:validate-live:
+    desc: Run RuntimeCell API contract tests against current Kubernetes cluster
+    cmds:
+      - bash scripts/runtimecell/validate-live.sh
+
   build:
     desc: Build all services and frontend applications
     cmds:
@@ -544,7 +578,9 @@ tasks:
       - task: test:projection
       - task: test:model-access
       - task: test:model-gateway
+      - task: runtimecell:test
       - task: test
       - task: build
       - task: contracts:check-generated
+      - task: runtimecell:check-generated
       - task: contracts:breaking
