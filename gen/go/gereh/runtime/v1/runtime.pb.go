@@ -74,12 +74,73 @@ func (RuntimeProvisioningState) EnumDescriptor() ([]byte, []int) {
 	return file_gereh_runtime_v1_runtime_proto_rawDescGZIP(), []int{0}
 }
 
+// RuntimeKind identifies the runtime implementation hosted by a RuntimeCell.
+// It intentionally contains product/runtime identity only and no cloud
+// provider information.
+type RuntimeKind int32
+
+const (
+	RuntimeKind_RUNTIME_KIND_UNSPECIFIED RuntimeKind = 0
+	RuntimeKind_RUNTIME_KIND_OPENCLAW    RuntimeKind = 1
+	RuntimeKind_RUNTIME_KIND_HERMES      RuntimeKind = 2
+)
+
+// Enum value maps for RuntimeKind.
+var (
+	RuntimeKind_name = map[int32]string{
+		0: "RUNTIME_KIND_UNSPECIFIED",
+		1: "RUNTIME_KIND_OPENCLAW",
+		2: "RUNTIME_KIND_HERMES",
+	}
+	RuntimeKind_value = map[string]int32{
+		"RUNTIME_KIND_UNSPECIFIED": 0,
+		"RUNTIME_KIND_OPENCLAW":    1,
+		"RUNTIME_KIND_HERMES":      2,
+	}
+)
+
+func (x RuntimeKind) Enum() *RuntimeKind {
+	p := new(RuntimeKind)
+	*p = x
+	return p
+}
+
+func (x RuntimeKind) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RuntimeKind) Descriptor() protoreflect.EnumDescriptor {
+	return file_gereh_runtime_v1_runtime_proto_enumTypes[1].Descriptor()
+}
+
+func (RuntimeKind) Type() protoreflect.EnumType {
+	return &file_gereh_runtime_v1_runtime_proto_enumTypes[1]
+}
+
+func (x RuntimeKind) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RuntimeKind.Descriptor instead.
+func (RuntimeKind) EnumDescriptor() ([]byte, []int) {
+	return file_gereh_runtime_v1_runtime_proto_rawDescGZIP(), []int{1}
+}
+
 type EnsureTenantRuntimeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
 	OperationId   string                 `protobuf:"bytes,2,opt,name=operation_id,json=operationId,proto3" json:"operation_id,omitempty"`
 	Region        string                 `protobuf:"bytes,3,opt,name=region,proto3" json:"region,omitempty"`
 	IsolationTier string                 `protobuf:"bytes,4,opt,name=isolation_tier,json=isolationTier,proto3" json:"isolation_tier,omitempty"`
+	Runtime       RuntimeKind            `protobuf:"varint,5,opt,name=runtime,proto3,enum=gereh.runtime.v1.RuntimeKind" json:"runtime,omitempty"`
+	// Runtime implementation release desired for the cell.
+	// This is a logical runtime release, not a container image supplied by
+	// untrusted callers. The Runtime Manager resolves releases to approved,
+	// digest-pinned images.
+	RuntimeVersion string `protobuf:"bytes,6,opt,name=runtime_version,json=runtimeVersion,proto3" json:"runtime_version,omitempty"`
+	// Kubernetes StorageClass selected by trusted regional placement policy.
+	// Provider-specific CSI implementation details remain outside this API.
+	StorageClass  string `protobuf:"bytes,7,opt,name=storage_class,json=storageClass,proto3" json:"storage_class,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -138,6 +199,27 @@ func (x *EnsureTenantRuntimeRequest) GetRegion() string {
 func (x *EnsureTenantRuntimeRequest) GetIsolationTier() string {
 	if x != nil {
 		return x.IsolationTier
+	}
+	return ""
+}
+
+func (x *EnsureTenantRuntimeRequest) GetRuntime() RuntimeKind {
+	if x != nil {
+		return x.Runtime
+	}
+	return RuntimeKind_RUNTIME_KIND_UNSPECIFIED
+}
+
+func (x *EnsureTenantRuntimeRequest) GetRuntimeVersion() string {
+	if x != nil {
+		return x.RuntimeVersion
+	}
+	return ""
+}
+
+func (x *EnsureTenantRuntimeRequest) GetStorageClass() string {
+	if x != nil {
+		return x.StorageClass
 	}
 	return ""
 }
@@ -215,12 +297,15 @@ var File_gereh_runtime_v1_runtime_proto protoreflect.FileDescriptor
 
 const file_gereh_runtime_v1_runtime_proto_rawDesc = "" +
 	"\n" +
-	"\x1egereh/runtime/v1/runtime.proto\x12\x10gereh.runtime.v1\x1a\x1egoogle/protobuf/duration.proto\"\x9b\x01\n" +
+	"\x1egereh/runtime/v1/runtime.proto\x12\x10gereh.runtime.v1\x1a\x1egoogle/protobuf/duration.proto\"\xa2\x02\n" +
 	"\x1aEnsureTenantRuntimeRequest\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12!\n" +
 	"\foperation_id\x18\x02 \x01(\tR\voperationId\x12\x16\n" +
 	"\x06region\x18\x03 \x01(\tR\x06region\x12%\n" +
-	"\x0eisolation_tier\x18\x04 \x01(\tR\risolationTier\"\xe2\x01\n" +
+	"\x0eisolation_tier\x18\x04 \x01(\tR\risolationTier\x127\n" +
+	"\aruntime\x18\x05 \x01(\x0e2\x1d.gereh.runtime.v1.RuntimeKindR\aruntime\x12'\n" +
+	"\x0fruntime_version\x18\x06 \x01(\tR\x0eruntimeVersion\x12#\n" +
+	"\rstorage_class\x18\a \x01(\tR\fstorageClass\"\xe2\x01\n" +
 	"\x1bEnsureTenantRuntimeResponse\x12@\n" +
 	"\x05state\x18\x01 \x01(\x0e2*.gereh.runtime.v1.RuntimeProvisioningStateR\x05state\x12&\n" +
 	"\x0fruntime_cell_id\x18\x02 \x01(\tR\rruntimeCellId\x12:\n" +
@@ -232,7 +317,11 @@ const file_gereh_runtime_v1_runtime_proto_rawDesc = "" +
 	"&RUNTIME_PROVISIONING_STATE_UNSPECIFIED\x10\x00\x12&\n" +
 	"\"RUNTIME_PROVISIONING_STATE_PENDING\x10\x01\x12$\n" +
 	" RUNTIME_PROVISIONING_STATE_READY\x10\x02\x12%\n" +
-	"!RUNTIME_PROVISIONING_STATE_FAILED\x10\x032\x8b\x01\n" +
+	"!RUNTIME_PROVISIONING_STATE_FAILED\x10\x03*_\n" +
+	"\vRuntimeKind\x12\x1c\n" +
+	"\x18RUNTIME_KIND_UNSPECIFIED\x10\x00\x12\x19\n" +
+	"\x15RUNTIME_KIND_OPENCLAW\x10\x01\x12\x17\n" +
+	"\x13RUNTIME_KIND_HERMES\x10\x022\x8b\x01\n" +
 	"\x15RuntimeManagerService\x12r\n" +
 	"\x13EnsureTenantRuntime\x12,.gereh.runtime.v1.EnsureTenantRuntimeRequest\x1a-.gereh.runtime.v1.EnsureTenantRuntimeResponseB\xc2\x01\n" +
 	"\x14com.gereh.runtime.v1B\fRuntimeProtoP\x01Z:github.com/aminio9/gereh/gen/go/gereh/runtime/v1;runtimev1\xa2\x02\x03GRX\xaa\x02\x10Gereh.Runtime.V1\xca\x02\x10Gereh\\Runtime\\V1\xe2\x02\x1cGereh\\Runtime\\V1\\GPBMetadata\xea\x02\x12Gereh::Runtime::V1b\x06proto3"
@@ -249,24 +338,26 @@ func file_gereh_runtime_v1_runtime_proto_rawDescGZIP() []byte {
 	return file_gereh_runtime_v1_runtime_proto_rawDescData
 }
 
-var file_gereh_runtime_v1_runtime_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_gereh_runtime_v1_runtime_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_gereh_runtime_v1_runtime_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_gereh_runtime_v1_runtime_proto_goTypes = []any{
 	(RuntimeProvisioningState)(0),       // 0: gereh.runtime.v1.RuntimeProvisioningState
-	(*EnsureTenantRuntimeRequest)(nil),  // 1: gereh.runtime.v1.EnsureTenantRuntimeRequest
-	(*EnsureTenantRuntimeResponse)(nil), // 2: gereh.runtime.v1.EnsureTenantRuntimeResponse
-	(*durationpb.Duration)(nil),         // 3: google.protobuf.Duration
+	(RuntimeKind)(0),                    // 1: gereh.runtime.v1.RuntimeKind
+	(*EnsureTenantRuntimeRequest)(nil),  // 2: gereh.runtime.v1.EnsureTenantRuntimeRequest
+	(*EnsureTenantRuntimeResponse)(nil), // 3: gereh.runtime.v1.EnsureTenantRuntimeResponse
+	(*durationpb.Duration)(nil),         // 4: google.protobuf.Duration
 }
 var file_gereh_runtime_v1_runtime_proto_depIdxs = []int32{
-	0, // 0: gereh.runtime.v1.EnsureTenantRuntimeResponse.state:type_name -> gereh.runtime.v1.RuntimeProvisioningState
-	3, // 1: gereh.runtime.v1.EnsureTenantRuntimeResponse.retry_after:type_name -> google.protobuf.Duration
-	1, // 2: gereh.runtime.v1.RuntimeManagerService.EnsureTenantRuntime:input_type -> gereh.runtime.v1.EnsureTenantRuntimeRequest
-	2, // 3: gereh.runtime.v1.RuntimeManagerService.EnsureTenantRuntime:output_type -> gereh.runtime.v1.EnsureTenantRuntimeResponse
-	3, // [3:4] is the sub-list for method output_type
-	2, // [2:3] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	1, // 0: gereh.runtime.v1.EnsureTenantRuntimeRequest.runtime:type_name -> gereh.runtime.v1.RuntimeKind
+	0, // 1: gereh.runtime.v1.EnsureTenantRuntimeResponse.state:type_name -> gereh.runtime.v1.RuntimeProvisioningState
+	4, // 2: gereh.runtime.v1.EnsureTenantRuntimeResponse.retry_after:type_name -> google.protobuf.Duration
+	2, // 3: gereh.runtime.v1.RuntimeManagerService.EnsureTenantRuntime:input_type -> gereh.runtime.v1.EnsureTenantRuntimeRequest
+	3, // 4: gereh.runtime.v1.RuntimeManagerService.EnsureTenantRuntime:output_type -> gereh.runtime.v1.EnsureTenantRuntimeResponse
+	4, // [4:5] is the sub-list for method output_type
+	3, // [3:4] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_gereh_runtime_v1_runtime_proto_init() }
@@ -279,7 +370,7 @@ func file_gereh_runtime_v1_runtime_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_gereh_runtime_v1_runtime_proto_rawDesc), len(file_gereh_runtime_v1_runtime_proto_rawDesc)),
-			NumEnums:      1,
+			NumEnums:      2,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   1,

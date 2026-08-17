@@ -311,6 +311,92 @@ jobs:
             -f deployments/local/compose.yaml \
             down -v --remove-orphans
 
+  runtimecell-contract:
+    name: RuntimeCell Kubernetes contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Install Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
+
+      - name: Synchronize workspace
+        run: go work sync
+
+      - name: Download Go dependencies
+        run: |
+          go mod download
+          go -C tools mod download
+
+      - name: Generate RuntimeCell API artifacts
+        run: |
+          bash scripts/runtimecell/generate.sh
+
+      - name: Verify generated RuntimeCell artifacts
+        run: |
+          git diff \
+            --exit-code \
+            -- \
+            platform/go/runtimecell/api/v1/zz_generated.deepcopy.go \
+            deploy/crds/runtime.gereh.ai_runtimecells.yaml
+
+      - name: Install kind
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          tool_bin="${RUNNER_TEMP}/gereh-kind"
+          mkdir -p "${tool_bin}"
+
+          GOBIN="${tool_bin}" \
+            go install sigs.k8s.io/kind@v0.32.0
+
+          echo "${tool_bin}" >> "${GITHUB_PATH}"
+
+      - name: Create Kubernetes 1.36 cluster
+        run: |
+          kind create cluster \
+            --name gereh-runtimecell \
+            --image \
+            kindest/node:v1.36.1@sha256:3489c7674813ba5d8b1a9977baea8a6e553784dab7b84759d1014dbd78f7ebd5 \
+            --wait 120s
+
+      - name: Install RuntimeCell CRD
+        run: |
+          kubectl apply -k deploy/crds
+          kubectl wait \
+            --for=condition=Established \
+            crd/runtimecells.runtime.gereh.ai \
+            --timeout=60s
+
+      - name: Validate RuntimeCell API contract
+        run: |
+          bash scripts/runtimecell/validate-live.sh
+
+      - name: Show cluster diagnostics after failure
+        if: failure()
+        run: |
+          kubectl get nodes -o wide || true
+          kubectl get crd runtimecells.runtime.gereh.ai -o yaml || true
+          kubectl get runtimecells -A -o yaml || true
+
+      - name: Delete kind cluster
+        if: always()
+        run: |
+          kind delete cluster \
+            --name gereh-runtimecell
+
   database-contracts:
     name: Database contract validation
     runs-on: ubuntu-24.04
@@ -342,26 +428,88 @@ jobs:
         with:
           version: "v1.3.0"
 
-      - name: Create migration databases
+      - name: Create migration roles and databases
         env:
           PGPASSWORD: postgres
+        shell: bash
         run: |
-          psql -h 127.0.0.1 -U postgres -d postgres -c 'CREATE DATABASE model_access_ci;'
-          psql -h 127.0.0.1 -U postgres -d postgres -c 'CREATE DATABASE model_gateway_ci;'
+          set -Eeuo pipefail
 
-      - name: Validate Model Access migrations
+          psql \
+            -h 127.0.0.1 \
+            -U postgres \
+            -d postgres \
+            -v ON_ERROR_STOP=1 \
+            -c '
+              CREATE ROLE gereh_model_access_app
+              NOLOGIN
+              NOSUPERUSER
+              NOCREATEDB
+              NOCREATEROLE
+              NOINHERIT
+              NOREPLICATION
+              NOBYPASSRLS;
+            '
+
+          psql \
+            -h 127.0.0.1 \
+            -U postgres \
+            -d postgres \
+            -v ON_ERROR_STOP=1 \
+            -c '
+              CREATE ROLE gereh_model_gateway_app
+              NOLOGIN
+              NOSUPERUSER
+              NOCREATEDB
+              NOCREATEROLE
+              NOINHERIT
+              NOREPLICATION
+              NOBYPASSRLS;
+            '
+
+          psql \
+            -h 127.0.0.1 \
+            -U postgres \
+            -d postgres \
+            -v ON_ERROR_STOP=1 \
+            -c 'CREATE DATABASE model_access_ci;'
+
+          psql \
+            -h 127.0.0.1 \
+            -U postgres \
+            -d postgres \
+            -v ON_ERROR_STOP=1 \
+            -c 'CREATE DATABASE model_gateway_ci;'
+
+      - name: Validate Model Access migration directory
         env:
           MODEL_ACCESS_MIGRATION_DATABASE_URL: >-
             postgres://postgres:postgres@127.0.0.1:5432/model_access_ci?sslmode=disable
         run: |
-          atlas migrate validate --env model_access
-          atlas migrate apply --env model_access
+          atlas migrate validate \
+            --env model_access
 
-      - name: Validate Model Gateway migrations
+      - name: Apply Model Access migrations
+        env:
+          MODEL_ACCESS_MIGRATION_DATABASE_URL: >-
+            postgres://postgres:postgres@127.0.0.1:5432/model_access_ci?sslmode=disable
+        run: |
+          atlas migrate apply \
+            --env model_access
+
+      - name: Validate Model Gateway migration directory
         env:
           MODEL_GATEWAY_MIGRATION_DATABASE_URL: >-
             postgres://postgres:postgres@127.0.0.1:5432/model_gateway_ci?sslmode=disable
         run: |
-          atlas migrate validate --env model_gateway
-          atlas migrate apply --env model_gateway
+          atlas migrate validate \
+            --env model_gateway
+
+      - name: Apply Model Gateway migrations
+        env:
+          MODEL_GATEWAY_MIGRATION_DATABASE_URL: >-
+            postgres://postgres:postgres@127.0.0.1:5432/model_gateway_ci?sslmode=disable
+        run: |
+          atlas migrate apply \
+            --env model_gateway
 
