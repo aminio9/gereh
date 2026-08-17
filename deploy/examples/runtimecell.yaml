@@ -1,0 +1,19 @@
+apiVersion: runtime.gereh.ai/v1
+kind: RuntimeCell
+metadata:
+  name: example-openclaw
+  namespace: gereh-runtime-system
+spec:
+  tenantId: 2a27c31f-9a73-4977-8e4f-b49135380cc7
+  operationId: 749694fc-a57d-4622-b503-900c2353ec1e
+  runtime: openclaw
+  version: "2026.07"
+  isolationTier: standard
+
+  # This is intentionally the Kubernetes StorageClass abstraction.
+  # Replace this example with the class provided by the selected
+  # Arvan/RKE2/other execution cluster.
+  storageClass: encrypted-rwo
+
+  # Gereh logical placement region, not an Arvan resource identifier.
+  region: ir-thr-1
