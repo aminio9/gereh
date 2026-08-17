@@ -1,0 +1,108 @@
+---
+- name: Prepare Gereh execution nodes
+  hosts: all
+  become: true
+  gather_facts: true
+  vars_files:
+    - ../group_vars/all.yml
+
+  tasks:
+    - name: Validate operating system
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.system == "Linux"
+        fail_msg: "Gereh RKE2 nodes must run Linux."
+
+    - name: Validate private node IP
+      ansible.builtin.assert:
+        that:
+          - rke2_node_ip is defined
+          - rke2_node_ip | length > 0
+        fail_msg: "Every node must define rke2_node_ip."
+
+    - name: Validate cluster token
+      ansible.builtin.assert:
+        that:
+          - rke2_token | length >= 32
+        fail_msg: >-
+          Set RKE2_TOKEN to a strong random secret before provisioning.
+
+    - name: Validate registration endpoint
+      ansible.builtin.assert:
+        that:
+          - rke2_registration_address | length > 0
+        fail_msg: >-
+          RKE2_REGISTRATION_ADDRESS must contain the stable private registration endpoint.
+
+    - name: Require pinned installer checksum in production
+      ansible.builtin.assert:
+        that:
+          - rke2_install_script_checksum | length > 0
+        fail_msg: >-
+          Production must use a mirrored/pinned RKE2 installer together with RKE2_INSTALL_SCRIPT_CHECKSUM.
+      when: gereh_environment == "prod"
+
+    - name: Install host prerequisites
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - gzip
+          - jq
+          - tar
+        state: present
+        update_cache: true
+      when: ansible_facts.os_family == "Debian"
+
+    - name: Disable active swap
+      ansible.builtin.command:
+        cmd: swapoff -a
+      when: ansible_swaptotal_mb | int > 0
+      changed_when: true
+
+    - name: Disable swap entries in fstab
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^([^#].*\s+swap\s+.*)$'
+        replace: '# \1'
+        backup: true
+
+    - name: Create RKE2 configuration directory
+      ansible.builtin.file:
+        path: /etc/rancher/rke2
+        state: directory
+        owner: root
+        group: root
+        mode: "0700"
+
+    - name: Create Gereh bootstrap directory
+      ansible.builtin.file:
+        path: "{{ gereh_bootstrap_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0700"
+
+    - name: Create etcd user required by hardened server nodes
+      ansible.builtin.user:
+        name: etcd
+        system: true
+        create_home: false
+        shell: /usr/sbin/nologin
+      when: inventory_hostname in groups['rke2_servers']
+
+    - name: Install Kubernetes sysctl configuration
+      ansible.builtin.template:
+        src: ../templates/90-gereh-kubernetes.conf.j2
+        dest: /etc/sysctl.d/90-gereh-kubernetes.conf
+        owner: root
+        group: root
+        mode: "0644"
+      notify:
+        - Apply sysctl
+
+  handlers:
+    - name: Apply sysctl
+      ansible.builtin.command:
+        cmd: sysctl --system
+      changed_when: true

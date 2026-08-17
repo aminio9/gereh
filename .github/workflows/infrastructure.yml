@@ -1,0 +1,107 @@
+name: Execution Infrastructure
+
+on:
+  pull_request:
+    paths:
+      - "infrastructure/execution-cluster/**"
+      - "deploy/policies/execution/**"
+      - "scripts/infra/execution-cluster/**"
+      - ".github/workflows/infrastructure.yml"
+
+  push:
+    branches:
+      - main
+    paths:
+      - "infrastructure/execution-cluster/**"
+      - "deploy/policies/execution/**"
+      - "scripts/infra/execution-cluster/**"
+      - ".github/workflows/infrastructure.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: execution-infra-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate execution infrastructure
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install validation tools
+        working-directory: infrastructure/execution-cluster
+        run: |
+          python -m pip install \
+            --disable-pip-version-check \
+            -r requirements.txt
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+
+      - name: Validate YAML
+        run: |
+          yamllint \
+            infrastructure/execution-cluster \
+            deploy/policies/execution
+
+      - name: Lint Ansible
+        working-directory: infrastructure/execution-cluster
+        run: |
+          ansible-lint playbooks/*.yml
+
+      - name: Syntax-check node preparation
+        working-directory: infrastructure/execution-cluster
+        env:
+          RKE2_TOKEN: "ci-placeholder-token-with-more-than-32-characters"
+          RKE2_REGISTRATION_ADDRESS: "10.80.0.10"
+        run: |
+          ansible-playbook \
+            -i inventories/dev/hosts.yml.example \
+            playbooks/prepare.yml \
+            --syntax-check
+
+      - name: Syntax-check RKE2 installation
+        working-directory: infrastructure/execution-cluster
+        env:
+          RKE2_TOKEN: "ci-placeholder-token-with-more-than-32-characters"
+          RKE2_REGISTRATION_ADDRESS: "10.80.0.10"
+        run: |
+          ansible-playbook \
+            -i inventories/dev/hosts.yml.example \
+            playbooks/install.yml \
+            --syntax-check
+
+      - name: Syntax-check bootstrap
+        working-directory: infrastructure/execution-cluster
+        env:
+          RKE2_TOKEN: "ci-placeholder-token-with-more-than-32-characters"
+          RKE2_REGISTRATION_ADDRESS: "10.80.0.10"
+        run: |
+          ansible-playbook \
+            -i inventories/dev/hosts.yml.example \
+            playbooks/bootstrap.yml \
+            --syntax-check
+
+      - name: Syntax-check verification
+        working-directory: infrastructure/execution-cluster
+        run: |
+          ansible-playbook \
+            -i inventories/dev/hosts.yml.example \
+            playbooks/verify.yml \
+            --syntax-check
+
+      - name: Check shell scripts
+        run: |
+          shellcheck scripts/infra/execution-cluster/*.sh

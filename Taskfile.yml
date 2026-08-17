@@ -41,18 +41,15 @@ tasks:
       - go tool buf lint
 
   contracts:generate:
-    desc: Generate Go code from Protobuf contracts
+    desc: Generate Go code from Protobuf contracts using pinned tools
     cmds:
-      - rm -rf gen/go
-      - mkdir -p gen/go
-      - go tool buf generate
-      - go mod tidy
+      - bash scripts/contracts/generate.sh
 
   contracts:check-generated:
     desc: Verify committed generated contracts are current
     cmds:
       - task: contracts:generate
-      - git diff --exit-code -- gen/go go.mod go.sum
+      - git diff --exit-code -- gen/go
 
   contracts:breaking:
     desc: Check Protobuf contracts for breaking changes against main
@@ -351,6 +348,18 @@ tasks:
     cmds:
       - atlas migrate validate --env model_gateway
 
+  db:model-gateway:lint:
+    desc: Lint Model Gateway migration
+    cmds:
+      - |
+        if atlas migrate lint --env model_gateway --latest 1; then
+          :
+        elif atlas migrate lint --env model_gateway --latest 1 2>&1 | grep -qE "available only to Atlas Pro|dev-url"; then
+          echo "atlas migrate lint skipped: requires Atlas Pro or dev-url"
+        else
+          exit 1
+        fi
+
   db:model-gateway:status:
     desc: Show Model Gateway migration status
     cmds:
@@ -376,6 +385,71 @@ tasks:
     desc: Run Model Gateway tests
     cmds:
       - go test -race -count=1 ./services/model-gateway/...
+
+  infra:execution:deps:
+    desc: Install execution-cluster development dependencies
+    cmds:
+      - |
+        python3 -m pip install \
+          -r infrastructure/execution-cluster/requirements.txt
+
+  infra:execution:validate:
+    desc: Validate execution Kubernetes infrastructure
+    cmds:
+      - >-
+        yamllint
+        infrastructure/execution-cluster
+        deploy/policies/execution
+      - >-
+        ansible-lint
+        infrastructure/execution-cluster/playbooks/*.yml
+      - >-
+        shellcheck
+        scripts/infra/execution-cluster/*.sh
+
+  infra:execution:prepare:
+    desc: Prepare execution-cluster Linux nodes
+    requires:
+      vars:
+        - INVENTORY
+    cmds:
+      - >-
+        ansible-playbook
+        -i {{.INVENTORY}}
+        infrastructure/execution-cluster/playbooks/prepare.yml
+
+  infra:execution:install:
+    desc: Install RKE2 execution cluster
+    requires:
+      vars:
+        - INVENTORY
+    cmds:
+      - >-
+        ansible-playbook
+        -i {{.INVENTORY}}
+        infrastructure/execution-cluster/playbooks/install.yml
+
+  infra:execution:bootstrap:
+    desc: Bootstrap Gereh Kubernetes policies
+    requires:
+      vars:
+        - INVENTORY
+    cmds:
+      - >-
+        ansible-playbook
+        -i {{.INVENTORY}}
+        infrastructure/execution-cluster/playbooks/bootstrap.yml
+
+  infra:execution:verify:
+    desc: Verify Gereh execution cluster
+    requires:
+      vars:
+        - INVENTORY
+    cmds:
+      - >-
+        ansible-playbook
+        -i {{.INVENTORY}}
+        infrastructure/execution-cluster/playbooks/verify.yml
 
   dev:web:
     desc: Run the React development server
@@ -405,15 +479,7 @@ tasks:
   format:check:
     desc: Verify source formatting
     cmds:
-      - |
-        files="$(find platform services runtime-connectors gen -type f -name '*.go' 2>/dev/null)"
-        if [[ -n "${files}" ]]; then
-          unformatted="$(gofmt -l ${files})"
-          if [[ -n "${unformatted}" ]]; then
-            echo "${unformatted}"
-            exit 1
-          fi
-        fi
+      - bash -c 'files="$(find platform services runtime-connectors gen -type f -name "*.go" 2>/dev/null)"; if [ -n "$files" ]; then unformatted="$(gofmt -l $files)"; if [ -n "$unformatted" ]; then echo "$unformatted"; exit 1; fi; fi'
       - go tool buf format --diff --exit-code
       - pnpm -r --if-present format:check
 
@@ -460,6 +526,7 @@ tasks:
     cmds:
       - task: format:check
       - task: lint
+      - task: infra:execution:validate
       - task: db:tenant:validate
       - task: db:organization:validate
       - task: db:work:validate
@@ -468,12 +535,15 @@ tasks:
       - task: db:projection:lint
       - task: db:model-access:validate
       - task: db:model-access:lint
+      - task: db:model-gateway:validate
+      - task: db:model-gateway:lint
       - task: workflow:check
       - task: test:organization
       - task: test:work
       - task: test:policy
       - task: test:projection
       - task: test:model-access
+      - task: test:model-gateway
       - task: test
       - task: build
       - task: contracts:check-generated

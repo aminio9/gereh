@@ -1,0 +1,9 @@
+---
+{% if rke2_enable_registry_mirror %}
+mirrors:
+  docker.io:
+    endpoint:
+      - "{{ rke2_docker_mirror_endpoint }}"
+{% else %}
+mirrors: {}
+{% endif %}

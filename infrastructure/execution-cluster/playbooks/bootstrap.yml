@@ -1,0 +1,67 @@
+---
+- name: Bootstrap Gereh execution-plane Kubernetes policy
+  hosts: rke2_servers[0]
+  become: true
+  gather_facts: false
+  vars_files:
+    - ../group_vars/all.yml
+  vars:
+    repository_execution_policies: >-
+      {{ playbook_dir }}/../../../deploy/policies/execution
+
+  tasks:
+    - name: Ensure bootstrap directory exists
+      ansible.builtin.file:
+        path: "{{ gereh_bootstrap_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0700"
+
+    - name: Copy execution-plane policies
+      ansible.builtin.copy:
+        src: "{{ repository_execution_policies }}/"
+        dest: "{{ gereh_bootstrap_dir }}/"
+        owner: root
+        group: root
+        mode: "0600"
+
+    - name: Apply namespaces first
+      ansible.builtin.command:
+        cmd: >-
+          /var/lib/rancher/rke2/bin/kubectl
+          --kubeconfig /etc/rancher/rke2/rke2.yaml
+          apply -f {{ gereh_bootstrap_dir }}/namespaces.yaml
+      changed_when: true
+
+    - name: Apply priority classes
+      ansible.builtin.command:
+        cmd: >-
+          /var/lib/rancher/rke2/bin/kubectl
+          --kubeconfig /etc/rancher/rke2/rke2.yaml
+          apply -f {{ gereh_bootstrap_dir }}/priority-classes.yaml
+      changed_when: true
+
+    - name: Apply default service accounts
+      ansible.builtin.command:
+        cmd: >-
+          /var/lib/rancher/rke2/bin/kubectl
+          --kubeconfig /etc/rancher/rke2/rke2.yaml
+          apply -f {{ gereh_bootstrap_dir }}/default-service-accounts.yaml
+      changed_when: true
+
+    - name: Apply default deny policies
+      ansible.builtin.command:
+        cmd: >-
+          /var/lib/rancher/rke2/bin/kubectl
+          --kubeconfig /etc/rancher/rke2/rke2.yaml
+          apply -f {{ gereh_bootstrap_dir }}/default-deny.yaml
+      changed_when: true
+
+    - name: Apply DNS policies
+      ansible.builtin.command:
+        cmd: >-
+          /var/lib/rancher/rke2/bin/kubectl
+          --kubeconfig /etc/rancher/rke2/rke2.yaml
+          apply -f {{ gereh_bootstrap_dir }}/allow-dns.yaml
+      changed_when: true

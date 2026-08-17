@@ -1,0 +1,41 @@
+---
+all:
+  vars:
+    ansible_user: ubuntu
+    gereh_environment: staging
+
+  children:
+    rke2_servers:
+      hosts:
+        gereh-staging-cp-01:
+          ansible_host: 10.81.0.11
+          rke2_node_ip: 10.81.0.11
+        gereh-staging-cp-02:
+          ansible_host: 10.81.0.12
+          rke2_node_ip: 10.81.0.12
+        gereh-staging-cp-03:
+          ansible_host: 10.81.0.13
+          rke2_node_ip: 10.81.0.13
+
+    rke2_agents:
+      children:
+        system_workers:
+          hosts:
+            gereh-staging-system-01:
+              ansible_host: 10.81.1.11
+              rke2_node_ip: 10.81.1.11
+              gereh_node_pool: system
+
+        runtime_workers:
+          hosts:
+            gereh-staging-runtime-01:
+              ansible_host: 10.81.2.11
+              rke2_node_ip: 10.81.2.11
+              gereh_node_pool: runtime
+
+        sandbox_workers:
+          hosts:
+            gereh-staging-sandbox-01:
+              ansible_host: 10.81.3.11
+              rke2_node_ip: 10.81.3.11
+              gereh_node_pool: sandbox

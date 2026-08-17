@@ -1,0 +1,53 @@
+---
+all:
+  vars:
+    ansible_user: ubuntu
+    gereh_environment: prod
+
+  children:
+    rke2_servers:
+      hosts:
+        gereh-prod-cp-01:
+          ansible_host: 10.82.0.11
+          rke2_node_ip: 10.82.0.11
+        gereh-prod-cp-02:
+          ansible_host: 10.82.0.12
+          rke2_node_ip: 10.82.0.12
+        gereh-prod-cp-03:
+          ansible_host: 10.82.0.13
+          rke2_node_ip: 10.82.0.13
+
+    rke2_agents:
+      children:
+        system_workers:
+          hosts:
+            gereh-prod-system-01:
+              ansible_host: 10.82.1.11
+              rke2_node_ip: 10.82.1.11
+              gereh_node_pool: system
+            gereh-prod-system-02:
+              ansible_host: 10.82.1.12
+              rke2_node_ip: 10.82.1.12
+              gereh_node_pool: system
+
+        runtime_workers:
+          hosts:
+            gereh-prod-runtime-01:
+              ansible_host: 10.82.2.11
+              rke2_node_ip: 10.82.2.11
+              gereh_node_pool: runtime
+            gereh-prod-runtime-02:
+              ansible_host: 10.82.2.12
+              rke2_node_ip: 10.82.2.12
+              gereh_node_pool: runtime
+
+        sandbox_workers:
+          hosts:
+            gereh-prod-sandbox-01:
+              ansible_host: 10.82.3.11
+              rke2_node_ip: 10.82.3.11
+              gereh_node_pool: sandbox
+            gereh-prod-sandbox-02:
+              ansible_host: 10.82.3.12
+              rke2_node_ip: 10.82.3.12
+              gereh_node_pool: sandbox
