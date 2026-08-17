@@ -1,0 +1,29 @@
+---
+token: "{{ rke2_token }}"
+{% if inventory_hostname != groups['rke2_servers'][0] %}
+server: "https://{{ rke2_registration_address }}:9345"
+{% endif %}
+data-dir: "{{ rke2_data_dir }}"
+profile: cis
+node-ip: "{{ rke2_node_ip }}"
+node-label:
+  - "gereh.ai/plane=execution"
+  - "gereh.ai/node-pool=control-plane"
+node-taint:
+  - "gereh.ai/workload=control-plane:NoSchedule"
+tls-san:
+  - "{{ rke2_registration_address }}"
+tls-san-security: true
+cluster-cidr: "{{ rke2_cluster_cidr }}"
+service-cidr: "{{ rke2_service_cidr }}"
+cluster-dns: "{{ rke2_cluster_dns }}"
+cluster-domain: "{{ rke2_cluster_domain }}"
+cni: "{{ rke2_cni }}"
+ingress-controller: none
+enable-servicelb: false
+write-kubeconfig-mode: "0600"
+audit-policy-file: "/etc/rancher/rke2/audit-policy.yaml"
+etcd-snapshot-schedule-cron: "{{ rke2_etcd_snapshot_schedule }}"
+etcd-snapshot-retention: {{ rke2_etcd_snapshot_retention }}
+etcd-snapshot-compress: {{ rke2_etcd_snapshot_compress | lower }}
+protect-kernel-defaults: true

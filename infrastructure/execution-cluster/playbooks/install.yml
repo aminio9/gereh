@@ -1,0 +1,145 @@
+---
+- name: Install RKE2 binaries
+  hosts: all
+  become: true
+  gather_facts: false
+  vars_files:
+    - ../group_vars/all.yml
+
+  tasks:
+    - name: Download pinned RKE2 installer
+      ansible.builtin.get_url:
+        url: "{{ rke2_install_script_url }}"
+        dest: /usr/local/src/install-rke2.sh
+        mode: "0755"
+        owner: root
+        group: root
+        checksum: >-
+          {{ rke2_install_script_checksum if rke2_install_script_checksum | length > 0 else omit }}
+
+    - name: Determine RKE2 node type
+      ansible.builtin.set_fact:
+        rke2_install_type: >-
+          {{ 'server' if inventory_hostname in groups['rke2_servers'] else 'agent' }}
+
+    - name: Install exact RKE2 version
+      ansible.builtin.command:
+        cmd: /usr/local/src/install-rke2.sh
+        creates: "/usr/local/bin/rke2"
+      environment:
+        INSTALL_RKE2_VERSION: "{{ rke2_version }}"
+        INSTALL_RKE2_TYPE: "{{ rke2_install_type }}"
+
+    - name: Install Docker registry configuration
+      ansible.builtin.template:
+        src: ../templates/registries.yaml.j2
+        dest: /etc/rancher/rke2/registries.yaml
+        owner: root
+        group: root
+        mode: "0600"
+
+- name: Configure RKE2 server nodes
+  hosts: rke2_servers
+  become: true
+  gather_facts: false
+  vars_files:
+    - ../group_vars/all.yml
+
+  tasks:
+    - name: Install Kubernetes audit policy
+      ansible.builtin.template:
+        src: ../templates/audit-policy.yaml.j2
+        dest: /etc/rancher/rke2/audit-policy.yaml
+        owner: root
+        group: root
+        mode: "0600"
+
+    - name: Install server configuration
+      ansible.builtin.template:
+        src: ../templates/rke2-server.yaml.j2
+        dest: /etc/rancher/rke2/config.yaml
+        owner: root
+        group: root
+        mode: "0600"
+
+- name: Configure RKE2 worker nodes
+  hosts: rke2_agents
+  become: true
+  gather_facts: false
+  vars_files:
+    - ../group_vars/all.yml
+
+  tasks:
+    - name: Validate worker node pool
+      ansible.builtin.assert:
+        that:
+          - gereh_node_pool in ['system', 'runtime', 'sandbox']
+
+    - name: Install agent configuration
+      ansible.builtin.template:
+        src: ../templates/rke2-agent.yaml.j2
+        dest: /etc/rancher/rke2/config.yaml
+        owner: root
+        group: root
+        mode: "0600"
+
+- name: Start initial RKE2 server
+  hosts: rke2_servers[0]
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Enable and start initial server
+      ansible.builtin.systemd_service:
+        name: rke2-server
+        enabled: true
+        state: started
+
+    - name: Wait for RKE2 supervisor
+      ansible.builtin.wait_for:
+        host: "{{ rke2_node_ip }}"
+        port: 9345
+        timeout: 300
+
+    - name: Wait for Kubernetes API
+      ansible.builtin.command:
+        cmd: >-
+          /var/lib/rancher/rke2/bin/kubectl
+          --kubeconfig /etc/rancher/rke2/rke2.yaml
+          get --raw=/readyz
+      register: api_ready
+      retries: 30
+      delay: 10
+      until: api_ready.rc == 0
+      changed_when: false
+
+- name: Join remaining RKE2 server nodes
+  hosts: rke2_servers
+  serial: 1
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Enable and start additional server
+      ansible.builtin.systemd_service:
+        name: rke2-server
+        enabled: true
+        state: started
+      when: inventory_hostname != groups['rke2_servers'][0]
+
+    - name: Wait for server readiness
+      ansible.builtin.wait_for:
+        host: "{{ rke2_node_ip }}"
+        port: 9345
+        timeout: 300
+      when: inventory_hostname != groups['rke2_servers'][0]
+
+- name: Start RKE2 workers
+  hosts: rke2_agents
+  serial: 2
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Enable and start RKE2 agent
+      ansible.builtin.systemd_service:
+        name: rke2-agent
+        enabled: true
+        state: started

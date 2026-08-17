@@ -1,0 +1,12 @@
+---
+server: "https://{{ rke2_registration_address }}:9345"
+token: "{{ rke2_token }}"
+data-dir: "{{ rke2_data_dir }}"
+node-ip: "{{ rke2_node_ip }}"
+node-label:
+  - "gereh.ai/plane=execution"
+  - "gereh.ai/node-pool={{ gereh_node_pool }}"
+{% if gereh_node_pool in ['runtime', 'sandbox'] %}
+node-taint:
+  - "gereh.ai/workload={{ gereh_node_pool }}:NoSchedule"
+{% endif %}

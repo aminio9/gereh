@@ -8,104 +8,70 @@ The execution cluster is separate from the shared Gereh control plane and is
 intended to host OpenClaw, Hermes, runtime support services, and isolated
 execution sandboxes in later phases.
 
+## Modes
+
+- **Mode A**: Arvan Private Kubernetes (managed with native admin kubeconfig)
+- **Mode B**: Hardened RKE2 on Arvan Cloud Servers, Derak, or other Iranian VPS providers via Ansible
+
 ## Prerequisites
 
-- AWS CLI
-- Terraform 1.15.x
-- kubectl compatible with Kubernetes 1.36
-- jq
-- AWS identity permitted to assume the infrastructure role
-- VPC connectivity for Kubernetes API operations
+- SSH access to cluster nodes (Mode B)
+- Python 3.13+ with `ansible-core`
+- `kubectl` compatible with Kubernetes 1.36
+- `jq`
+- Valid private network connectivity / VPN
 
-## Plan
+## Mode B: Provisioning RKE2 Cluster
 
+1. Prepare environment inventory:
 ```bash
-export TF_VAR_cluster_admin_role_arn="arn:aws:iam::<account>:role/GerehEKSAdmin"
-
-cd infrastructure/live/dev/execution-cluster
-
-terraform init \
-  -backend-config=backend.hcl
-
-terraform fmt -check
-
-terraform validate
-
-terraform plan
+cd infrastructure/execution-cluster
+cp inventories/dev/hosts.yml.example inventories/dev/hosts.yml
 ```
 
-## Apply
-
+2. Set required environment variables:
 ```bash
-terraform apply
+export RKE2_TOKEN="$(openssl rand -hex 48)"
+export RKE2_REGISTRATION_ADDRESS="10.80.0.11"
 ```
 
-Production infrastructure should normally be applied through the protected  
-GitHub Actions environment rather than directly from a workstation.
-
-## Configure Kubernetes access
-
+3. Run node preparation:
 ```bash
-export AWS_REGION=eu-north-1
-export EXECUTION_CLUSTER_NAME=gereh-dev-exec-eu-north-1
-
-aws eks update-kubeconfig \
-  --region "${AWS_REGION}" \
-  --name "${EXECUTION_CLUSTER_NAME}"
+ansible-playbook -i inventories/dev/hosts.yml playbooks/prepare.yml
 ```
 
-The Kubernetes API endpoint is private, so this command requires VPC  
-connectivity for subsequent kubectl operations.
-
-## Bootstrap cluster policy
-
+4. Install RKE2:
 ```bash
-task infra:execution:bootstrap
+ansible-playbook -i inventories/dev/hosts.yml playbooks/install.yml
 ```
 
-## Verify
-
+5. Bootstrap policies:
 ```bash
-task infra:execution:verify
+ansible-playbook -i inventories/dev/hosts.yml playbooks/bootstrap.yml
 ```
 
-## Required invariants
+6. Verify cluster health:
+```bash
+ansible-playbook -i inventories/dev/hosts.yml playbooks/verify.yml
+```
 
-- EKS status is ACTIVE.
-- Kubernetes API is private.
-- Public Kubernetes API is disabled.
-- Kubernetes version is the approved version.
-- system, runtime, and sandbox node groups exist.
-- runtime and sandbox pools are tainted.
-- EKS control-plane logging is enabled.
-- VPC CNI NetworkPolicy support is enabled.
-- Pod Identity Agent is ACTIVE.
-- execution namespaces use restricted Pod Security.
-- default-deny NetworkPolicies are installed.
-- no tenant runtime workloads exist before Runtime Plane Phase 23.
+## Mode A: Arvan Private Kubernetes Bootstrap
 
-## Failure handling
+If using Arvan Private Kubernetes with admin kubeconfig:
 
-If Terraform apply fails:
+```bash
+export KUBECONFIG="$HOME/.kube/gereh-arvan-execution.yaml"
+bash scripts/infra/execution-cluster/bootstrap.sh
+```
 
-1. Do not manually create replacement cloud resources.
-2. Inspect the Terraform error and AWS service status.
-3. Re-run `terraform plan`.
-4. Ensure the proposed reconciliation is safe.
-5. Re-apply through the same state backend.
+## Required Invariants
 
-If Kubernetes bootstrap fails:
-
-1. Confirm VPC/private API connectivity.
-2. Confirm the caller is mapped through an EKS Access Entry.
-3. Run `aws eks describe-cluster`.
-4. Run `kubectl get --raw=/readyz`.
-5. Inspect add-on status.
-6. Re-run bootstrap; all manifests are declarative and idempotent.
-
-## Destruction
-
-Production destruction must not be automated.
-
-Deletion protection must be explicitly disabled in reviewed Terraform before  
-the production cluster can be destroyed.
+- Kubernetes version is pinned (v1.36.3).
+- CIS profile is active (RKE2 Mode B).
+- Secrets at rest are encrypted.
+- System, runtime, and sandbox node pools exist.
+- Runtime and sandbox node pools are tainted with `gereh.ai/workload=<pool>:NoSchedule`.
+- `gereh-runtime-system`, `gereh-runtime-cells`, and `gereh-sandboxes` namespaces enforce Restricted Pod Security.
+- Default ServiceAccounts have `automountServiceAccountToken: false`.
+- Default-deny NetworkPolicies are installed in all execution namespaces.
+- DNS is the only baseline allowed egress.

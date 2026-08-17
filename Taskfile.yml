@@ -386,50 +386,70 @@ tasks:
     cmds:
       - go test -race -count=1 ./services/model-gateway/...
 
-  infra:execution:fmt:
-    desc: Format execution-cluster Terraform
-    cmds:
-      - terraform fmt -recursive infrastructure
-
-  infra:execution:validate:
-    desc: Validate all execution-cluster Terraform environments
+  infra:execution:deps:
+    desc: Install execution-cluster development dependencies
     cmds:
       - |
-        set -Eeuo pipefail
+        python3 -m pip install \
+          -r infrastructure/execution-cluster/requirements.txt
 
-        for environment in dev staging prod; do
-          stack="infrastructure/live/${environment}/execution-cluster"
+  infra:execution:validate:
+    desc: Validate execution Kubernetes infrastructure
+    cmds:
+      - >-
+        yamllint
+        infrastructure/execution-cluster
+        deploy/policies/execution
+      - >-
+        ansible-lint
+        infrastructure/execution-cluster/playbooks/*.yml
+      - >-
+        shellcheck
+        scripts/infra/execution-cluster/*.sh
 
-          terraform \
-            -chdir="${stack}" \
-            init \
-            -backend=false \
-            -input=false
+  infra:execution:prepare:
+    desc: Prepare execution-cluster Linux nodes
+    requires:
+      vars:
+        - INVENTORY
+    cmds:
+      - >-
+        ansible-playbook
+        -i {{.INVENTORY}}
+        infrastructure/execution-cluster/playbooks/prepare.yml
 
-          terraform \
-            -chdir="${stack}" \
-            validate
-        done
+  infra:execution:install:
+    desc: Install RKE2 execution cluster
+    requires:
+      vars:
+        - INVENTORY
+    cmds:
+      - >-
+        ansible-playbook
+        -i {{.INVENTORY}}
+        infrastructure/execution-cluster/playbooks/install.yml
 
   infra:execution:bootstrap:
-    desc: Bootstrap Kubernetes execution-plane policies
-    preconditions:
-      - sh: test -n "${EXECUTION_CLUSTER_NAME:-}"
-        msg: EXECUTION_CLUSTER_NAME is required
-      - sh: test -n "${AWS_REGION:-}"
-        msg: AWS_REGION is required
+    desc: Bootstrap Gereh Kubernetes policies
+    requires:
+      vars:
+        - INVENTORY
     cmds:
-      - bash scripts/infra/execution-cluster/bootstrap.sh
+      - >-
+        ansible-playbook
+        -i {{.INVENTORY}}
+        infrastructure/execution-cluster/playbooks/bootstrap.yml
 
   infra:execution:verify:
-    desc: Verify the execution Kubernetes cluster
-    preconditions:
-      - sh: test -n "${EXECUTION_CLUSTER_NAME:-}"
-        msg: EXECUTION_CLUSTER_NAME is required
-      - sh: test -n "${AWS_REGION:-}"
-        msg: AWS_REGION is required
+    desc: Verify Gereh execution cluster
+    requires:
+      vars:
+        - INVENTORY
     cmds:
-      - bash scripts/infra/execution-cluster/verify.sh
+      - >-
+        ansible-playbook
+        -i {{.INVENTORY}}
+        infrastructure/execution-cluster/playbooks/verify.yml
 
   dev:web:
     desc: Run the React development server

@@ -1,0 +1,25 @@
+---
+gereh_environment: dev
+rke2_version: "v1.36.3+rke2r1"
+rke2_token: >-
+  {{ lookup('env', 'RKE2_TOKEN') }}
+rke2_registration_address: >-
+  {{ lookup('env', 'RKE2_REGISTRATION_ADDRESS') }}
+rke2_install_script_url: >-
+  {{ lookup('env', 'RKE2_INSTALL_SCRIPT_URL') | default('https://get.rke2.io', true) }}
+rke2_install_script_checksum: >-
+  {{ lookup('env', 'RKE2_INSTALL_SCRIPT_CHECKSUM') }}
+rke2_cluster_cidr: "10.42.0.0/16"
+rke2_service_cidr: "10.43.0.0/16"
+rke2_cluster_dns: "10.43.0.10"
+rke2_cluster_domain: "cluster.local"
+rke2_cni: cilium
+rke2_etcd_snapshot_schedule: "0 */6 * * *"
+rke2_etcd_snapshot_retention: 28
+rke2_etcd_snapshot_compress: true
+rke2_docker_mirror_endpoint: >-
+  {{ lookup('env', 'RKE2_DOCKER_MIRROR_ENDPOINT') }}
+rke2_enable_registry_mirror: >-
+  {{ (rke2_docker_mirror_endpoint | length) > 0 }}
+rke2_data_dir: "/var/lib/rancher/rke2"
+gereh_bootstrap_dir: "/var/lib/gereh/bootstrap"
