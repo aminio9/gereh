@@ -20,6 +20,6 @@
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {
-    "@redocly/cli": "^2.46.0"
+    "@redocly/cli": "^2.46.1"
   }
 }
