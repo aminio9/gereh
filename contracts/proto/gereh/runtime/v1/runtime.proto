@@ -21,11 +21,31 @@ enum RuntimeProvisioningState {
   RUNTIME_PROVISIONING_STATE_FAILED = 3;
 }
 
+// RuntimeKind identifies the runtime implementation hosted by a RuntimeCell.
+// It intentionally contains product/runtime identity only and no cloud
+// provider information.
+enum RuntimeKind {
+  RUNTIME_KIND_UNSPECIFIED = 0;
+  RUNTIME_KIND_OPENCLAW = 1;
+  RUNTIME_KIND_HERMES = 2;
+}
+
 message EnsureTenantRuntimeRequest {
   string tenant_id = 1;
   string operation_id = 2;
   string region = 3;
   string isolation_tier = 4;
+  RuntimeKind runtime = 5;
+
+  // Runtime implementation release desired for the cell.
+  // This is a logical runtime release, not a container image supplied by
+  // untrusted callers. The Runtime Manager resolves releases to approved,
+  // digest-pinned images.
+  string runtime_version = 6;
+
+  // Kubernetes StorageClass selected by trusted regional placement policy.
+  // Provider-specific CSI implementation details remain outside this API.
+  string storage_class = 7;
 }
 
 message EnsureTenantRuntimeResponse {
