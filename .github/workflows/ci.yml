@@ -338,8 +338,9 @@ jobs:
           go-version-file: go.mod
 
       - name: Install Atlas
-        run: |
-          curl -sSf https://atlasgo.sh | sh
+        uses: ariga/setup-atlas@v0.3
+        with:
+          version: "v1.3.0"
 
       - name: Create migration databases
         env:

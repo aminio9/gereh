@@ -1,0 +1,5 @@
+bucket       = "REPLACE_WITH_GEREH_TERRAFORM_STATE_BUCKET"
+key          = "execution/dev/eu-north-1/terraform.tfstate"
+region       = "eu-north-1"
+encrypt      = true
+use_lockfile = true

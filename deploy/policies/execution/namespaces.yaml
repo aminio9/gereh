@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gereh-runtime-system
+  labels:
+    gereh.ai/plane: execution
+    gereh.ai/purpose: runtime-system
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: v1.36
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/audit-version: v1.36
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/warn-version: v1.36
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gereh-runtime-cells
+  labels:
+    gereh.ai/plane: execution
+    gereh.ai/purpose: runtime-cells
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: v1.36
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/audit-version: v1.36
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/warn-version: v1.36
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gereh-sandboxes
+  labels:
+    gereh.ai/plane: execution
+    gereh.ai/purpose: sandboxes
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: v1.36
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/audit-version: v1.36
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/warn-version: v1.36

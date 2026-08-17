@@ -1,0 +1,160 @@
+name: Infrastructure
+
+on:
+  pull_request:
+    paths:
+      - "infrastructure/**"
+      - "deploy/policies/execution/**"
+      - "scripts/infra/execution-cluster/**"
+      - ".github/workflows/infrastructure.yml"
+
+  push:
+    branches:
+      - main
+    paths:
+      - "infrastructure/**"
+      - "deploy/policies/execution/**"
+      - "scripts/infra/execution-cluster/**"
+      - ".github/workflows/infrastructure.yml"
+
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Execution environment
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+
+      action:
+        description: Terraform action
+        required: true
+        type: choice
+        options:
+          - plan
+          - apply
+
+permissions:
+  contents: read
+
+concurrency:
+  group: infrastructure-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Terraform validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4.0.1
+        with:
+          terraform_version: "1.15.8"
+
+      - name: Check Terraform formatting
+        run: terraform fmt -check -recursive infrastructure
+
+      - name: Validate execution-cluster stacks
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          for environment in dev staging prod; do
+            stack="infrastructure/live/${environment}/execution-cluster"
+
+            terraform \
+              -chdir="${stack}" \
+              init \
+              -backend=false \
+              -input=false
+
+            terraform \
+              -chdir="${stack}" \
+              validate
+          done
+
+  deploy:
+    name: ${{ inputs.action }} execution ${{ inputs.environment }}
+    if: github.event_name == 'workflow_dispatch'
+
+    needs:
+      - validate
+
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    environment:
+      name: execution-${{ inputs.environment }}
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4.0.1
+        with:
+          terraform_version: "1.15.8"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6.2.1
+        with:
+          role-to-assume: ${{ vars.AWS_TERRAFORM_ROLE_ARN }}
+          aws-region: eu-north-1
+
+      - name: Terraform init
+        working-directory: infrastructure/live/${{ inputs.environment }}/execution-cluster
+        run: |
+          terraform init \
+            -input=false \
+            -reconfigure \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="key=execution/${{ inputs.environment }}/eu-north-1/terraform.tfstate" \
+            -backend-config="region=eu-north-1" \
+            -backend-config="encrypt=true" \
+            -backend-config="use_lockfile=true"
+
+      - name: Terraform plan
+        working-directory: infrastructure/live/${{ inputs.environment }}/execution-cluster
+        env:
+          TF_VAR_cluster_admin_role_arn: ${{ vars.EKS_ADMIN_ROLE_ARN }}
+        run: |
+          terraform plan \
+            -input=false \
+            -out=tfplan
+
+      - name: Guard production apply
+        if: inputs.action == 'apply'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          if [[ "${GITHUB_REF}" != "refs/heads/main" ]]; then
+            echo "Infrastructure apply must run from main." >&2
+            exit 1
+          fi
+
+      - name: Terraform apply
+        if: inputs.action == 'apply'
+        working-directory: infrastructure/live/${{ inputs.environment }}/execution-cluster
+        env:
+          TF_VAR_cluster_admin_role_arn: ${{ vars.EKS_ADMIN_ROLE_ARN }}
+        run: |
+          terraform apply \
+            -input=false \
+            -auto-approve \
+            tfplan
